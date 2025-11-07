@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Write(*)",
+      "Bash(*)",
+      "Edit(*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./secrets/**)",
+      "Bash(rm*)",
+      "Bash(sudo*)"
+    ]
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

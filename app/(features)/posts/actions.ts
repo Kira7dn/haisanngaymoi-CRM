@@ -1,0 +1,25 @@
+"use server"
+
+import { revalidatePath } from "next/cache"
+import { createPostUseCase } from "@/core/application/usecases/create-post"
+import { deletePostUseCase } from "@/core/application/usecases/delete-post"
+import { updatePostUseCase } from "@/core/application/usecases/update-post"
+
+export async function createPostAction(formData: FormData) {
+  const title = formData.get("title")?.toString() || ""
+  const body = formData.get("body")?.toString() || ""
+  await createPostUseCase({ title, body })
+  revalidatePath("/posts")
+}
+
+export async function deletePostAction(id: string) {
+  await deletePostUseCase(id)
+  revalidatePath("/posts")
+}
+
+export async function updatePostAction(id: string, formData: FormData) {
+  const title = formData.get("title")?.toString()
+  const body = formData.get("body")?.toString()
+  await updatePostUseCase(id, { title, body })
+  revalidatePath("/posts")
+}

@@ -1,0 +1,264 @@
+{
+  "brand": {
+    "name": "Hải sản Ngày mới Cô Tô",
+    "shortName": "Hải sản Ngày mới",
+    "tagline": "Ngày sáng tươi mới, Cô Tô trọn vị",
+    "description": "Vẹn nguyên hồn biển trong từng bữa ăn.",
+    "positioning": "Hải sản tươi - tiện lợi - an toàn cho gia đình Việt"
+  },
+  "assets": {
+    "logoFull": "/logo-full.png",
+    "logoShort": "/logo-short.png",
+    "wallpaper": "/wallpaper.png"
+  },
+  "contact": {
+    "phone": "0123 456 789",
+    "email": "contact@haisanngaymoi.vn",
+    "region": "Đông Bắc Bộ, Việt Nam",
+    "facebook": "https://facebook.com",
+    "zalo": "https://zalo.me"
+  },
+  "hero": {
+    "title": {
+      "line1": "HẢI SẢN",
+      "line2": "NGÀY MỚI",
+      "line3": "CÔ TÔ"
+    },
+    "cta": {
+      "primary": {
+        "text": "ĐẶT HÀNG NGAY",
+        "link": "#contact"
+      },
+      "secondary": {
+        "text": "Xem sản phẩm",
+        "link": "#products"
+      }
+    }
+  },
+  "benefits": {
+    "title": "Tại sao chọn Hải sản Ngày mới?",
+    "subtitle": "Cam kết mang đến hải sản tươi ngon, an toàn và tiện lợi cho mọi gia đình Việt",
+    "items": [
+      {
+        "id": "fresh",
+        "icon": "check-circle",
+        "title": "Cam kết tươi ngon",
+        "description": "Hải sản được nhập trực tiếp từ Cô Tô, bảo quản trong kho lạnh hiện đại, đảm bảo độ tươi ngon tối đa",
+        "color": "blue"
+      },
+      {
+        "id": "fast-delivery",
+        "icon": "lightning",
+        "title": "Giao hàng nhanh",
+        "description": "Dịch vụ giao hàng nhanh chóng trong khu vực Đông Bắc Bộ, đảm bảo hải sản đến tay bạn trong tình trạng tốt nhất",
+        "color": "green"
+      },
+      {
+        "id": "convenient",
+        "icon": "clock",
+        "title": "Tiện lợi - Chế biến sẵn",
+        "description": "Sản phẩm chế biến sẵn như chả mực, sashimi giúp tiết kiệm thời gian mà vẫn đảm bảo chất lượng dinh dưỡng",
+        "color": "yellow"
+      }
+    ]
+  },
+  "products": {
+    "title": "Danh mục Sản phẩm",
+    "subtitle": "Đa dạng các loại hải sản tươi sống, đông lạnh và chế biến sẵn",
+    "categories": [
+      {
+        "id": "fresh-seafood",
+        "emoji": "🦐",
+        "title": "Hải sản tươi sống",
+        "description": "Tôm, cua, cá, ghẹ tươi ngon từ biển",
+        "color": "blue",
+        "items": [
+          "Tôm sú",
+          "Cua biển",
+          "Cá tươi",
+          "Ghẹ"
+        ],
+        "link": "#"
+      },
+      {
+        "id": "frozen-seafood",
+        "emoji": "❄️",
+        "title": "Hải sản đông lạnh",
+        "description": "Cá hồi, mực, tôm bóc nõn cao cấp",
+        "color": "cyan",
+        "items": [
+          "Cá hồi",
+          "Mực ống",
+          "Tôm bóc nõn",
+          "Bạch tuộc"
+        ],
+        "link": "#"
+      },
+      {
+        "id": "processed",
+        "emoji": "🍱",
+        "title": "Chế biến sẵn",
+        "description": "Chả mực, sashimi, đồ ăn sẵn tiện lợi",
+        "color": "green",
+        "items": [
+          "Chả mực Cô Tô",
+          "Sashimi",
+          "Hải sản nướng",
+          "Hải sản chiên"
+        ],
+        "link": "#"
+      }
+    ]
+  },
+  "about": {
+    "title": "Về Hải sản Ngày mới Cô Tô",
+    "intro": [
+      "Chúng tôi tự hào là đơn vị cung cấp hải sản uy tín tại khu vực Đông Bắc Bộ, mang đến cho khách hàng những sản phẩm hải sản tươi ngon nhất từ vùng biển Cô Tô.",
+      "Với hệ thống kho lạnh hiện đại, quy trình bảo quản nghiêm ngặt và đội ngũ chuyên nghiệp, chúng tôi cam kết:"
+    ],
+    "commitments": [
+      "Hải sản tươi ngon, nguồn gốc rõ ràng",
+      "Bảo quản đạt chuẩn, an toàn vệ sinh thực phẩm",
+      "Giá cả hợp lý, nhiều ưu đãi hấp dẫn",
+      "Phục vụ tận tâm, giao hàng nhanh chóng"
+    ]
+  },
+  "cta": {
+    "title": "Sẵn sàng thưởng thức hải sản tươi ngon?",
+    "subtitle": "Liên hệ ngay với chúng tôi để được tư vấn và đặt hàng các sản phẩm hải sản chất lượng cao",
+    "buttons": [
+      {
+        "text": "Nhắn tin Facebook",
+        "link": "https://facebook.com",
+        "icon": "facebook",
+        "style": "primary"
+      },
+      {
+        "text": "Chat Zalo",
+        "link": "https://zalo.me",
+        "icon": "zalo",
+        "style": "secondary"
+      }
+    ],
+    "contactCards": [
+      {
+        "emoji": "📞",
+        "title": "Hotline",
+        "value": "0123 456 789"
+      },
+      {
+        "emoji": "📧",
+        "title": "Email",
+        "value": "contact@haisanngaymoi.vn"
+      },
+      {
+        "emoji": "📍",
+        "title": "Khu vực",
+        "value": "Đông Bắc Bộ"
+      }
+    ]
+  },
+  "footer": {
+    "columns": [
+      {
+        "title": "Sản phẩm",
+        "links": [
+          {
+            "text": "Hải sản tươi sống",
+            "href": "#"
+          },
+          {
+            "text": "Hải sản đông lạnh",
+            "href": "#"
+          },
+          {
+            "text": "Sản phẩm chế biến",
+            "href": "#"
+          }
+        ]
+      },
+      {
+        "title": "Thông tin",
+        "links": [
+          {
+            "text": "Về chúng tôi",
+            "href": "#about"
+          },
+          {
+            "text": "Ưu điểm",
+            "href": "#benefits"
+          },
+          {
+            "text": "Liên hệ",
+            "href": "#contact"
+          }
+        ]
+      },
+      {
+        "title": "Liên hệ",
+        "links": [
+          {
+            "text": "📞 0123 456 789",
+            "href": "tel:0123456789"
+          },
+          {
+            "text": "📧 contact@haisanngaymoi.vn",
+            "href": "mailto:contact@haisanngaymoi.vn"
+          },
+          {
+            "text": "📍 Đông Bắc Bộ, Việt Nam",
+            "href": "#"
+          }
+        ]
+      }
+    ],
+    "copyright": "2025 Hải sản Ngày mới Cô Tô. All rights reserved."
+  },
+  "navigation": {
+    "items": [
+      {
+        "text": "Sản phẩm",
+        "href": "#products"
+      },
+      {
+        "text": "Ưu điểm",
+        "href": "#benefits"
+      },
+      {
+        "text": "Về chúng tôi",
+        "href": "#about"
+      }
+    ],
+    "ctaButton": {
+      "text": "Liên hệ ngay",
+      "href": "#contact"
+    }
+  },
+  "theme": {
+    "colors": {
+      "primary": "blue",
+      "secondary": "yellow",
+      "accent": "green"
+    },
+    "fonts": {
+      "heading": "font-bold",
+      "body": "font-normal"
+    }
+  },
+  "seo": {
+    "title": "Hải sản Ngày mới Cô Tô - Hải sản tươi ngon từ biển Cô Tô",
+    "description": "Hải sản tươi sống, đông lạnh và chế biến sẵn từ Cô Tô. Cam kết chất lượng, giao hàng nhanh tại khu vực Đông Bắc Bộ.",
+    "keywords": [
+      "hải sản",
+      "Cô Tô",
+      "hải sản tươi sống",
+      "hải sản đông lạnh",
+      "chả mực",
+      "sashimi",
+      "tôm",
+      "cua",
+      "ghẹ"
+    ],
+    "ogImage": "/wallpaper.png"
+  }
+}
