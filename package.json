@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:cov": "vitest run --coverage"
+    "test:cov": "vitest run --coverage",
+    "server": "npm --prefix backend run dev"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",

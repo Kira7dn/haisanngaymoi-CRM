@@ -1,4 +1,4 @@
-import { getPostsUseCase } from '@/core/application/usecases/get-posts'
+import { getPostsUseCase } from '@/core/application/usecases/post/get-posts'
 import PostList from './components/PostList'
 import PostFilter from './components/PostFilter'
 import PostForm from './components/PostForm'

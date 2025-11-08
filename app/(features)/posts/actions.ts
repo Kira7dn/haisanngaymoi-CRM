@@ -1,9 +1,9 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { createPostUseCase } from "@/core/application/usecases/create-post"
-import { deletePostUseCase } from "@/core/application/usecases/delete-post"
-import { updatePostUseCase } from "@/core/application/usecases/update-post"
+import { createPostUseCase } from "@/core/application/usecases/post/create-post"
+import { deletePostUseCase } from "@/core/application/usecases/post/delete-post"
+import { updatePostUseCase } from "@/core/application/usecases/post/update-post"
 
 export async function createPostAction(formData: FormData) {
   const title = formData.get("title")?.toString() || ""

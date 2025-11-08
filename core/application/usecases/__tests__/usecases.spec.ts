@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createPostUseCase } from '@/core/application/usecases/create-post'
+import { createPostUseCase } from '@/core/application/usecases/post/create-post'
 import { postRepository } from '@/infrastructure/repositories/post-repo'
 
 vi.mock('@/infrastructure/repositories/post-repo', () => ({

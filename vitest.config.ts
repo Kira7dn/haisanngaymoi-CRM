@@ -3,10 +3,11 @@ import path from 'path'
 
 export default defineConfig({
   test: {
-    environment: 'happy-dom',
+    environment: 'node', // Use node for integration tests with server
     globals: true,
     setupFiles: './vitest.setup.ts',
     coverage: { provider: 'v8' },
+    exclude: ['backend/**', 'node_modules/**', '__tests__/integration/**', 'app/**'],
   },
   resolve: {
     alias: {
