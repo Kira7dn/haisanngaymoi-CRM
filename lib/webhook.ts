@@ -10,7 +10,12 @@ export const notifyOrderWebhook = async (order: Order): Promise<void> => {
   });
 
   // Optional: Send to external webhook URL if configured
-  const externalWebhookUrl = process.env.EXTERNAL_WEBHOOK_URL?.trim();
+  const externalWebhookUrl = process.env.ORDER_WEBHOOK_URL?.trim();
+  console.log("[notifyOrderWebhook] Checking webhook URL", { 
+    hasUrl: !!externalWebhookUrl, 
+    url: externalWebhookUrl 
+  });
+  
   if (externalWebhookUrl) {
     try {
       const response = await fetch(externalWebhookUrl, {
