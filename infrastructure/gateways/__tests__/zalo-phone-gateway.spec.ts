@@ -46,11 +46,11 @@ describe('ZaloPhoneGateway', () => {
       expect(result).toBe('+84987654321');
     });
 
-    it('should handle Zalo API error', async () => {
-      // Arrange
+    it('should handle Zalo API error without message', async () => {
+      // Arrange - payload without message field
       const mockErrorResponse = {
         error: 1,
-        message: 'Invalid token'
+        // No message field
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -59,9 +59,9 @@ describe('ZaloPhoneGateway', () => {
         text: () => Promise.resolve(JSON.stringify(mockErrorResponse)),
       } as Response);
 
-      // Act & Assert
+      // Act & Assert - should use fallback message
       await expect(gateway.decodePhone('invalid_token', 'test_access_token'))
-        .rejects.toThrow('Invalid token');
+        .rejects.toThrow('Không thể giải mã số điện thoại từ token. Vui lòng thử lại hoặc kiểm tra cấu hình.');
     });
 
     it('should handle invalid JSON response', async () => {

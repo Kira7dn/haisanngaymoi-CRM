@@ -9,9 +9,9 @@
     "lint": "eslint",
     "test": "vitest",
     "test:ui": "vitest --ui",
+    "test:unit": "vitest run",
     "test:cov": "vitest run --coverage",
-    "test:unit": "vitest run --exclude='__tests__/integration/**'",
-    "test:unit:cov": "vitest run --coverage",
+    "test:cov:full": "vitest run --coverage --config vitest.integration.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "server": "npm --prefix backend run dev"
   },

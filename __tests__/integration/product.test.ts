@@ -12,35 +12,56 @@ beforeAll(async () => {
     dev: true,
     turbo: false, // Disable Turbopack, use webpack
   });
-  await app.prepare();
-  const handle = app.getRequestHandler();
 
-  const server = createServer((req, res) => {
-    const parsedUrl = parse(req.url!, true);
-    handle(req, res, parsedUrl);
-  });
+  try {
+    await app.prepare();
+    const handle = app.getRequestHandler();
 
-  await new Promise<void>((resolve) => {
-    server.listen(0, () => resolve()); // bind to random available port
-  });
+    const server = createServer((req, res) => {
+      const parsedUrl = parse(req.url!, true);
+      handle(req, res, parsedUrl);
+    });
 
-  const addr = server.address() as AddressInfo;
-  (global as any).testServer = server;
-  (global as any).baseUrl = `http://127.0.0.1:${addr.port}`;
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Server startup timeout'));
+      }, 60000); // 60 second timeout for server startup
+
+      server.listen(0, () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
+
+    const addr = server.address() as AddressInfo;
+    (global as any).testServer = server;
+    (global as any).baseUrl = `http://127.0.0.1:${addr.port}`;
+
+    console.log(`Test server started at ${(global as any).baseUrl}`);
+  } catch (error) {
+    console.error('Failed to start Next.js test server:', error);
+    throw error;
+  }
 }, 90000); // Increase timeout to 90 seconds for Next.js dev server startup
 
 afterAll(async () => {
   const srv = (global as any).testServer as ReturnType<typeof createServer> | undefined;
   if (srv) {
-    await new Promise<void>((resolve) => {
-      srv.close(() => resolve());
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        console.warn('Server close timeout - forcing exit');
+        resolve(); // Resolve anyway to allow cleanup to continue
+      }, 5000);
+
+      srv.close(() => {
+        clearTimeout(timeout);
+        resolve();
+      });
     });
   }
-});
+}, 10000);
 
-beforeEach(async () => {
-  // Seed test data if needed
-});
+// Note: No beforeEach needed - server is initialized in beforeAll
 
 const getBaseUrl = () => (global as any).baseUrl as string;
 
@@ -52,7 +73,7 @@ describe("Next.js API Integration Tests", () => {
     expect(data.status).toBe("ok");
     expect(data.timestamp).toBeDefined();
     expect(typeof data.timestamp).toBe("string");
-  }, 15000); // 15 seconds timeout
+  }, 60000); // 60 seconds timeout - first API route needs time to compile (can take 40+ seconds)
 
   it("CRUD categories", async () => {
     // Create
@@ -97,7 +118,7 @@ describe("Next.js API Integration Tests", () => {
       method: "DELETE",
     });
     expect(deleteRes.status).toBe(204);
-  }, 15000); // 15 seconds timeout
+  }, 30000); // 30 seconds timeout - multiple API routes need time to compile
 
   it("CRUD products", async () => {
     // Create category first
@@ -155,5 +176,5 @@ describe("Next.js API Integration Tests", () => {
     await fetch(`${getBaseUrl()}/api/category/${categoryId}`, {
       method: "DELETE",
     });
-  }, 15000); // 15 seconds timeout
+  }, 30000); // 30 seconds timeout - multiple API routes need time to compile
 });

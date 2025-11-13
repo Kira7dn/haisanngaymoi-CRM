@@ -91,7 +91,7 @@ export function SustainabilitySection() {
         </SectionHeading>
 
         {/* Process Timeline */}
-        <div className="mt-16 bg-gradient-to-br from-brand-sand/50 to-white rounded-2xl p-8 md:p-12 max-w-5xl mx-auto">
+        <div className="mt-16 bg-linear-to-br from-brand-sand/50 to-white rounded-2xl p-8 md:p-12 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {processSteps.map((step, index) => {
               const Icon = step.icon;
@@ -175,7 +175,7 @@ export function SustainabilitySection() {
         </div>
 
         {/* Certification Path */}
-        <div className="mt-20 bg-gradient-to-r from-brand-sand/50 to-white border-l-4 border-brand-crystal rounded-r-xl p-8 md:p-12">
+        <div className="mt-20 bg-linear-to-r from-brand-sand/50 to-white border-l-4 border-brand-crystal rounded-r-xl p-8 md:p-12">
           <h3 className="text-2xl md:text-3xl font-bold text-brand-charcoal mb-6">
             Hướng tới chứng nhận quốc tế
           </h3>
@@ -190,7 +190,7 @@ export function SustainabilitySection() {
                 key={index}
                 className="flex items-start gap-6 p-6 bg-white rounded-lg border border-gray-200"
               >
-                <div className="flex-shrink-0 w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="shrink-0 w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center">
                   {/* Logo placeholder */}
                   <div className="text-gray-400 font-bold text-2xl">
                     {cert.abbr}

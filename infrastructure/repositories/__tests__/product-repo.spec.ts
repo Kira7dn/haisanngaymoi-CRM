@@ -1,27 +1,17 @@
-import { describe, beforeAll, afterAll, it, expect, beforeEach } from 'vitest';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { describe, beforeAll, afterAll, it, expect } from 'vitest';
 import { MongoClient } from 'mongodb';
 import type { Product, SizeOption } from '@/core/domain/product';
 
-let mongo: MongoMemoryServer;
 let uri: string;
 let client: MongoClient;
+const TEST_PREFIX = `vitest_${process.pid}_`;
 
-describe('productRepository (integration)', () => {
+describe.sequential('productRepository (integration)', () => {
   beforeAll(async () => {
-    mongo = await MongoMemoryServer.create({
-      instance: {
-        port: undefined,
-        ip: '127.0.0.1',
-        storageEngine: 'wiredTiger',
-      },
-      binary: {
-        downloadDir: './node_modules/.cache/mongodb-memory-server',
-      },
-    });
-    uri = mongo.getUri();
-    process.env.MONGODB_URI = uri;
-    process.env.MONGODB_DB = 'testdb';
+    if (!process.env.MONGODB_URI || !process.env.MONGODB_DB) {
+      throw new Error('MONGODB_URI and MONGODB_DB must be set to run integration tests against Mongo Cloud');
+    }
+    uri = process.env.MONGODB_URI;
     client = new MongoClient(uri);
     await client.connect();
   }, 60000);
@@ -30,15 +20,6 @@ describe('productRepository (integration)', () => {
     if (client) {
       await client.close();
     }
-    if (mongo) {
-      await mongo.stop();
-    }
-  });
-
-  beforeEach(async () => {
-    // Clear products collection before each test
-    const db = client.db('testdb');
-    await db.collection('products').deleteMany({});
   });
 
   it('should create a product with basic fields', async () => {
@@ -46,7 +27,7 @@ describe('productRepository (integration)', () => {
 
     const product = await productRepository.create({
       categoryId: 1,
-      name: 'Fresh Crab',
+      name: TEST_PREFIX + 'Fresh Crab',
       price: 200000,
       originalPrice: 250000,
       image: 'https://example.com/crab.jpg',
@@ -54,7 +35,7 @@ describe('productRepository (integration)', () => {
     });
 
     expect(product.id).toBeDefined();
-    expect(product.name).toBe('Fresh Crab');
+    expect(product.name).toBe(TEST_PREFIX + 'Fresh Crab');
     expect(product.price).toBe(200000);
     expect(product.categoryId).toBe(1);
     expect(product.createdAt).toBeInstanceOf(Date);
@@ -70,7 +51,7 @@ describe('productRepository (integration)', () => {
 
     const product = await productRepository.create({
       categoryId: 1,
-      name: 'Premium Shrimp',
+      name: TEST_PREFIX + 'Premium Shrimp',
       price: 150000,
       sizes,
       colors: ['red', 'orange'],
@@ -87,7 +68,7 @@ describe('productRepository (integration)', () => {
 
     const created = await productRepository.create({
       categoryId: 1,
-      name: 'Test Product',
+      name: TEST_PREFIX + 'Test Product',
       price: 100000,
     });
 
@@ -95,7 +76,7 @@ describe('productRepository (integration)', () => {
 
     expect(fetched).toBeDefined();
     expect(fetched?.id).toBe(created.id);
-    expect(fetched?.name).toBe('Test Product');
+    expect(fetched?.name).toBe(TEST_PREFIX + 'Test Product');
   });
 
   it('should return null when product not found', async () => {
@@ -111,7 +92,7 @@ describe('productRepository (integration)', () => {
 
     const created = await productRepository.create({
       categoryId: 1,
-      name: 'Original Name',
+      name: TEST_PREFIX + 'Original Name',
       price: 100000,
     });
 
@@ -128,42 +109,47 @@ describe('productRepository (integration)', () => {
 
   it('should filter products by categoryId', async () => {
     const { productRepository } = await import('@/infrastructure/repositories/product-repo');
-
-    await productRepository.create({ categoryId: 1, name: 'Product 1', price: 100000 });
-    await productRepository.create({ categoryId: 1, name: 'Product 2', price: 200000 });
-    await productRepository.create({ categoryId: 2, name: 'Product 3', price: 300000 });
+    const TAG = `${TEST_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2,7)}_`;
+    await productRepository.create({ categoryId: 1, name: TAG + 'Product 1', price: 100000 });
+    await productRepository.create({ categoryId: 1, name: TAG + 'Product 2', price: 200000 });
+    await productRepository.create({ categoryId: 2, name: TAG + 'Product 3', price: 300000 });
 
     const products = await productRepository.filter({ categoryId: 1 });
+    const mine = products.filter(p => p.name.startsWith(TAG));
 
-    expect(products).toHaveLength(2);
-    expect(products.every(p => p.categoryId === 1)).toBe(true);
+    expect(mine).toHaveLength(2);
+    expect(mine.every(p => p.categoryId === 1)).toBe(true);
   });
 
   it('should filter products by search keyword', async () => {
     const { productRepository } = await import('@/infrastructure/repositories/product-repo');
+    const TAG = `${TEST_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2,7)}_`;
 
-    await productRepository.create({ categoryId: 1, name: 'Fresh Crab', price: 200000 });
-    await productRepository.create({ categoryId: 1, name: 'Dried Crab', price: 150000 });
-    await productRepository.create({ categoryId: 1, name: 'Fresh Shrimp', price: 100000 });
+    await productRepository.create({ categoryId: 1, name: TAG + 'Fresh Crab', price: 200000 });
+    await productRepository.create({ categoryId: 1, name: TAG + 'Dried Crab', price: 150000 });
+    await productRepository.create({ categoryId: 1, name: TAG + 'Fresh Shrimp', price: 100000 });
 
     const products = await productRepository.filter({ search: 'crab' });
+    const mine = products.filter(p => p.name.startsWith(TAG));
 
-    expect(products).toHaveLength(2);
-    expect(products.every(p => p.name.toLowerCase().includes('crab'))).toBe(true);
+    expect(mine).toHaveLength(2);
+    expect(mine.every(p => p.name.toLowerCase().includes('crab'))).toBe(true);
   });
 
   it('should filter products by both categoryId and search', async () => {
     const { productRepository } = await import('@/infrastructure/repositories/product-repo');
+    const TAG = `${TEST_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2,7)}_`;
 
-    await productRepository.create({ categoryId: 1, name: 'Fresh Crab', price: 200000 });
-    await productRepository.create({ categoryId: 1, name: 'Dried Shrimp', price: 100000 });
-    await productRepository.create({ categoryId: 2, name: 'Fresh Crab', price: 250000 });
+    await productRepository.create({ categoryId: 1, name: TAG + 'Fresh Crab', price: 200000 });
+    await productRepository.create({ categoryId: 1, name: TAG + 'Dried Shrimp', price: 100000 });
+    await productRepository.create({ categoryId: 2, name: TAG + 'Fresh Crab', price: 250000 });
 
     const products = await productRepository.filter({ categoryId: 1, search: 'crab' });
+    const mine = products.filter(p => p.name.startsWith(TAG));
 
-    expect(products).toHaveLength(1);
-    expect(products[0].name).toBe('Fresh Crab');
-    expect(products[0].categoryId).toBe(1);
+    expect(mine).toHaveLength(1);
+    expect(mine[0].name).toBe(TAG + 'Fresh Crab');
+    expect(mine[0].categoryId).toBe(1);
   });
 
   it('should delete a product', async () => {
@@ -171,7 +157,7 @@ describe('productRepository (integration)', () => {
 
     const created = await productRepository.create({
       categoryId: 1,
-      name: 'To Delete',
+      name: TEST_PREFIX + 'To Delete',
       price: 100000,
     });
 
@@ -192,9 +178,24 @@ describe('productRepository (integration)', () => {
   it('should handle string sizes and normalize them', async () => {
     const { productRepository } = await import('@/infrastructure/repositories/product-repo');
 
-    const db = client.db('testdb');
-    await db.collection('products').insertOne({
-      _id: 1,
+    const db = client.db(process.env.MONGODB_DB!);
+    type ProductDoc = {
+      _id: number;
+      categoryId: number;
+      name: string;
+      price: number;
+      originalPrice: number;
+      image: string;
+      detail: string;
+      sizes?: any;
+      colors?: string[];
+      createdAt: Date;
+      updatedAt: Date;
+    };
+    const productsCol = db.collection<ProductDoc>('products');
+    const nextId = await productRepository.getNextId();
+    await productsCol.insertOne({
+      _id: nextId,
       categoryId: 1,
       name: 'Test Product',
       price: 100000,
@@ -206,7 +207,7 @@ describe('productRepository (integration)', () => {
       updatedAt: new Date(),
     });
 
-    const product = await productRepository.getById(1);
+    const product = await productRepository.getById(nextId);
 
     expect(product?.sizes).toBeDefined();
     expect(product?.sizes).toHaveLength(3);

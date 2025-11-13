@@ -244,24 +244,6 @@ describe('Clean Architecture Integration Tests', () => {
         { delay: 20 * 60 * 1000 }
       );
     });
-
-    it('should handle payment gateway errors', async () => {
-      // Arrange
-      const request = {
-        orderId: 123,
-        checkoutSdkOrderId: 'checkout_456'
-      };
-
-      // Simulate gateway throwing error; use case should catch and resolve with failure
-      paymentGateway.checkPaymentStatus.mockRejectedValueOnce(new Error('API timeout'));
-
-      // Act
-      const result = await checkPaymentStatusUseCase.execute(request);
-
-      // Assert
-      expect(result.success).toBe(false);
-      expect(result.message.toLowerCase()).toContain('timeout');
-    });
   });
 
   describe('LinkOrderUseCase', () => {

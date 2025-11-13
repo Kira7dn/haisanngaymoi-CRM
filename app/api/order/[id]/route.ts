@@ -4,39 +4,43 @@ import { UpdateOrderUseCase } from "@/core/application/usecases/order/update-ord
 import { DeleteOrderUseCase } from "@/core/application/usecases/order/delete-order";
 import { orderService } from "@/lib/container";
 
+const getOrderByIdUseCase = new GetOrderByIdUseCase(orderService);
+const updateOrderUseCase = new UpdateOrderUseCase(orderService);
+const deleteOrderUseCase = new DeleteOrderUseCase(orderService);
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id);
-  if (isNaN(id)) return NextResponse.json({ message: "Invalid ID" }, { status: 400 });
-  const useCase = new GetOrderByIdUseCase(orderService);
-  const result = await useCase.execute({ id });
+  const { id } = await params;
+  const orderId = Number(id);
+  if (isNaN(orderId)) return NextResponse.json({ message: "Invalid ID" }, { status: 400 });
+  const result = await getOrderByIdUseCase.execute({ id: orderId });
   if (!result.order) return NextResponse.json({ message: "Order not found" }, { status: 404 });
   return NextResponse.json(result.order);
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id);
-  if (isNaN(id)) return NextResponse.json({ message: "Invalid ID" }, { status: 400 });
+  const { id } = await params;
+  const orderId = Number(id);
+  if (isNaN(orderId)) return NextResponse.json({ message: "Invalid ID" }, { status: 400 });
   const body = await request.json();
-  const useCase = new UpdateOrderUseCase(orderService);
-  const result = await useCase.execute({ id, payload: body });
+  const result = await updateOrderUseCase.execute({ id: orderId, ...body });
   if (!result.order) return NextResponse.json({ message: "Order not found" }, { status: 404 });
   return NextResponse.json(result.order);
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id);
-  if (isNaN(id)) return NextResponse.json({ message: "Invalid ID" }, { status: 400 });
-  const useCase = new DeleteOrderUseCase(orderService);
-  const result = await useCase.execute({ id });
+  const { id } = await params;
+  const orderId = Number(id);
+  if (isNaN(orderId)) return NextResponse.json({ message: "Invalid ID" }, { status: 400 });
+  const result = await deleteOrderUseCase.execute({ id: orderId });
   if (!result.success) return NextResponse.json({ message: "Order not found" }, { status: 404 });
   return new Response(null, { status: 204 });
 }

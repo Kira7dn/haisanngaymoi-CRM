@@ -129,7 +129,7 @@ describe('ZaloLocationGateway', () => {
         .rejects.toThrow('Zalo Open API không trả về vị trí hợp lệ.');
     });
 
-    it('should handle Nominatim API failure gracefully', async () => {
+    it('should handle Nominatim JSON parse error gracefully', async () => {
       // Arrange
       const mockZaloResponse = {
         data: {
@@ -147,22 +147,22 @@ describe('ZaloLocationGateway', () => {
         } as Response)
       );
 
-      // Mock Nominatim API failure
+      // Mock Nominatim API with invalid JSON
       mockFetch.mockImplementationOnce(() =>
         Promise.resolve({
-          ok: false,
-          status: 500,
-          text: () => Promise.resolve('Server error'),
+          ok: true,
+          status: 200,
+          json: () => Promise.reject(new Error('Invalid JSON')),
         } as Response)
       );
 
       // Act
       const result = await gateway.decodeLocation('test_token', 'test_access_token');
 
-      // Assert
+      // Assert - should return null address on parse error
       expect(result).toEqual({
         location: { lat: 21.0278, lng: 105.8342 },
-        address: null, // Should be null when geocoding fails
+        address: null,
       });
     });
 

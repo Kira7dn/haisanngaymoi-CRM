@@ -120,8 +120,23 @@ export const orderRepository: OrderService & {
       paymentStatus: payload.paymentStatus ?? "pending",
       createdAt: now,
       updatedAt: payload.updatedAt ?? now,
-      items: payload.items,
-      delivery: payload.delivery,
+      items: payload.items.map(item => ({
+        productId: (item.product as any).id || 0,
+        quantity: item.quantity,
+        price: (item.product as any).price || 0,
+        name: (item.product as any).name || "",
+        size: (item.product as any).size,
+        color: (item.product as any).color,
+      })),
+      delivery: {
+        name: payload.delivery.name,
+        phone: payload.delivery.phone,
+        address: payload.delivery.address,
+        location: payload.delivery.location ? {
+          lat: payload.delivery.location.lat,
+          lon: payload.delivery.location.lng,
+        } : undefined,
+      },
       total: payload.total ?? 0,
       note: payload.note ?? "",
     };
@@ -138,8 +153,27 @@ export const orderRepository: OrderService & {
     if (payload.status !== undefined) updateObj.status = payload.status;
     if (payload.paymentStatus !== undefined) updateObj.paymentStatus = payload.paymentStatus;
     if (payload.updatedAt !== undefined) updateObj.updatedAt = payload.updatedAt;
-    if (payload.items !== undefined) updateObj.items = payload.items;
-    if (payload.delivery !== undefined) updateObj.delivery = payload.delivery;
+    if (payload.items !== undefined) {
+      updateObj.items = payload.items.map(item => ({
+        productId: (item.product as any).id || 0,
+        quantity: item.quantity,
+        price: (item.product as any).price || 0,
+        name: (item.product as any).name || "",
+        size: (item.product as any).size,
+        color: (item.product as any).color,
+      }));
+    }
+    if (payload.delivery !== undefined) {
+      updateObj.delivery = {
+        name: payload.delivery.name,
+        phone: payload.delivery.phone,
+        address: payload.delivery.address,
+        location: payload.delivery.location ? {
+          lat: payload.delivery.location.lat,
+          lon: payload.delivery.location.lng,
+        } : undefined,
+      };
+    }
     if (payload.total !== undefined) updateObj.total = payload.total;
     if (payload.note !== undefined) updateObj.note = payload.note;
 

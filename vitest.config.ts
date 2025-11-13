@@ -17,8 +17,8 @@ export default defineConfig({
         '**/*.test.*',
       ],
     },
-    // Include all test files including integration tests
-    exclude: ['backend/**', 'node_modules/**', '.next/**'],
+    // Exclude integration tests by default (they start Next.js servers and take long time)
+    exclude: ['backend/**', 'node_modules/**', '.next/**', '__tests__/integration/**'],
     include: ['**/*.spec.ts', '**/*.test.ts'],
   },
   server: {

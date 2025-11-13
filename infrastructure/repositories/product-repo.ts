@@ -36,8 +36,8 @@ const normalizeSizes = (product: ProductDocument): SizeOption[] | undefined => {
       const originalPrice = typeof s.originalPrice === "number" ? s.originalPrice : product.originalPrice;
       return { label, price, originalPrice };
     })
-    .filter((s): s is SizeOption => s !== null);
-};
+    .filter((s) => s !== null) as SizeOption[];
+};;
 
 const getNextProductId = async (): Promise<number> => {
   const client = await clientPromise;
@@ -126,9 +126,9 @@ export const productRepository: ProductService & {
       categoryId: product.categoryId,
       name: product.name,
       price: product.price,
-      originalPrice: product.originalPrice,
-      image: product.image,
-      detail: product.detail,
+      originalPrice: product.originalPrice || product.price,
+      image: product.image || "",
+      detail: product.detail || "",
       sizes: product.sizes,
       colors: product.colors,
       createdAt: now,
@@ -140,9 +140,9 @@ export const productRepository: ProductService & {
       categoryId: product.categoryId,
       name: product.name,
       price: product.price,
-      originalPrice: product.originalPrice,
-      image: product.image,
-      detail: product.detail,
+      originalPrice: product.originalPrice || product.price,
+      image: product.image || "",
+      detail: product.detail || "",
       sizes: product.sizes,
       colors: product.colors,
       createdAt: now,

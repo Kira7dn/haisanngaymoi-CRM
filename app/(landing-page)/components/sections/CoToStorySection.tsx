@@ -150,7 +150,7 @@ export function CoToStorySection() {
               {images.map((image, index) => (
                 <div
                   key={index}
-                  className="relative aspect-video rounded-lg overflow-hidden shadow-lg group"
+                  className="bg-linear-to-t from-transparent to-white/20 backdrop-blur-sm border border-white/20 rounded-lg p-6 group"
                 >
                   <Image
                     src={image.src}
@@ -158,7 +158,7 @@ export function CoToStorySection() {
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4">
                     <p className="text-white font-semibold">{image.caption}</p>
                   </div>

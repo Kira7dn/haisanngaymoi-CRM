@@ -6,9 +6,20 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     setupFiles: './vitest.setup.ts',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      exclude: [
+        '**/.next/**',
+        '**/node_modules/**',
+        '**/__tests__/**',
+        '**/*.spec.*',
+        '**/*.test.*',
+      ],
+    },
     // Only exclude common paths, allow integration tests
     exclude: ['backend/**', 'node_modules/**', '.next/**'],
-    include: ['__tests__/integration/**/*.test.ts'],
+    include: ['**/*.spec.ts', '**/*.test.ts'],
   },
   server: {
     sourcemapIgnoreList(sourcePath, sourcemapPath) {

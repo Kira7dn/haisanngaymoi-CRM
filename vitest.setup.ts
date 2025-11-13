@@ -23,6 +23,19 @@ process.env.APP_ID = process.env.APP_ID
 process.env.CHECKOUT_SDK_PRIVATE_KEY = process.env.CHECKOUT_SDK_PRIVATE_KEY
 process.env.VITEST = 'true'
 
+// Mock external payment gateway to avoid real requests during tests
+vi.mock('@/infrastructure/gateways/zalopay-gateway', () => {
+  class ZaloPayGatewayMock {
+    async checkPaymentStatus(..._args: any[]) {
+      return { success: true, status: 'success', data: {} }
+    }
+    async processPaymentUpdate(..._args: any[]) {
+      return
+    }
+  }
+  return { ZaloPayGateway: ZaloPayGatewayMock }
+})
+
 // Warm-up Next.js API route modules to avoid cold compile cost on first test run
 // Note: chỉ import module để kích hoạt biên dịch, không gọi handler để tránh side-effects
 const __warmupRoutes = [
