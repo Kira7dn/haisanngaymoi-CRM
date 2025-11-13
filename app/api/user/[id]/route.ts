@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GetUserByIdUseCase } from "@/core/application/usecases/user/get-user-by-id";
-import { UpsertUserUseCase } from "@/core/application/usecases/user/upsert-user";
-import { userService } from "@/lib/container";
-
-const getUserByIdUseCase = new GetUserByIdUseCase(userService);
-const upsertUserUseCase = new UpsertUserUseCase(userService);
+import { getUserByIdUseCase, upsertUserUseCase } from "@/lib/container";
 
 export async function GET(
   request: NextRequest,

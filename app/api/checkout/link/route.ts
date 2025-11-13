@@ -15,8 +15,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("[linkOrder] Error:", error);
-    return NextResponse.json({
-      message: error instanceof Error ? error.message : String(error)
-    }, { status: 400 });
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Match Express controller behavior: return 404 for "not found" errors
+    if (errorMessage === "Không tìm thấy đơn hàng") {
+      return NextResponse.json({ message: errorMessage }, { status: 404 });
+    }
+
+    // All other errors return 400
+    return NextResponse.json({ message: errorMessage }, { status: 400 });
   }
 }

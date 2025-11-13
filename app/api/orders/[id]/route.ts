@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GetOrderByIdUseCase } from "@/core/application/usecases/order/get-order-by-id";
-import { UpdateOrderUseCase } from "@/core/application/usecases/order/update-order";
-import { DeleteOrderUseCase } from "@/core/application/usecases/order/delete-order";
-import { orderService } from "@/lib/container";
-
-const getOrderByIdUseCase = new GetOrderByIdUseCase(orderService);
-const updateOrderUseCase = new UpdateOrderUseCase(orderService);
-const deleteOrderUseCase = new DeleteOrderUseCase(orderService);
+import { getOrderByIdUseCase, updateOrderUseCase, deleteOrderUseCase } from "@/lib/container";
 
 export async function GET(
   request: NextRequest,

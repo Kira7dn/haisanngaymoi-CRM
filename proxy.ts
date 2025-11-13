@@ -10,7 +10,7 @@ const ALLOWED_ORIGINS = new Set([
 const ALLOW_ALL = true
 const ALLOW_CREDENTIALS = false
 
-export function middleware(req: NextRequest) {
+export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
   if (!pathname.startsWith('/api/')) return NextResponse.next()
 

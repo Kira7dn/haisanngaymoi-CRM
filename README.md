@@ -1,55 +1,113 @@
-# 🧭 NextJS 16 Fullstack Clean Architecture Guide
+# 🧭 NextJS 16 Fullstack Clean Architecture - Hải Sản Ngay Mới CRM
 
 ### 🚀 Mục tiêu
 
 * Xây dựng ứng dụng **Next.js 16** theo mô hình **Clean / Onion Architecture**
 * Kết hợp **Server Components + Client Components**
-* CRUD dữ liệu với **MongoDB**
+* **Full-stack E-commerce** với MongoDB, Payment Gateway, Queue System
 * Quản lý **state bằng Zustand**
-* Triển khai **Server Actions thay cho API route**
+* **API Routes** với Clean Architecture thay vì Server Actions
 * Viết **unit / integration / UI tests** đầy đủ bằng **Vitest**
+* **Payment Integration**: VNPay, ZaloPay với webhook handling
+* **Queue System**: BullMQ cho background job processing
 
 ---
 
 ## 📁 Cấu trúc thư mục tổng thể
 
 ```
-src/
+.
 ├─ app/
-│  ├─ posts/
-│  │   ├─ page.tsx
-│  │   ├─ actions.ts
-│  │   ├─ components/
-│  │   │   ├─ PostList.tsx
-│  │   │   ├─ PostFilter.tsx
-│  │   │   └─ PostForm.tsx
-│  │   ├─ store/usePostStore.ts
-│  │   └─ __tests__/
-│  │       ├─ actions.spec.ts
-│  │       └─ components/
-│  │           └─ PostList.spec.tsx
-│  └─ layout.tsx
+│  ├─ api/
+│  │  ├─ banners/           # CRUD banners
+│  │  ├─ categories/        # CRUD categories
+│  │  ├─ checkout/          # Payment operations
+│  │  │  ├─ callback/       # Payment callback
+│  │  │  ├─ link/           # Link order to payment
+│  │  │  ├─ mac/            # Generate payment MAC
+│  │  │  └─ status/         # Check payment status
+│  │  ├─ health/            # Health check
+│  │  ├─ ipn/               # VNPay IPN webhook
+│  │  ├─ orders/            # CRUD orders
+│  │  ├─ products/          # CRUD products
+│  │  ├─ stations/          # CRUD stations
+│  │  ├─ user/              # User management
+│  │  └─ utils/             # Utility APIs (location, phone decode)
+│  ├─ (features)/
+│  │  └─ posts/             # Demo posts feature
+│  └─ (policies)/
+│     ├─ cookies/
+│     ├─ privacy/
+│     └─ terms/
 │
 ├─ core/
 │  ├─ domain/
-│  │   ├─ post.ts
-│  │   └─ __tests__/post.spec.ts
+│  │  ├─ banner.ts
+│  │  ├─ category.ts
+│  │  ├─ order.ts
+│  │  ├─ post.ts
+│  │  ├─ station.ts
+│  │  ├─ user.ts
+│  │  └─ __tests__/
 │  ├─ application/
-│  │   ├─ usecases/
-│  │   │   ├─ get-posts.ts
-│  │   │   ├─ create-post.ts
-│  │   │   ├─ update-post.ts
-│  │   │   ├─ delete-post.ts
-│  │   │   └─ __tests__/usecases.spec.ts
+│  │   ├─ interfaces/
+│  │   │  ├─ location-service.ts
+│  │   │  ├─ order-service.ts
+│  │   │  ├─ payment-gateway.ts
+│  │   │  ├─ phone-service.ts
+│  │   │  ├─ queue-service.ts
+│  │   │  └─ vnpay-gateway.ts
+│  │   └─ usecases/
+│  │       ├─ banner/        # get-banners, create-banner, update-banner, delete-banner
+│  │       ├─ category/      # get-categories, create-category, update-category, delete-category
+│  │       ├─ checkout/      # check-order-status, mac-request
+│  │       ├─ location/      # decode-location
+│  │       ├─ order/         # CRUD + link-order + payment-callback
+│  │       ├─ phone/         # decode-phone
+│  │       ├─ station/       # get-stations, create-station, update-station, delete-station
+│  │       ├─ user/          # upsert-user, get-user-by-id
+│  │       └─ vnpay/         # handle-vnpay-ipn
 │
 ├─ infrastructure/
-│  ├─ db/mongo.ts
-│  ├─ repositories/
-│  │   ├─ post-repo.ts
-│  │   └─ __tests__/post-repo.spec.ts
+│  ├─ db/
+│  │  ├─ mongo.ts
+│  │  └─ __tests__/
+│  ├─ gateways/
+│  │  ├─ zalopay-gateway.ts
+│  │  ├─ zalo-location-gateway.ts
+│  │  ├─ zalo-phone-gateway.ts
+│  │  ├─ vnpay-gateway.ts
+│  │  └─ __tests__/
+│  ├─ queue/
+│  │  ├─ bullmq-adapter.ts
+│  │  ├─ order-worker.ts
+│  │  └─ __tests__/
+│  └─ repositories/
+│     ├─ banner-repo.ts
+│     ├─ category-repo.ts
+│     ├─ order-repo.ts
+│     ├─ product-repo.ts
+│     ├─ station-repo.ts
+│     └─ user-repo.ts
 │
-├─ shared/
-│  └─ types/
+├─ lib/
+│  ├─ container.ts          # Dependency Injection Container
+│  ├─ webhook.ts            # Webhook utilities
+│  └─ utils.ts
+│
+├─ @shared/
+│  └─ ui/
+│     ├─ button.tsx
+│     ├─ carousel.tsx
+│     └─ tabs.tsx
+│
+├─ __tests__/
+│  ├─ integration/
+│  │  ├─ check-out.test.ts
+│  │  ├─ location.test.ts
+│  │  ├─ payment-worker.test.ts
+│  │  └─ ...
+│  └─ unit/
 │
 └─ vitest.config.ts
 ```
@@ -59,418 +117,380 @@ src/
 ## ⚙️ 1. Cài đặt
 
 ```bash
-npm install mongodb zustand
-npm install -D vitest @testing-library/react @testing-library/jest-dom happy-dom mongodb-memory-server
+npm install
 ```
 
 File `.env.local`:
 
 ```
-MONGODB_URI=mongodb+srv://user:pass@cluster0.mongodb.net/mydb
-MONGODB_DB=mydb
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/?appName=ClusterName
+MONGODB_DB=database_name
+VNP_HASH_SECRET=your_vnpay_secret
+CHECKOUT_SDK_PRIVATE_KEY=your_checkout_key
+ZALO_APP_SECRET=your_zalo_app_secret
+REDIS_URL=redis://localhost:6379
+ENABLE_ORDER_WORKER=true
 ```
 
 ---
 
-## ⚙️ 2. Cấu trúc Clean Architecture
+## 🧱 3. Domain Layer - Core Entities
 
-| Layer          | Vai trò                         | Ví dụ                                      |
-| -------------- | ------------------------------- | ------------------------------------------ |
-| Domain         | Định nghĩa entity               | `core/domain/post.ts`                      |
-| Application    | Chứa use case (logic nghiệp vụ) | `core/application/usecases/create-post.ts` |
-| Infrastructure | Kết nối MongoDB, repo           | `infrastructure/repositories/post-repo.ts` |
-| UI (App)       | Giao diện, server actions       | `app/posts/`                               |
+### **Order Entity**
+- **Định nghĩa**: Đại diện cho đơn hàng trong hệ thống e-commerce
+- **Mục đích**: Quản lý thông tin đơn hàng, thanh toán, giao hàng
+- **File**: `core/domain/order.ts`
 
----
+### **Banner Entity**
+- **Định nghĩa**: Đại diện cho banner quảng cáo trên website
+- **Mục đích**: Hiển thị thông tin quảng cáo, khuyến mãi
+- **File**: `core/domain/banner.ts`
 
-## 🧱 3. Domain
+### **Category Entity**
+- **Định nghĩa**: Đại diện cho danh mục sản phẩm
+- **Mục đích**: Phân loại và tổ chức sản phẩm
+- **File**: `core/domain/category.ts`
 
-```ts
-// src/core/domain/post.ts
-export interface Post {
-  id: string
-  title: string
-  content: string
-}
-```
+### **Product Entity**
+- **Định nghĩa**: Đại diện cho sản phẩm trong catalog
+- **Mục đích**: Lưu trữ thông tin chi tiết sản phẩm
+- **File**: `core/domain/product.ts`
 
----
+### **Station Entity**
+- **Định nghĩa**: Đại diện cho điểm bán/trạm trong hệ thống
+- **Mục đích**: Quản lý các địa điểm kinh doanh
+- **File**: `core/domain/station.ts`
 
-## ⚙️ 4. MongoDB Connection
+### **User Entity**
+- **Định nghĩa**: Đại diện cho người dùng hệ thống
+- **Mục đích**: Quản lý thông tin tài khoản và profile
+- **File**: `core/domain/user.ts`
 
-```ts
-// src/infrastructure/db/mongo.ts
-import { MongoClient } from "mongodb"
-
-const uri = process.env.MONGODB_URI!
-const options = {}
-let client: MongoClient
-let clientPromise: Promise<MongoClient>
-
-declare global {
-  var _mongoClientPromise: Promise<MongoClient> | undefined
-}
-
-if (!global._mongoClientPromise) {
-  client = new MongoClient(uri, options)
-  global._mongoClientPromise = client.connect()
-}
-
-clientPromise = global._mongoClientPromise
-export default clientPromise
-```
+### **Post Entity (Demo)**
+- **Định nghĩa**: Entity demo cho bài viết blog
+- **Mục đích**: Minh họa Clean Architecture pattern
+- **File**: `core/domain/post.ts`
 
 ---
 
-## ⚙️ 5. Repository Layer
+## ⚙️ 4. Application Layer
 
-```ts
-// src/infrastructure/repositories/post-repo.ts
-import clientPromise from "../db/mongo"
-import { ObjectId } from "mongodb"
-import { Post } from "@/core/domain/post"
+### **Use Cases** (Business Logic):
 
-export const postRepository = {
-  async getAll(): Promise<Post[]> {
-    const client = await clientPromise
-    const db = client.db(process.env.MONGODB_DB)
-    return db.collection("posts").find().sort({ _id: -1 }).toArray() as Post[]
-  },
+#### **Order Management** (`core/application/usecases/order/`)
+- `get-orders.ts` - List orders with filters
+- `create-order.ts` - Create new order
+- `get-order-by-id.ts` - Get specific order
+- `update-order.ts` - Update order
+- `delete-order.ts` - Delete order
+- `link-order.ts` - Link order to payment
+- `payment-callback.ts` - Handle payment callback
 
-  async create(post: Omit<Post, "id">): Promise<Post> {
-    const client = await clientPromise
-    const db = client.db(process.env.MONGODB_DB)
-    const result = await db.collection("posts").insertOne(post)
-    return { ...post, id: result.insertedId.toString() }
-  },
+#### **Payment Operations** (`core/application/usecases/checkout/`)
+- `mac-request.ts` - Generate payment MAC
+- `check-order-status.ts` - Check payment status
 
-  async update(id: string, post: Partial<Post>): Promise<boolean> {
-    const client = await clientPromise
-    const db = client.db(process.env.MONGODB_DB)
-    const res = await db.collection("posts").updateOne({ _id: new ObjectId(id) }, { $set: post })
-    return res.modifiedCount > 0
-  },
+#### **External Integrations**:
+- `decode-location.ts` - Decode location from Zalo
+- `decode-phone.ts` - Decode phone from Zalo
+- `handle-vnpay-ipn.ts` - Process VNPay IPN
 
-  async delete(id: string): Promise<boolean> {
-    const client = await clientPromise
-    const db = client.db(process.env.MONGODB_DB)
-    const res = await db.collection("posts").deleteOne({ _id: new ObjectId(id) })
-    return res.deletedCount > 0
-  },
-}
-```
+#### **CRUD Operations**:
+- **Banner**: get-banners, create-banner, update-banner, delete-banner
+- **Category**: get-categories, create-category, update-category, delete-category
+- **Station**: get-stations, create-station, update-station, delete-station
+- **User**: upsert-user, get-user-by-id
 
----
-
-## ⚙️ 6. Use Cases
-
-```ts
-// create-post.ts
-import { postRepository } from "@/infrastructure/repositories/post-repo"
-export async function createPostUseCase(data) {
-  return await postRepository.create(data)
+### **Interfaces** (Dependency Inversion):
+```typescript
+// core/application/interfaces/payment-gateway.ts
+export interface PaymentGateway {
+  processPaymentUpdate(orderId: number, sdkOrderId: string, miniAppId?: string): Promise<void>;
 }
 
-// update-post.ts
-export async function updatePostUseCase(id: string, data) {
-  return await postRepository.update(id, data)
-}
-
-// delete-post.ts
-export async function deletePostUseCase(id: string) {
-  return await postRepository.delete(id)
-}
-
-// get-posts.ts
-export async function getPostsUseCase() {
-  return await postRepository.getAll()
+// core/application/interfaces/order-service.ts
+export interface OrderService {
+  getById(id: number): Promise<Order | null>;
+  update(id: number, data: Partial<Order>): Promise<Order | null>;
+  // ... more methods
 }
 ```
 
 ---
 
-## ⚙️ 7. State Management (Zustand)
+## 🏗️ 5. Infrastructure Layer
 
-```ts
-// app/posts/store/usePostStore.ts
-"use client"
-import { create } from "zustand"
-import { Post } from "@/core/domain/post"
+### **Payment Gateways**:
 
-interface PostStore {
-  posts: Post[]
-  filter: string
-  setPosts: (posts: Post[]) => void
-  setFilter: (filter: string) => void
-}
-
-export const usePostStore = create<PostStore>((set) => ({
-  posts: [],
-  filter: "",
-  setPosts: (posts) => set({ posts }),
-  setFilter: (filter) => set({ filter }),
-}))
-```
-
----
-
-## ⚙️ 8. Server Actions
-
-```ts
-// app/posts/actions.ts
-"use server"
-import { revalidatePath } from "next/cache"
-import {
-  createPostUseCase,
-  deletePostUseCase,
-  updatePostUseCase,
-} from "@/core/application/usecases"
-
-export async function createPostAction(formData: FormData) {
-  const title = formData.get("title")?.toString() || ""
-  const content = formData.get("content")?.toString() || ""
-  await createPostUseCase({ title, content })
-  revalidatePath("/posts")
-}
-
-export async function deletePostAction(id: string) {
-  await deletePostUseCase(id)
-  revalidatePath("/posts")
-}
-
-export async function updatePostAction(id: string, formData: FormData) {
-  const title = formData.get("title")?.toString()
-  const content = formData.get("content")?.toString()
-  await updatePostUseCase(id, { title, content })
-  revalidatePath("/posts")
+#### **ZaloPay Gateway** (`infrastructure/gateways/zalopay-gateway.ts`)
+```typescript
+export class ZaloPayGateway implements PaymentGateway {
+  async processPaymentUpdate(orderId: number, sdkOrderId: string, miniAppId?: string): Promise<void> {
+    // Check payment status via ZaloPay API
+    // Update order payment status in database
+  }
 }
 ```
+- **Mục đích**: Xử lý thanh toán qua ZaloPay
+- **Chức năng**: Query payment status, update order status
 
----
-
-## ⚙️ 9. UI Components
-
-### `PostForm.tsx`
-
-```tsx
-"use client"
-import { useTransition } from "react"
-import { createPostAction } from "../actions"
-
-export default function PostForm() {
-  const [pending, startTransition] = useTransition()
-  async function handleSubmit(formData: FormData) {
-    startTransition(async () => await createPostAction(formData))
+#### **VNPay Gateway** (`infrastructure/gateways/vnpay-gateway.ts`)
+```typescript
+export class VnpayGatewayImpl implements VnpayGateway {
+  async validateSignature(params: VnpayIpnParams): Promise<boolean> {
+    // HMAC SHA512 signature validation
   }
 
-  return (
-    <form action={handleSubmit} className="space-y-2 mt-4">
-      <input name="title" placeholder="Title" className="border p-1 w-full" required />
-      <textarea name="content" placeholder="Content" className="border p-1 w-full" required />
-      <button className="bg-blue-500 text-white px-3 py-1 rounded" disabled={pending}>
-        {pending ? "Saving..." : "Add Post"}
-      </button>
-    </form>
-  )
+  parsePaymentResult(params: VnpayIpnParams): VnpayIpnResult {
+    // Parse payment response from VNPay
+  }
 }
 ```
+- **Mục đích**: Xử lý thanh toán qua VNPay
+- **Chức năng**: IPN signature validation, payment result parsing
 
-### `PostFilter.tsx`
+### **External API Integrations**:
 
-```tsx
-"use client"
-import { usePostStore } from "../store/usePostStore"
-export default function PostFilter() {
-  const { filter, setFilter } = usePostStore()
-  return (
-    <input
-      value={filter}
-      onChange={(e) => setFilter(e.target.value)}
-      placeholder="Search..."
-      className="border px-2 py-1 rounded"
-    />
-  )
+#### **Zalo Location Gateway** (`infrastructure/gateways/zalo-location-gateway.ts`)
+```typescript
+export class ZaloLocationGateway implements LocationService {
+  async decodeLocation(token: string, accessToken: string): Promise<{location: {lat: number, lng: number}, address: string | null}> {
+    // Call Zalo Open API for location data
+    // Perform reverse geocoding with Nominatim
+    // Return coordinates and address
+  }
 }
 ```
+- **Mục đích**: Decode location từ Zalo Mini App tokens
+- **Chức năng**: Zalo API call + reverse geocoding
 
-### `PostList.tsx`
-
-```tsx
-"use client"
-import { useEffect } from "react"
-import { usePostStore } from "../store/usePostStore"
-import { deletePostAction } from "../actions"
-
-export default function PostList({ initialPosts }) {
-  const { posts, setPosts, filter } = usePostStore()
-
-  useEffect(() => {
-    setPosts(initialPosts)
-  }, [initialPosts])
-
-  const filtered = posts.filter((p) => p.title.toLowerCase().includes(filter.toLowerCase()))
-
-  return (
-    <ul className="mt-4 space-y-1">
-      {filtered.map((p) => (
-        <li key={p.id} className="flex justify-between border-b py-1">
-          {p.title}
-          <button onClick={() => deletePostAction(p.id)} className="text-red-500">
-            ✕
-          </button>
-        </li>
-      ))}
-    </ul>
-  )
+#### **Zalo Phone Gateway** (`infrastructure/gateways/zalo-phone-gateway.ts`)
+```typescript
+export class ZaloPhoneGateway implements PhoneService {
+  async decodePhone(token: string, accessToken: string): Promise<string> {
+    // Call Zalo Open API for phone number
+    // Parse and return phone number
+  }
 }
 ```
+- **Mục đích**: Decode phone number từ Zalo Mini App tokens
+- **Chức năng**: Zalo API call, phone number extraction
 
----
+### **Queue System**:
 
-## ⚙️ 10. Page
-
-```tsx
-// app/posts/page.tsx
-import { getPostsUseCase } from "@/core/application/usecases/get-posts"
-import PostForm from "./components/PostForm"
-import PostFilter from "./components/PostFilter"
-import PostList from "./components/PostList"
-
-export default async function PostsPage() {
-  const posts = await getPostsUseCase()
-  return (
-    <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold">Blog Posts</h1>
-      <PostForm />
-      <PostFilter />
-      <PostList initialPosts={posts} />
-    </div>
-  )
+#### **BullMQ Adapter** (`infrastructure/queue/bullmq-adapter.ts`)
+```typescript
+export class BullMQAdapter implements QueueService {
+  async addJob(queueName: string, jobName: string, data: any, options: { delay?: number }): Promise<string> {
+    // Add job to Redis queue with BullMQ
+  }
 }
 ```
+- **Mục đích**: Background job processing với Redis
+- **Chức năng**: Queue management, delayed job execution
 
----
+#### **Order Worker** (`infrastructure/queue/order-worker.ts`)
+```typescript
+export const createOrderWorker = (paymentGateway: PaymentGateway) => {
+  // BullMQ Worker processing payment status check jobs
+  // Calls payment gateway to update order status
+};
+```
+- **Mục đích**: Process background jobs cho order payments
+- **Chức năng**: Payment status checking, order updates
 
-## 🧪 11. Testing Setup
+### **Data Access Layer**:
 
-### `vitest.config.ts`
-
-```ts
-import { defineConfig } from "vitest/config"
-export default defineConfig({
-  test: {
-    environment: "happy-dom",
-    globals: true,
-    setupFiles: "./vitest.setup.ts",
-    coverage: { provider: "v8" },
+#### **MongoDB Repositories** (`infrastructure/repositories/`)
+```typescript
+// infrastructure/repositories/order-repo.ts
+export const orderRepository = {
+  async getById(id: number): Promise<Order | null> {
+    // MongoDB queries for orders
   },
-})
+  async update(id: number, data: Partial<Order>): Promise<Order | null> {
+    // Update operations
+  }
+};
 ```
+- **Mục đích**: Data access abstraction cho MongoDB
+- **Chức năng**: CRUD operations cho tất cả entities
 
-### `vitest.setup.ts`
+---
 
-```ts
-import "@testing-library/jest-dom"
+## 🔗 6. Dependency Injection Container
+
+```typescript
+// lib/container.ts
+export const paymentGateway: PaymentGateway = new ZaloPayGateway();
+export const queueService: QueueService = new BullMQAdapter();
+export const locationService: LocationService = new ZaloLocationGateway();
+
+// Use cases with injected dependencies
+export const linkOrderUseCase = new LinkOrderUseCase(orderService, queueService);
+export const handleVnpayIpnUseCase = new HandleVnpayIpnUseCase(vnpayGateway, orderService);
+
+// Worker initialization
+if (process.env.ENABLE_ORDER_WORKER === 'true') {
+  createOrderWorker(paymentGateway);
+}
 ```
 
 ---
 
-## 🧩 12. Test ví dụ
+## 🌐 7. API Routes (Clean Architecture)
 
-### Domain
+### **Order Management**:
+```typescript
+// app/api/orders/route.ts
+export async function GET() {
+  const result = await getOrdersUseCase.execute({ status, zaloUserId });
+  return NextResponse.json(result.orders);
+}
 
-```ts
-import { describe, it, expect } from "vitest"
-import { Post } from "../post"
-
-describe("Post", () => {
-  it("creates a valid post", () => {
-    const p: Post = { id: "1", title: "A", content: "B" }
-    expect(p.title).toBe("A")
-  })
-})
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  const result = await createOrderUseCase.execute(body);
+  return NextResponse.json(result.order, { status: 201 });
+}
 ```
 
-### Use Case
-
-```ts
-import { describe, it, expect, vi } from "vitest"
-import { createPostUseCase } from "../create-post"
-import { postRepository } from "@/infrastructure/repositories/post-repo"
-
-vi.mock("@/infrastructure/repositories/post-repo", () => ({
-  postRepository: { create: vi.fn().mockResolvedValue({ id: "1", title: "T", content: "C" }) },
-}))
-
-it("calls repo correctly", async () => {
-  const res = await createPostUseCase({ title: "T", content: "C" })
-  expect(res.id).toBe("1")
-  expect(postRepository.create).toHaveBeenCalledOnce()
-})
+### **Payment Integration**:
+```typescript
+// app/api/checkout/callback/route.ts
+export async function POST(request: NextRequest) {
+  const { data, overallMac } = await request.json();
+  const result = await paymentCallbackUseCase.execute({ data, overallMac });
+  return NextResponse.json({ returnCode: result.returnCode, returnMessage: result.returnMessage });
+}
 ```
 
-### Repository Integration (in-memory Mongo)
+### **Webhook Handling**:
+```typescript
+// app/api/ipn/route.ts - VNPay IPN
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  const { result, order } = await handleVnpayIpnUseCase.execute({ body });
 
-```ts
-import { MongoMemoryServer } from "mongodb-memory-server"
-import { MongoClient } from "mongodb"
-import { postRepository } from "../post-repo"
+  if (result.isSuccess && order) {
+    void notifyOrderWebhook(order);
+  }
 
-let server: MongoMemoryServer, client: MongoClient
-
-beforeAll(async () => {
-  server = await MongoMemoryServer.create()
-  process.env.MONGODB_URI = server.getUri()
-  process.env.MONGODB_DB = "testdb"
-  client = new MongoClient(server.getUri())
-  await client.connect()
-})
-
-afterAll(async () => {
-  await client.close()
-  await server.stop()
-})
-
-it("inserts and reads", async () => {
-  const post = await postRepository.create({ title: "T", content: "C" })
-  const all = await postRepository.getAll()
-  expect(all.length).toBe(1)
-  expect(all[0].title).toBe("T")
-})
+  return NextResponse.json({ returnCode: result.returnCode, returnMessage: result.returnMessage });
+}
 ```
 
-### Component Test
-
-```tsx
-import { render, screen } from "@testing-library/react"
-import PostList from "../PostList"
-
-it("renders posts", () => {
-  render(<PostList initialPosts={[{ id: "1", title: "Hello", content: "World" }]} />)
-  expect(screen.getByText("Hello")).toBeInTheDocument()
-})
+### **Utility APIs**:
+```typescript
+// app/api/utils/location/route.ts
+export async function POST(request: NextRequest) {
+  const { token, accessToken } = await request.json();
+  const result = await decodeLocationUseCase.execute({ token, accessToken });
+  return NextResponse.json(result);
+}
 ```
 
 ---
 
-## 🧪 13. Chạy test
+## 🎯 8. Key Features Implemented
+
+| Feature | Implementation | Description |
+|---------|----------------|-------------|
+| **Payment Processing** | ZaloPay + VNPay | Multiple payment gateways |
+| **Webhook Handling** | VNPay IPN | Secure payment notifications |
+| **Queue System** | BullMQ + Redis | Background job processing |
+| **External APIs** | Zalo Location/Phone | Social login integration |
+| **CRUD Operations** | All entities | Full data management |
+| **Clean Architecture** | Dependency Injection | Testable, maintainable code |
+| **Error Handling** | Structured responses | Proper HTTP status codes |
+| **Type Safety** | TypeScript | Full type coverage |
+
+---
+
+## 🧪 9. Testing Strategy
+
+### **Unit Tests**:
+```typescript
+// Domain tests
+describe("Order", () => {
+  it("validates order data", () => { /* ... */ });
+});
+
+// Use case tests
+describe("CreateOrderUseCase", () => {
+  it("calls repository correctly", async () => {
+    vi.mock("@/infrastructure/repositories/order-repo");
+    // ...
+  });
+});
+```
+
+### **Integration Tests**:
+```typescript
+// Repository integration with MongoDB Memory Server
+describe("OrderRepository", () => {
+  let mongoServer: MongoMemoryServer;
+
+  beforeAll(async () => {
+    mongoServer = await MongoMemoryServer.create();
+    process.env.MONGODB_URI = mongoServer.getUri();
+  });
+
+  it("creates and retrieves orders", async () => {
+    // Test actual database operations
+  });
+});
+```
+
+### **API Integration Tests**:
+```typescript
+// Test complete API flows
+describe("Order API", () => {
+  it("creates order via API", async () => {
+    const response = await fetch('/api/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData)
+    });
+    expect(response.status).toBe(201);
+  });
+});
+```
+
+---
+
+## 🚀 10. Chạy ứng dụng
 
 ```bash
-npx vitest
-# hoặc giao diện UI:
-npx vitest --ui
+# Development
+npm run dev
+
+# Build production
+npm run build
+
+# Start production
+npm start
+
+# Testing
+npm test              # Unit tests
+npm run test:ui       # Test UI
+npm run test:cov      # Coverage report
+npm run test:integration # Integration tests
 ```
 
 ---
 
-## ✅ 14. Tổng kết
+## ✅ 11. Tổng kết
 
-| Thành phần  | Công nghệ               | Vai trò                    |
-| ----------- | ----------------------- | -------------------------- |
-| Data Layer  | MongoDB                 | Lưu dữ liệu                |
-| Repository  | `post-repo.ts`          | CRUD                       |
-| Application | Use Case                | Logic nghiệp vụ            |
-| UI          | Next.js 16 (App Router) | Giao diện                  |
-| State       | Zustand                 | Local store                |
-| Action      | Server Actions          | Mutation server-side       |
-| Test        | Vitest + RTL            | Unit, Integration, UI test |
+| Thành phần | Công nghệ | Vai trò |
+|-----------|-----------|---------|
+| **Framework** | Next.js 16 (App Router) | Full-stack React |
+| **Architecture** | Clean/Onion Architecture | Separation of concerns |
+| **Database** | MongoDB | Data persistence |
+| **Payment** | ZaloPay + VNPay | Payment processing |
+| **Queue** | BullMQ + Redis | Background jobs |
+| **External APIs** | Zalo Open API | Location/Phone decode |
+| **State** | Zustand | Client state management |
+| **Testing** | Vitest + RTL | Unit/Integration/UI tests |
+| **Type Safety** | TypeScript | Full type coverage |
+
+**🎉 Đây là một full-stack e-commerce application hoàn chỉnh với Clean Architecture!**

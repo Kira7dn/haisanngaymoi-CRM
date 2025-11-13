@@ -6,6 +6,10 @@ export default defineConfig({
     environment: 'node', // Use node for integration tests with server
     globals: true,
     setupFiles: './vitest.setup.ts',
+    sequence: {
+      concurrent: false,
+      shuffle: false,
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import Redis from 'ioredis';
-import { paymentGateway } from '@/lib/container';
+import { paymentGateway } from '@/lib/container'; // Direct import for simplicity
 
 // Lazy initialization of Redis connection
 const getRedisConnection = (): Redis => {
@@ -15,7 +15,8 @@ const getRedisConnection = (): Redis => {
 
 let orderWorkerInstance: Worker | null = null;
 
-export const ensureOrderWorker = (): Worker => {
+// Simplified worker initialization - just like controller used orderQueue
+const initializeWorker = (): Worker => {
   if (orderWorkerInstance) return orderWorkerInstance;
 
   // Worker to process order jobs
@@ -89,7 +90,10 @@ export const ensureOrderWorker = (): Worker => {
   return orderWorkerInstance;
 };
 
-// Only auto-start worker when explicitly enabled
+// Auto-start worker when enabled - just like controller used queue
 if (process.env.ENABLE_ORDER_WORKER === 'true') {
-  ensureOrderWorker();
+  initializeWorker();
 }
+
+// Export for testing or manual initialization
+export const getOrderWorker = (): Worker | null => orderWorkerInstance;

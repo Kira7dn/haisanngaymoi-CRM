@@ -61,7 +61,8 @@ describe('Order Worker', () => {
     it('should create worker with correct configuration', async () => {
       process.env.REDIS_URL = 'redis://test'
 
-      await import('../order-worker')
+      const { ensureOrderWorker } = await import('../order-worker')
+      ensureOrderWorker()
 
       expect(mockWorkerInstance).toBeDefined()
       expect(mockWorkerInstance.name).toBe('orders')
@@ -74,7 +75,8 @@ describe('Order Worker', () => {
       const testRedisUrl = 'redis://test:6379'
       process.env.REDIS_URL = testRedisUrl
 
-      await import('../order-worker')
+      const { ensureOrderWorker } = await import('../order-worker')
+      ensureOrderWorker()
 
       // Redis should be created with the correct URL
       // We can't easily test this without spying, so we'll just check that worker was created
@@ -85,7 +87,8 @@ describe('Order Worker', () => {
 
   describe('Job processing logic', () => {
     it('should process checkPaymentStatus jobs', async () => {
-      await import('../order-worker')
+      const { ensureOrderWorker } = await import('../order-worker')
+      ensureOrderWorker()
 
       // Mock job data
       const mockJob = {
@@ -105,7 +108,8 @@ describe('Order Worker', () => {
     })
 
     it('should handle unknown job types', async () => {
-      await import('../order-worker')
+      const { ensureOrderWorker } = await import('../order-worker')
+      ensureOrderWorker()
 
       const mockJob = {
         name: 'unknownJobType',
@@ -125,16 +129,17 @@ describe('Order Worker', () => {
     it('should create Redis connection only once (singleton)', async () => {
       process.env.REDIS_URL = 'redis://test'
 
-      await import('../order-worker')
+      const { ensureOrderWorker } = await import('../order-worker')
+      ensureOrderWorker()
 
       // Check that worker was created with a connection
       expect(mockWorkerInstance).toBeDefined()
       expect(mockWorkerInstance.opts.connection).toBeDefined()
 
-      // Second import should reuse the same worker instance
-      const secondWorker = mockWorkerInstance
-      await import('../order-worker')
-      expect(mockWorkerInstance).toBe(secondWorker)
+      // Second call should reuse the same worker instance
+      const firstWorker = mockWorkerInstance
+      ensureOrderWorker()
+      expect(mockWorkerInstance).toBe(firstWorker)
     })
   })
 
@@ -149,7 +154,8 @@ describe('Order Worker', () => {
     it('should handle job processing errors gracefully', async () => {
       mockProcessPaymentUpdate.mockRejectedValueOnce(new Error('Payment API error'))
 
-      await import('../order-worker')
+      const { ensureOrderWorker } = await import('../order-worker')
+      ensureOrderWorker()
 
       const mockJob = {
         name: 'checkPaymentStatus',

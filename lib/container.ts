@@ -10,6 +10,7 @@ import { orderRepository } from "@/infrastructure/repositories/order-repo";
 import { ZaloPayGateway } from "@/infrastructure/gateways/zalopay-gateway";
 import { ZaloLocationGateway } from "@/infrastructure/gateways/zalo-location-gateway";
 import { ZaloPhoneGateway } from "@/infrastructure/gateways/zalo-phone-gateway";
+import { VnpayGatewayImpl } from "@/infrastructure/gateways/vnpay-gateway";
 import { BullMQAdapter } from "@/infrastructure/queue/bullmq-adapter";
 
 // Initialize workers when container loads
@@ -20,8 +21,7 @@ import type { PaymentGateway } from "@/core/application/interfaces/payment-gatew
 import type { QueueService } from "@/core/application/interfaces/queue-service";
 import type { LocationService } from "@/core/application/interfaces/location-service";
 import type { PhoneService } from "@/core/application/interfaces/phone-service";
-
-// Queue worker will be started by runtime/test explicitly to avoid circular imports
+import type { VnpayGateway } from "@/core/application/interfaces/vnpay-gateway";
 
 // Services
 export const bannerService = {
@@ -53,6 +53,7 @@ export const paymentGateway: PaymentGateway = new ZaloPayGateway();
 export const queueService: QueueService = new BullMQAdapter();
 export const locationService: LocationService = new ZaloLocationGateway();
 export const phoneService: PhoneService = new ZaloPhoneGateway();
+export const vnpayGateway: VnpayGateway = new VnpayGatewayImpl();
 
 // Use Cases
 import { FilterProductsUseCase } from "@/core/application/usecases/product/filter-products";
@@ -92,6 +93,8 @@ import { LinkOrderUseCase } from "@/core/application/usecases/order/link-order";
 import { CheckPaymentStatusUseCase } from "@/core/application/usecases/order/check-payment-status";
 import { CheckOrderStatusUseCase } from "@/core/application/usecases/checkout/check-order-status";
 import { MacRequestUseCase } from "@/core/application/usecases/checkout/mac-request";
+
+import { HandleVnpayIpnUseCase } from "@/core/application/usecases/vnpay/handle-vnpay-ipn";
 
 import { DecodeLocationUseCase } from "@/core/application/usecases/location/decode-location";
 
@@ -138,3 +141,8 @@ export const checkPaymentStatusUseCase = new CheckPaymentStatusUseCase(paymentGa
 export const linkOrderUseCase = new LinkOrderUseCase(orderService, queueService);
 export const decodeLocationUseCase = new DecodeLocationUseCase(locationService);
 export const decodePhoneUseCase = new DecodePhoneUseCase(phoneService);
+
+export const handleVnpayIpnUseCase = new HandleVnpayIpnUseCase(
+  vnpayGateway,
+  orderService
+);

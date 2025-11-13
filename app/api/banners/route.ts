@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBannersUseCase, createBannerUseCase } from "@/lib/container";
 
-export async function GET() {
-  const result = await getBannersUseCase.execute({ detailed: false });
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const detailed = searchParams.get('detailed') === 'true';
+  const result = await getBannersUseCase.execute({ detailed });
   return NextResponse.json(result.banners);
 }
 
