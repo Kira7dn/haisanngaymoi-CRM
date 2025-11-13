@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'www.figma.com',
       },
+      { protocol: "http", 
+        hostname: "*"
+      }
     ],
   },
 };

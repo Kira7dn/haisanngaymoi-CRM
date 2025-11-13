@@ -1,11 +1,12 @@
 import type { StationService } from "@/core/application/interfaces/station-service";
+import type { Station } from "@/core/domain/station";
 
 export interface GetStationByIdRequest {
   id: number;
 }
 
 export interface GetStationByIdResponse {
-  station: any | null;
+  station: Station | null;
 }
 
 export class GetStationByIdUseCase {

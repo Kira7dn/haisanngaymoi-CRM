@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GetOrdersUseCase } from "@/core/application/usecases/order/get-orders";
-import { CreateOrderUseCase } from "@/core/application/usecases/order/create-order";
-import { orderService } from "@/lib/container";
+import { getOrdersUseCase, createOrderUseCase } from "@/lib/container";
 
 export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-  const status = url.searchParams.get("status") || undefined;
-  const zaloUserId = url.searchParams.get("zaloUserId") || undefined;
-  const useCase = new GetOrdersUseCase(orderService);
-  const result = await useCase.execute({ status, zaloUserId });
-  return NextResponse.json(result.orders);
+  try {
+    const url = new URL(request.url);
+    const status = url.searchParams.get("status") || undefined;
+    const zaloUserId = url.searchParams.get("zaloUserId") || undefined;
+    const result = await getOrdersUseCase.execute({ status, zaloUserId });
+    return NextResponse.json(result.orders);
+  } catch (error) {
+    return NextResponse.json({ message: "Error fetching orders" }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const useCase = new CreateOrderUseCase(orderService);
-  const result = await useCase.execute(body);
-  return NextResponse.json(result.order, { status: 201 });
+  try {
+    const body = await request.json();
+    const result = await createOrderUseCase.execute(body);
+    return NextResponse.json(result.order, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ message: "Error creating order" }, { status: 500 });
+  }
 }

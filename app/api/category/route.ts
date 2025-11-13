@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GetCategoriesUseCase } from "@/core/application/usecases/category/get-categories";
-import { CreateCategoryUseCase } from "@/core/application/usecases/category/create-category";
-import { categoryService } from "@/lib/container";
+import { getCategoriesUseCase, createCategoryUseCase } from "@/lib/container";
 
 export async function GET() {
-  const useCase = new GetCategoriesUseCase(categoryService);
-  const result = await useCase.execute();
-  return NextResponse.json(result.categories);
+  try {
+    const result = await getCategoriesUseCase.execute();
+    return NextResponse.json(result.categories);
+  } catch (error) {
+    return NextResponse.json({ message: "Error fetching categories" }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const useCase = new CreateCategoryUseCase(categoryService);
-  const result = await useCase.execute(body);
-  return NextResponse.json(result.category, { status: 201 });
+  try {
+    const body = await request.json();
+    const result = await createCategoryUseCase.execute(body);
+    return NextResponse.json(result.category, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ message: "Error creating category" }, { status: 500 });
+  }
 }

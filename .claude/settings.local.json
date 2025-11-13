@@ -1,9 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(nul)",
-      "Bash(timeout /t 3)",
-      "Bash(npm run build:*)"
+      "Bash(npm run test:cov:*)",
+      "Read(*)",
+      "Write(*)",
+      "Bash(*)",
+      "Edit(*)"
     ],
     "deny": [],
     "ask": []

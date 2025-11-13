@@ -2,31 +2,48 @@ import type { Product, SizeOption } from "@/core/domain/product";
 import type { ProductService, FilterProductsParams } from "@/core/application/interfaces/product-service";
 import clientPromise from "@/infrastructure/db/mongo";
 
-const normalizeSizes = (product: any): SizeOption[] | undefined => {
+/**
+ * MongoDB document interface for Product collection
+ */
+interface ProductDocument {
+  _id: number;
+  categoryId: number;
+  name: string;
+  price: number;
+  originalPrice: number;
+  image: string;
+  detail: string;
+  sizes?: SizeOption[];
+  colors?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const normalizeSizes = (product: ProductDocument): SizeOption[] | undefined => {
   if (!product.sizes || product.sizes.length === 0) return undefined;
   return product.sizes
-    .map((s: any) => {
+    .map((s) => {
       if (typeof s === "string") {
         return {
           label: s,
           price: product.price,
           originalPrice: product.originalPrice,
-        } as SizeOption;
+        };
       }
       const label = s.label ?? "";
       if (!label) return null;
       const price = typeof s.price === "number" ? s.price : product.price;
       const originalPrice = typeof s.originalPrice === "number" ? s.originalPrice : product.originalPrice;
-      return { label, price, originalPrice } as SizeOption;
+      return { label, price, originalPrice };
     })
-    .filter(Boolean) as SizeOption[];
+    .filter((s): s is SizeOption => s !== null);
 };
 
 const getNextProductId = async (): Promise<number> => {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
-  const lastProduct = await db.collection("products").findOne({}, { sort: { _id: -1 } });
-  return lastProduct ? ((lastProduct._id as any) as number) + 1 : 1;
+  const lastProduct = await db.collection<ProductDocument>("products").findOne({}, { sort: { _id: -1 } });
+  return lastProduct ? lastProduct._id + 1 : 1;
 };
 
 export const productRepository: ProductService & {
@@ -35,8 +52,8 @@ export const productRepository: ProductService & {
   async getAll(): Promise<Product[]> {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB);
-    const docs = await db.collection("products").find({}).sort({ _id: 1 }).toArray();
-    return docs.map((d: any) => ({
+    const docs = await db.collection<ProductDocument>("products").find({}).sort({ _id: 1 }).toArray();
+    return docs.map((d) => ({
       id: d._id,
       categoryId: d.categoryId,
       name: d.name,
@@ -54,9 +71,9 @@ export const productRepository: ProductService & {
   async getById(id: number): Promise<Product | null> {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB);
-    const doc = await db.collection("products").findOne({ _id: id as any });
+    const doc = await db.collection<ProductDocument>("products").findOne({ _id: id });
     return doc ? {
-      id: (doc._id as any) as number,
+      id: doc._id,
       categoryId: doc.categoryId,
       name: doc.name,
       price: doc.price,
@@ -83,8 +100,8 @@ export const productRepository: ProductService & {
     if (params.search) {
       query.name = { $regex: params.search, $options: "i" };
     }
-    const docs = await db.collection("products").find(query).sort({ _id: 1 }).toArray();
-    return docs.map((d: any) => ({
+    const docs = await db.collection<ProductDocument>("products").find(query).sort({ _id: 1 }).toArray();
+    return docs.map((d) => ({
       id: d._id,
       categoryId: d.categoryId,
       name: d.name,
@@ -104,7 +121,7 @@ export const productRepository: ProductService & {
     const db = client.db(process.env.MONGODB_DB);
     const id = await getNextProductId();
     const now = new Date();
-    await db.collection("products").insertOne({
+    const doc: ProductDocument = {
       _id: id,
       categoryId: product.categoryId,
       name: product.name,
@@ -116,7 +133,8 @@ export const productRepository: ProductService & {
       colors: product.colors,
       createdAt: now,
       updatedAt: now,
-    } as any);
+    };
+    await db.collection<ProductDocument>("products").insertOne(doc);
     return {
       id,
       categoryId: product.categoryId,
@@ -135,24 +153,29 @@ export const productRepository: ProductService & {
   async update(id: number, product: Partial<Omit<Product, "id" | "createdAt" | "updatedAt">>): Promise<Product | null> {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB);
-    const updateObj: any = { ...product };
-    updateObj.updatedAt = new Date();
-    const result = await db.collection("products").updateOne({ _id: id as any }, { $set: updateObj });
-    if (result.modifiedCount > 0) {
-      const updated = await db.collection("products").findOne({ _id: id as any });
-      return updated ? {
-        id: (updated._id as any) as number,
-        categoryId: updated.categoryId,
-        name: updated.name,
-        price: updated.price,
-        originalPrice: updated.originalPrice,
-        image: updated.image,
-        detail: updated.detail,
-        sizes: normalizeSizes(updated),
-        colors: updated.colors,
-        createdAt: updated.createdAt,
-        updatedAt: updated.updatedAt,
-      } : null;
+    const updateObj: Partial<ProductDocument> = {
+      ...product,
+      updatedAt: new Date()
+    };
+    const result = await db.collection<ProductDocument>("products").findOneAndUpdate(
+      { _id: id },
+      { $set: updateObj },
+      { returnDocument: "after" }
+    );
+    if (result) {
+      return {
+        id: result._id,
+        categoryId: result.categoryId,
+        name: result.name,
+        price: result.price,
+        originalPrice: result.originalPrice,
+        image: result.image,
+        detail: result.detail,
+        sizes: normalizeSizes(result),
+        colors: result.colors,
+        createdAt: result.createdAt,
+        updatedAt: result.updatedAt,
+      };
     }
     return null;
   },
@@ -160,7 +183,7 @@ export const productRepository: ProductService & {
   async delete(id: number): Promise<boolean> {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB);
-    const result = await db.collection("products").deleteOne({ _id: id as any });
+    const result = await db.collection<ProductDocument>("products").deleteOne({ _id: id });
     return result.deletedCount > 0;
   },
 

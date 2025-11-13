@@ -1,11 +1,12 @@
 import type { BannerService } from "@/core/application/interfaces/banner-service";
+import type { Banner } from "@/core/domain/banner";
 
 export interface GetBannersRequest {
   detailed?: boolean;
 }
 
 export interface GetBannersResponse {
-  banners: any[]; // or specific type
+  banners: Banner[] | string[];
 }
 
 export class GetBannersUseCase {

@@ -1,4 +1,5 @@
 import type { StationService } from "@/core/application/interfaces/station-service";
+import type { Station } from "@/core/domain/station";
 
 export interface UpdateStationRequest {
   id: number;
@@ -9,7 +10,7 @@ export interface UpdateStationRequest {
 }
 
 export interface UpdateStationResponse {
-  station: any | null;
+  station: Station | null;
 }
 
 export class UpdateStationUseCase {

@@ -1,11 +1,12 @@
 import type { ProductService } from "@/core/application/interfaces/product-service";
+import type { Product } from "@/core/domain/product";
 
 export interface GetProductByIdRequest {
   id: number;
 }
 
 export interface GetProductByIdResponse {
-  product: any | null; // specific type
+  product: Product | null;
 }
 
 export class GetProductByIdUseCase {

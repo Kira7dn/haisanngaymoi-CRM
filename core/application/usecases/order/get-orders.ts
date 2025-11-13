@@ -1,4 +1,5 @@
 import type { OrderService } from "@/core/application/interfaces/order-service";
+import type { Order } from "@/core/domain/order";
 
 export interface GetOrdersRequest {
   status?: string;
@@ -6,7 +7,7 @@ export interface GetOrdersRequest {
 }
 
 export interface GetOrdersResponse {
-  orders: any[];
+  orders: Order[];
 }
 
 export class GetOrdersUseCase {

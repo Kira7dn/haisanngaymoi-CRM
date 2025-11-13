@@ -1,13 +1,20 @@
 import type { Banner } from "@/core/domain/banner";
 import type { BannerService } from "@/core/application/interfaces/banner-service";
 import clientPromise from "@/infrastructure/db/mongo";
-import { ObjectId } from "mongodb";
+
+/**
+ * MongoDB document interface for Banner collection
+ */
+interface BannerDocument {
+  _id: number;
+  url: string;
+}
 
 const getNextBannerId = async (): Promise<number> => {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
-  const lastBanner = await db.collection("banners").findOne({}, { sort: { _id: -1 } });
-  return lastBanner ? ((lastBanner._id as any) as number) + 1 : 1;
+  const lastBanner = await db.collection<BannerDocument>("banners").findOne({}, { sort: { _id: -1 } });
+  return lastBanner ? lastBanner._id + 1 : 1;
 };
 
 export const bannerRepository: BannerService & {
@@ -16,9 +23,9 @@ export const bannerRepository: BannerService & {
   async getAll(): Promise<Banner[]> {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB);
-    const docs = await db.collection("banners").find({}).sort({ _id: 1 }).toArray();
-    return docs.map((d: any) => ({
-      id: (d._id as any) as number,
+    const docs = await db.collection<BannerDocument>("banners").find({}).sort({ _id: 1 }).toArray();
+    return docs.map((d) => ({
+      id: d._id,
       url: d.url,
     }));
   },
@@ -26,28 +33,36 @@ export const bannerRepository: BannerService & {
   async getById(id: number): Promise<Banner | null> {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB);
-    const doc = await db.collection("banners").findOne({ _id: id as any });
-    return doc ? { id: (doc._id as any) as number, url: doc.url } : null;
+    const doc = await db.collection<BannerDocument>("banners").findOne({ _id: id });
+    return doc ? { id: doc._id, url: doc.url } : null;
   },
 
   async create(banner: Omit<Banner, "id">): Promise<Banner> {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB);
     const id = await getNextBannerId();
-    await db.collection("banners").insertOne({
+    const doc: BannerDocument = {
       _id: id,
       url: banner.url,
-    } as any);
+    };
+    await db.collection<BannerDocument>("banners").insertOne(doc);
     return { id, url: banner.url };
   },
 
   async update(id: number, banner: Partial<Banner>): Promise<Banner | null> {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB);
-    const result = await db.collection("banners").updateOne({ _id: id as any }, { $set: banner });
-    if (result.modifiedCount > 0) {
-      const updated = await db.collection("banners").findOne({ _id: id as any });
-      return updated ? { id: (updated._id as any) as number, url: updated.url } : null;
+    const updateObj: Partial<BannerDocument> = {};
+    if (banner.url !== undefined) updateObj.url = banner.url;
+
+    const result = await db.collection<BannerDocument>("banners").findOneAndUpdate(
+      { _id: id },
+      { $set: updateObj },
+      { returnDocument: "after" }
+    );
+
+    if (result) {
+      return { id: result._id, url: result.url };
     }
     return null;
   },
@@ -55,7 +70,7 @@ export const bannerRepository: BannerService & {
   async delete(id: number): Promise<boolean> {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB);
-    const result = await db.collection("banners").deleteOne({ _id: id as any });
+    const result = await db.collection<BannerDocument>("banners").deleteOne({ _id: id });
     return result.deletedCount > 0;
   },
 

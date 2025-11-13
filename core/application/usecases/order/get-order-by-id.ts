@@ -1,11 +1,12 @@
 import type { OrderService } from "@/core/application/interfaces/order-service";
+import type { Order } from "@/core/domain/order";
 
 export interface GetOrderByIdRequest {
   id: number;
 }
 
 export interface GetOrderByIdResponse {
-  order: any | null;
+  order: Order | null;
 }
 
 export class GetOrderByIdUseCase {

@@ -1,4 +1,5 @@
 import type { ProductService } from "@/core/application/interfaces/product-service";
+import type { Product } from "@/core/domain/product";
 
 export interface UpdateProductRequest {
   id: number;
@@ -13,7 +14,7 @@ export interface UpdateProductRequest {
 }
 
 export interface UpdateProductResponse {
-  product: any | null; // specific type
+  product: Product | null;
 }
 
 export class UpdateProductUseCase {

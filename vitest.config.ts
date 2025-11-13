@@ -6,9 +6,28 @@ export default defineConfig({
     environment: 'node', // Use node for integration tests with server
     globals: true,
     setupFiles: './vitest.setup.ts',
-    coverage: { provider: 'v8' },
-    exclude: ['backend/**', 'node_modules/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      exclude: [
+        '**/.next/**',
+        '**/node_modules/**',
+        '**/__tests__/**',
+        '**/*.spec.*',
+        '**/*.test.*',
+      ],
+    },
+    exclude: ['backend/**', 'node_modules/**', '.next/**'],
     include: ['**/*.spec.ts', '**/*.test.ts'],
+  },
+  server: {
+    sourcemapIgnoreList(sourcePath, sourcemapPath) {
+      return (
+        sourcePath.includes('/.next/') ||
+        sourcePath.includes('\\.next\\') ||
+        (sourcemapPath ? sourcemapPath.includes('/.next/') || sourcemapPath.includes('\\.next\\') : false)
+      )
+    },
   },
   resolve: {
     alias: {

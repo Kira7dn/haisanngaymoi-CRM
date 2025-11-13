@@ -1,11 +1,12 @@
 import type { UserService } from "@/core/application/interfaces/user-service";
+import type { User } from "@/core/domain/user";
 
 export interface GetUserByIdRequest {
   id: string;
 }
 
 export interface GetUserByIdResponse {
-  user: any | null;
+  user: User | null;
 }
 
 export class GetUserByIdUseCase {

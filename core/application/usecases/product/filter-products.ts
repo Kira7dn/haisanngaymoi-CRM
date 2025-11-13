@@ -1,4 +1,5 @@
 import type { ProductService } from "@/core/application/interfaces/product-service";
+import type { Product } from "@/core/domain/product";
 
 export interface FilterProductsRequest {
   categoryId?: number | string;
@@ -6,7 +7,7 @@ export interface FilterProductsRequest {
 }
 
 export interface FilterProductsResponse {
-  products: any[]; // or specific type
+  products: Product[];
 }
 
 export class FilterProductsUseCase {

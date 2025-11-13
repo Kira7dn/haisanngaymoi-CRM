@@ -1,4 +1,5 @@
 import type { OrderService, UpdateOrderPayload } from "@/core/application/interfaces/order-service";
+import type { Order } from "@/core/domain/order";
 
 export interface UpdateOrderRequest {
   id: number;
@@ -6,7 +7,7 @@ export interface UpdateOrderRequest {
 }
 
 export interface UpdateOrderResponse {
-  order: any | null;
+  order: Order | null;
 }
 
 export class UpdateOrderUseCase {

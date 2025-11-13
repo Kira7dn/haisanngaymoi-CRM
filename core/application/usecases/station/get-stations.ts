@@ -1,7 +1,8 @@
 import type { StationService } from "@/core/application/interfaces/station-service";
+import type { Station } from "@/core/domain/station";
 
 export interface GetStationsResponse {
-  stations: any[]; // specific type
+  stations: Station[];
 }
 
 export class GetStationsUseCase {
