@@ -21,7 +21,7 @@ export async function PUT(
   const orderId = Number(id);
   if (isNaN(orderId)) return NextResponse.json({ message: "Invalid ID" }, { status: 400 });
   const body = await request.json();
-  const result = await updateOrderUseCase.execute({ id: orderId, ...body });
+  const result = await updateOrderUseCase.execute({ id: orderId, payload: body });
   if (!result.order) return NextResponse.json({ message: "Order not found" }, { status: 404 });
   return NextResponse.json(result.order);
 }

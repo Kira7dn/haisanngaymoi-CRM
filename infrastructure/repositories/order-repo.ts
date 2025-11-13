@@ -174,7 +174,8 @@ export const orderRepository: OrderService & {
     if (payload.checkoutSdkOrderId !== undefined) updateObj.checkoutSdkOrderId = payload.checkoutSdkOrderId;
     if (payload.status !== undefined) updateObj.status = payload.status;
     if (payload.paymentStatus !== undefined) updateObj.paymentStatus = payload.paymentStatus;
-    if (payload.updatedAt !== undefined) updateObj.updatedAt = payload.updatedAt;
+    // Always update the timestamp
+    updateObj.updatedAt = new Date();
     if (payload.items !== undefined) {
       updateObj.items = payload.items.map(item => ({
         product: item.product || {}, // Store full product object
