@@ -2,50 +2,13 @@ import * as React from "react";
 import Image from "next/image";
 import { Container } from "../ui/Container";
 import { SectionHeading } from "../ui/SectionHeading";
-import { Card } from "../ui/Card";
-import { Waves, Eye, Shell } from "lucide-react";
+import { Card, CardContent } from "@shared/ui/card";
+import { Icon } from "@shared/ui/icon";
+import brandConfig from "@/config/brand.json";
 
-const characteristics = [
-  {
-    icon: Waves,
-    value: "18-22°C",
-    label: "Nước lạnh nhất VN",
-    color: "text-blue-500",
-    bgColor: "bg-blue-50",
-  },
-  {
-    icon: Eye,
-    value: "10-15m",
-    label: "Độ trong vắt",
-    color: "text-cyan-500",
-    bgColor: "bg-cyan-50",
-  },
-  {
-    icon: Shell,
-    value: "Rạn san hô",
-    label: "phong phú",
-    color: "text-teal-500",
-    bgColor: "bg-teal-50",
-  },
-];
+const characteristics = brandConfig.coToStory.characteristics;
 
-const images = [
-  {
-    src: "/coto/ngudan.jpg",
-    alt: "Ngư dân Cô Tô",
-    caption: "Ngư dân địa phương",
-  },
-  // {
-  //   src: "/coto/tau-danh-ca.png",
-  //   alt: "Tàu cá Cô Tô",
-  //   caption: "Đội tàu đánh bắt",
-  // },
-  {
-    src: "/coto/sanho.webp",
-    alt: "San hô Cô Tô",
-    caption: "Rạn san hô phong phú",
-  },
-];
+const images = brandConfig.coToStory.images;
 
 export function CoToStorySection() {
   return (
@@ -62,95 +25,89 @@ export function CoToStorySection() {
         {/* Overlay Gradient */}
         <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-black/50" />
 
-        {/* Heading on Image */}
-        <div className="absolute inset-0 flex items-end">
-          <Container className="pb-12 md:pb-16">
-            <div className="max-w-3xl">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
-                Cô Tô - Vùng biển lạnh phía Bắc
-              </h2>
-              <p className="text-lg md:text-xl text-brand-sand">
-                Nơi hải lưu Bắc mang đến hương vị đặc biệt
-              </p>
-            </div>
-          </Container>
+        {/* Heading and Stats Overlay */}
+        <div className="absolute inset-0 flex flex-col justify-between">
+          {/* Heading on Image - Top */}
+          <div className="flex items-start pt-12 md:pt-16">
+            <Container>
+              <div className="max-w-3xl">
+                <SectionHeading
+                  level="h2"
+                  showDecorator
+                  decoratorColor="crystal"
+                  color="white"
+                  align="left"
+                  subtitle={brandConfig.coToStory.subtitle}
+                  subtitleColor="white"
+                >
+                  {brandConfig.coToStory.title}
+                </SectionHeading>
+              </div>
+            </Container>
+          </div>
+
+          {/* Stats/Facts Bar - Bottom */}
+          <div>
+            <Container className="py-3 md:py-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {characteristics.map((char, index) => {
+                  return (
+                    <div
+                      key={index}
+                      className="text-left flex gap-3 md:gap-4 bg-white/15 backdrop-blur-sm rounded-md border border-white/30 max-w-xs p-3 md:p-5"
+                    >
+                      <div className={`shrink-0 inline-flex items-center justify-center w-8 h-8 md:w-12 md:h-12 rounded-full ${char.bgColor} mt-1`}>
+                        <Icon type={char.icon} className={`w-4 h-4 md:w-6 md:h-6 ${char.color}`} />
+                      </div>
+                      <div className="text-sm md:text-lg font-bold text-white mb-1 drop-shadow">
+                        {char.value}
+                        <p className="text-white/95 text-xs md:text-sm drop-shadow-sm leading-tight font-medium">{char.label}</p>
+                        <p className="text-white/80 text-xs drop-shadow-sm leading-relaxed mt-1 md:mt-2 hidden md:block">{char.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Container>
+          </div>
         </div>
       </div>
 
-      {/* Stats/Facts Bar */}
-      <div className="bg-white border-b border-gray-200">
-        <Container className="py-8 md:py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {characteristics.map((char, index) => {
-              const Icon = char.icon;
-              return (
-                <Card
-                  key={index}
-                  variant="bordered"
-                  className="text-center"
-                >
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${char.bgColor} mb-4`}>
-                    <Icon className={`w-8 h-8 ${char.color}`} />
-                  </div>
-                  <div className="text-3xl md:text-4xl font-bold text-brand-charcoal mb-2">
-                    {char.value}
-                  </div>
-                  <p className="text-gray-600">{char.label}</p>
-                </Card>
-              );
-            })}
-          </div>
-        </Container>
-      </div>
-
       {/* Main Story Content */}
-      <div className="py-20 md:py-32 bg-white">
+      <div className="py-10 md:py-24 bg-white">
         <Container>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
             {/* Left: Text Content */}
             <div className="space-y-6 h-full">
-              <h3 className="text-3xl md:text-4xl font-bold text-brand-charcoal">
+              <h3 className="text-3xl md:text-4xl font-bold text-brand-charcoal text-left">
                 Tại sao Cô Tô đặc biệt?
               </h3>
 
               <div className="space-y-6 text-lg text-gray-700 leading-relaxed">
-                <p>
-                  Cô Tô nằm ở cực Đông Bắc Việt Nam, là hòn đảo xa bờ nhất tỉnh Quảng Ninh.
-                  Đây là nơi dòng hải lưu lạnh từ phía Bắc đi qua, mang theo nhiệt độ nước{" "}
-                  <strong className="text-brand-crystal">18-22°C</strong> — lạnh nhất cả nước.
-                </p>
-
-                <p>
-                  Nước lạnh khiến hải sản phát triển chậm hơn, tích lũy nhiều dưỡng chất,
-                  tạo nên <strong>thịt chắc và vị ngọt thanh</strong> đặc trưng. Đó là lý do
-                  tại sao cá, tôm, mực từ Cô Tô có hương vị khác biệt.
-                </p>
-
-                <p>
-                  Vùng biển Cô Tô còn có độ trong vắt cao (10-15m), nền đáy cát - san hô
-                  giàu khoáng chất, và dòng chảy mạnh giúp nước luôn tuần hoàn. Môi trường
-                  tự nhiên thuần khiết này là{" "}
-                  <strong className="text-brand-crystal">"bí mật"</strong> tạo nên hải sản cao cấp.
-                </p>
+                {brandConfig.coToStory.story.map((paragraph, index) => (
+                  <p key={index}>
+                    {paragraph}
+                  </p>
+                ))}
               </div>
 
               {/* Quote */}
               <blockquote className="border-l-4 border-brand-crystal pl-6 py-4 bg-brand-sand/30 rounded-r-lg">
                 <p className="text-lg italic text-gray-700 mb-2">
-                  "Biển lạnh tạo nên hải sản chất lượng. Đó là lý do chúng tôi chọn Cô Tô."
+                  "{brandConfig.coToStory.quote.text}"
                 </p>
                 <footer className="text-sm text-gray-600">
-                  — Nguyễn Văn Hải, Thuyền trưởng 25 năm kinh nghiệm
+                  — {brandConfig.coToStory.quote.author}
                 </footer>
               </blockquote>
             </div>
 
             {/* Right: Images Gallery */}
-            <div className="grid grid-cols-1 gap-6 h-full overflow-y-auto">
+            <div className="grid grid-cols-1 gap-4 md:gap-6 h-full overflow-y-auto">
               {images.map((image, index) => (
                 <div
                   key={index}
-                  className="bg-linear-to-t from-transparent to-white/20 backdrop-blur-sm border border-white/20 rounded-lg p-6 group"
+                  className="relative bg-linear-to-t from-transparent to-white/20 backdrop-blur-sm border border-white/20 rounded-lg p-4 md:p-6 group aspect-square md:aspect-auto"
                 >
                   <Image
                     src={image.src}
@@ -159,8 +116,8 @@ export function CoToStorySection() {
                     className="object-cover transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <p className="text-white font-semibold">{image.caption}</p>
+                  <div className="absolute bottom-2 left-2 right-2 md:bottom-4 md:left-4 md:right-4">
+                    <p className="text-white font-semibold text-sm md:text-base">{image.caption}</p>
                   </div>
                 </div>
               ))}
@@ -178,7 +135,7 @@ export function CoToStorySection() {
         >
           <path
             d="M0,0 C300,80 600,80 900,40 C1050,20 1150,40 1200,60 L1200,120 L0,120 Z"
-            fill="#F4EBDD"
+            fill="var(--brand-crystal)"
           />
         </svg>
       </div>

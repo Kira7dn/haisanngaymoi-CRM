@@ -6,31 +6,15 @@ import brandConfig from "@/config/brand.json";
 import { Facebook, Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react";
 
 const footerLinks = {
-  company: [
-    { label: "Về chúng tôi", href: "#about" },
-    { label: "Câu chuyện Cô Tô", href: "#coto-story" },
-    { label: "Bền vững", href: "#sustainability" },
-    { label: "Tác động xã hội", href: "#csr" },
-  ],
-  products: [
-    { label: "Tôm & Cua", href: "/products/shrimp" },
-    { label: "Cá tươi", href: "/products/fish" },
-    { label: "Hải sản khác", href: "/products/seafood" },
-    { label: "Quà tặng", href: "/products/gifts" },
-  ],
-  support: [
-    { label: "Câu hỏi thường gặp", href: "/faq" },
-    { label: "Hướng dẫn đặt hàng", href: "/guide" },
-    { label: "Chính sách giao hàng", href: "/shipping" },
-    { label: "Chính sách đổi trả", href: "/returns" },
-    { label: "Truy xuất nguồn gốc", href: "#traceability" },
-  ],
+  company: brandConfig.footer.columns.company.links,
+  products: brandConfig.footer.columns.products.links,
+  support: brandConfig.footer.columns.support.links,
 };
 
 const socialLinks = [
-  { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
-  { icon: Instagram, href: "https://instagram.com", label: "Instagram" },
-  { icon: Youtube, href: "https://youtube.com", label: "YouTube" },
+  { icon: Facebook, href: brandConfig.contact.socialMedia.facebook, label: "Facebook" },
+  { icon: Instagram, href: brandConfig.contact.socialMedia.instagram, label: "Instagram" },
+  { icon: Youtube, href: brandConfig.contact.socialMedia.youtube, label: "YouTube" },
 ];
 
 export function Footer() {
@@ -39,7 +23,7 @@ export function Footer() {
   return (
     <footer className="bg-white border-t border-gray-200">
       {/* Newsletter Section */}
-      <div className="bg-brand-sand py-12 md:py-16">
+      {/* <div className="bg-brand-sand py-12 md:py-16">
         <Container>
           <div className="max-w-3xl mx-auto text-center space-y-6">
             <h3 className="text-2xl md:text-3xl font-bold text-brand-charcoal">
@@ -69,7 +53,7 @@ export function Footer() {
             </p>
           </div>
         </Container>
-      </div>
+      </div> */}
 
       {/* Main Footer */}
       <div className="py-12 md:py-16">
@@ -123,7 +107,7 @@ export function Footer() {
                       href={link.href}
                       className="text-gray-600 hover:text-brand-crystal transition-colors"
                     >
-                      {link.label}
+                      {link.text}
                     </Link>
                   </li>
                 ))}
@@ -142,7 +126,7 @@ export function Footer() {
                       href={link.href}
                       className="text-gray-600 hover:text-brand-crystal transition-colors"
                     >
-                      {link.label}
+                      {link.text}
                     </Link>
                   </li>
                 ))}
@@ -157,31 +141,27 @@ export function Footer() {
               <ul className="space-y-3">
                 <li>
                   <a
-                    href="tel:1900xxxx"
+                    href={`tel:${brandConfig.contact.phone}`}
                     className="flex items-start gap-2 text-gray-600 hover:text-brand-crystal transition-colors"
                   >
                     <Phone className="w-5 h-5 shrink-0 mt-0.5" />
-                    <span>1900 xxxx</span>
+                    <span>{brandConfig.contact.phone}</span>
                   </a>
                 </li>
                 <li>
                   <a
-                    href="mailto:hello@ngaymoi-coto.vn"
+                    href={`mailto:${brandConfig.contact.email}`}
                     className="flex items-start gap-2 text-gray-600 hover:text-brand-crystal transition-colors"
                   >
                     <Mail className="w-5 h-5 shrink-0 mt-0.5" />
-                    <span>hello@ngaymoi-coto.vn</span>
+                    <span>{brandConfig.contact.email}</span>
                   </a>
                 </li>
                 <li className="flex items-start gap-2 text-gray-600">
                   <MapPin className="w-5 h-5 shrink-0 mt-0.5" />
-                  <span>Quảng Ninh, Việt Nam</span>
+                  <span>{brandConfig.contact.address}</span>
                 </li>
               </ul>
-              <p className="text-sm text-gray-500 mt-4">
-                Giờ làm việc:<br />
-                8:00 - 20:00 (Hàng ngày)
-              </p>
             </div>
           </div>
         </Container>
@@ -192,20 +172,17 @@ export function Footer() {
         <Container>
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
             <p>
-              © {currentYear} Ngày Mới - Cô Tô. All rights reserved.
+              {brandConfig.footer.copyright.replace(' 2025', ` ${currentYear}`)}
             </p>
             <div className="flex items-center gap-4">
-              <Link href="/privacy" className="hover:text-white transition-colors">
-                Chính sách bảo mật
-              </Link>
-              <span>|</span>
-              <Link href="/terms" className="hover:text-white transition-colors">
-                Điều khoản sử dụng
-              </Link>
-              <span>|</span>
-              <Link href="/cookies" className="hover:text-white transition-colors">
-                Cookies
-              </Link>
+              {brandConfig.footer.legal.map((link, index) => (
+                <React.Fragment key={link.href}>
+                  <Link href={link.href} className="hover:text-white transition-colors">
+                    {link.text}
+                  </Link>
+                  {index < brandConfig.footer.legal.length - 1 && <span>|</span>}
+                </React.Fragment>
+              ))}
             </div>
           </div>
         </Container>

@@ -41,7 +41,7 @@ export default function LandingPage() {
         </div>
 
         {/* Section 4: Traceability System - QR code demo, USP showcase */}
-        <TraceabilitySection />
+        {/* <TraceabilitySection /> */}
 
         {/* Section 5: Cô Tô Origin Story - Origin story about special seawater */}
         <CoToStorySection />
@@ -50,9 +50,9 @@ export default function LandingPage() {
         <SustainabilitySection />
 
         {/* Section 7: Customer Testimonials - Social proof */}
-        <div id="testimonials">
+        {/* <div id="testimonials">
           <TestimonialsSection />
-        </div>
+        </div> */}
 
         {/* Section 8: CSR & Impact - Social impact with real numbers */}
         <CSRSection />

@@ -4,11 +4,12 @@ import * as React from "react";
 import Image from "next/image";
 import { Container } from "../ui/Container";
 import { SectionHeading } from "../ui/SectionHeading";
-import { Card } from "../ui/Card";
+import { Card, CardContent } from "@shared/ui/card";
 import { Badge } from "../ui/Badge";
 import { Button } from "@shared/ui/button";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@shared/ui/carousel";
 import { ShoppingCart, Star } from "lucide-react";
+import brandConfig from "@/config/brand.json";
 
 interface Product {
   id: string;
@@ -16,61 +17,16 @@ interface Product {
   price: string;
   originalPrice?: string;
   image: string;
-  badge?: "new" | "bestseller" | "premium";
+  badge?: string;
   rating: number;
   reviews: number;
 }
 
-const products: Product[] = [
-  {
-    id: "1",
-    name: "Chả mực mai",
-    price: "400.000đ",
-    originalPrice: "450.000đ",
-    image: "/products/chamuc.png",
-    badge: "bestseller",
-    rating: 4.9,
-    reviews: 127,
-  },
-  {
-    id: "2",
-    name: "Bề bề",
-    price: "380.000đ",
-    image: "/products/bebe.png",
-    badge: "new",
-    rating: 4.8,
-    reviews: 89,
-  },
-  {
-    id: "3",
-    name: "Hải sâm",
-    price: "220.000đ",
-    image: "/products/haisam.png",
-    badge: "premium",
-    rating: 4.7,
-    reviews: 156,
-  },
-  {
-    id: "4",
-    name: "Mực Ống",
-    price: "180.000đ",
-    image: "/products/muc-ong.png",
-    rating: 4.9,
-    reviews: 203,
-  },
-  {
-    id: "5",
-    name: "Mực Lá",
-    price: "180.000đ",
-    image: "/products/muc-la.png",
-    rating: 4.9,
-    reviews: 203,
-  },
-];
+const products: Product[] = brandConfig.products.featured;
 
 export function ProductsSection() {
   return (
-    <section className="py-20 md:py-32 bg-brand-sand">
+    <section className="py-10 md:py-24 bg-brand-crystal">
       <Container>
         <SectionHeading
           level="h2"
@@ -78,10 +34,10 @@ export function ProductsSection() {
           decoratorColor="golden"
           subtitle="Hải sản tươi sống, đánh bắt hàng ngày từ vùng biển lạnh Cô Tô"
         >
-          Sản Phẩm Nổi Bật
+          {brandConfig.products.title}
         </SectionHeading>
 
-        <div className="mt-16">
+        <div className="mt-8">
           <Carousel
             opts={{
               align: "start",
@@ -92,60 +48,65 @@ export function ProductsSection() {
             <CarouselContent className="-ml-4">
               {products.map((product) => (
                 <CarouselItem key={product.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                  <Card variant="shadowed" padding="none" hover="lift" className="overflow-hidden">
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow relative pt-0 pb-0">
                     {/* Product Image */}
-                    <div className="relative aspect-square bg-gray-100">
+                    <div className="relative aspect-square bg-gray-100 group/image">
                       <Image
                         src={product.image}
                         alt={product.name}
                         fill
                         className="object-cover"
                       />
+                      {/* Overlay gradient */}
+                      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+
                       {/* Badge */}
                       {product.badge && (
-                        <div className="absolute top-4 right-4">
-                          <Badge variant={product.badge} size="sm">
+                        <div className="absolute top-4 right-4 z-10">
+                          <Badge variant={product.badge as any} size="sm">
                             {product.badge === "bestseller" && "Bán chạy"}
                             {product.badge === "new" && "Mới"}
                             {product.badge === "premium" && "Cao cấp"}
                           </Badge>
                         </div>
                       )}
-                    </div>
 
-                    {/* Product Info */}
-                    <div className="p-6 space-y-4">
-                      {/* Rating */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-brand-golden text-brand-golden" />
-                          <span className="font-semibold text-sm">{product.rating}</span>
+                      {/* Add to Cart Button - Center Overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center md:opacity-0 md:group-hover/image:md:opacity-100 transition-opacity duration-300">
+                        <Button className="bg-brand-golden text-brand-charcoal hover:bg-brand-golden/90 shadow-lg hover:shadow-xl transform hover:scale-105 transition-transform">
+                          <ShoppingCart className="w-5 h-5 mr-2" />
+                          Thêm vào giỏ
+                        </Button>
+                      </div>
+
+                      {/* Product Info Overlay - Always visible on mobile, fade on desktop hover */}
+                      <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2 text-white md:group-hover/image:md:opacity-50 transition-opacity duration-300">
+                        {/* Product Name */}
+                        <h3 className="font-bold text-lg line-clamp-2 drop-shadow-lg">
+                          {product.name}
+                        </h3>
+
+                        {/* Rating */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                            <span className="font-semibold text-sm">{product.rating}</span>
+                          </div>
+                          <span className="text-sm text-white/80">({product.reviews} đánh giá)</span>
                         </div>
-                        <span className="text-sm text-gray-500">({product.reviews} đánh giá)</span>
-                      </div>
 
-                      {/* Product Name */}
-                      <h3 className="font-bold text-lg text-brand-charcoal line-clamp-2">
-                        {product.name}
-                      </h3>
-
-                      {/* Price */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-brand-crystal">
-                          {product.price}
-                        </span>
-                        {product.originalPrice && (
-                          <span className="text-sm text-gray-400 line-through">
-                            {product.originalPrice}
+                        {/* Price */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl font-bold text-white drop-shadow-lg">
+                            {product.price}
                           </span>
-                        )}
+                          {product.originalPrice && (
+                            <span className="text-sm text-white/70 line-through drop-shadow">
+                              {product.originalPrice}
+                            </span>
+                          )}
+                        </div>
                       </div>
-
-                      {/* Add to Cart Button */}
-                      <Button className="w-full bg-brand-golden text-brand-charcoal hover:bg-brand-golden/90">
-                        <ShoppingCart className="w-4 h-4" />
-                        Thêm vào giỏ
-                      </Button>
                     </div>
                   </Card>
                 </CarouselItem>

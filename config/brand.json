@@ -25,16 +25,26 @@
     }
   },
   "contact": {
-    "phone": "1900 xxxx",
-    "phoneDisplay": "1900 xxxx",
+    "phone": "096-688-4771",
     "email": "hello@ngaymoi-coto.vn",
-    "address": "Quảng Ninh, Việt Nam",
+    "website": "https://ngaymoi-coto.vn",
+    "address": "Cô Tô, Vân Đồn, Quảng Ninh, Việt Nam",
     "region": "Đông Bắc Bộ, Việt Nam",
     "workingHours": "8:00 - 20:00 (Hàng ngày)",
-    "facebook": "https://www.facebook.com/ngaymoicoto",
-    "instagram": "https://instagram.com/ngaymoicoto",
-    "youtube": "https://youtube.com/@ngaymoicoto",
-    "zalo": "https://zalo.me/3103930951570612059"
+    "socialMedia": {
+      "facebook": "https://www.facebook.com/ngaymoicoto",
+      "instagram": "https://instagram.com/ngaymoicoto",
+      "youtube": "https://youtube.com/@ngaymoicoto",
+      "zalo": "https://zalo.me/3103930951570612059",
+      "tiktok": "https://tiktok.com/@ngaymoicoto",
+      "linkedin": "https://linkedin.com/company/ngaymoicoto",
+      "whatsapp": "https://wa.me/84123456789"
+    },
+    "chatSupport": {
+      "zalo": "https://zalo.me/3103930951570612059",
+      "facebook": "https://www.facebook.com/ngaymoicoto",
+      "website": "https://ngaymoi-coto.vn/chat"
+    }
   },
   "hero": {
     "title": {
@@ -54,12 +64,8 @@
     },
     "trustBadges": [
       {
-        "icon": "check-circle",
-        "text": "Truy xuất 100%"
-      },
-      {
         "icon": "snowflake",
-        "text": "Tươi <30 phút"
+        "text": "Tươi Ngon"
       },
       {
         "icon": "recycle",
@@ -73,11 +79,13 @@
     "items": [
       {
         "id": "transparency",
-        "icon": "qr-code",
+        "icon": "qrCode",
         "title": "MINH BẠCH 100%",
         "description": "Mỗi sản phẩm có mã truy xuất QR. Biết rõ nguồn gốc, ngày đánh bắt, và hành trình từ biển đến tay bạn.",
         "link": "#traceability",
-        "color": "crystal"
+        "color": "text-brand-crystal",
+        "bgColor": "bg-brand-crystal/10",
+        "iconColor": "text-brand-crystal"
       },
       {
         "id": "special-flavor",
@@ -85,7 +93,9 @@
         "title": "HƯƠNG VỊ ĐẶC BIỆT",
         "description": "Biển lạnh Cô Tô tạo nên vị ngọt tự nhiên đặc trưng. Hải sản phát triển chậm, thịt chắc, dinh dưỡng cao.",
         "link": "#coto-story",
-        "color": "golden"
+        "color": "text-brand-golden",
+        "bgColor": "bg-brand-golden/10",
+        "iconColor": "text-brand-golden"
       },
       {
         "id": "positive-impact",
@@ -93,7 +103,9 @@
         "title": "TÁC ĐỘNG TÍCH CỰC",
         "description": "1% doanh thu cho Quỹ Biển Sạch. Hỗ trợ ngư dân địa phương. Cam kết đánh bắt bền vững.",
         "link": "#csr",
-        "color": "red"
+        "color": "text-red-500",
+        "bgColor": "bg-red-50",
+        "iconColor": "text-red-500"
       }
     ]
   },
@@ -102,44 +114,48 @@
     "subtitle": "Hải sản tươi sống, đánh bắt hàng ngày từ vùng biển lạnh Cô Tô",
     "featured": [
       {
-        "id": "tom-hum",
-        "name": "Tôm Hùm Cô Tô Tươi",
-        "price": "850.000đ",
-        "originalPrice": "950.000đ",
-        "image": "/images/products/tom-hum.jpg",
+        "id": "1",
+        "name": "Chả mực mai",
+        "price": "400.000đ",
+        "originalPrice": "450.000đ",
+        "image": "/products/chamuc.png",
         "badge": "bestseller",
         "rating": 4.9,
-        "reviews": 127,
-        "unit": "kg"
+        "reviews": 127
       },
       {
-        "id": "ca-mu",
-        "name": "Cá Mú Đỏ Cao Cấp",
+        "id": "2",
+        "name": "Bề bề",
         "price": "380.000đ",
-        "image": "/images/products/ca-mu.jpg",
+        "image": "/products/bebe.png",
         "badge": "new",
         "rating": 4.8,
-        "reviews": 89,
-        "unit": "kg"
+        "reviews": 89
       },
       {
-        "id": "ghe-xanh",
-        "name": "Ghẹ Xanh Biển Lạnh",
+        "id": "3",
+        "name": "Hải sâm",
         "price": "220.000đ",
-        "image": "/images/products/ghe-xanh.jpg",
+        "image": "/products/haisam.png",
         "badge": "premium",
         "rating": 4.7,
-        "reviews": 156,
-        "unit": "kg"
+        "reviews": 156
       },
       {
-        "id": "muc-ong",
-        "name": "Mực Ống Tươi",
+        "id": "4",
+        "name": "Mực Ống",
         "price": "180.000đ",
-        "image": "/images/products/muc-ong.jpg",
+        "image": "/products/muc-ong.png",
         "rating": 4.9,
-        "reviews": 203,
-        "unit": "kg"
+        "reviews": 203
+      },
+      {
+        "id": "5",
+        "name": "Mực Lá",
+        "price": "180.000đ",
+        "image": "/products/muc-la.png",
+        "rating": 4.9,
+        "reviews": 203
       }
     ],
     "categories": [
@@ -229,16 +245,40 @@
     "subtitle": "Nơi hải lưu Bắc mang đến hương vị đặc biệt",
     "characteristics": [
       {
+        "icon": "waves",
         "value": "18-22°C",
-        "label": "Nước lạnh nhất VN"
+        "label": "Nước lạnh nhất VN",
+        "color": "text-blue-500",
+        "bgColor": "bg-blue-50",
+        "description": "Nhiệt độ nước biển duy trì ở mức 18-22°C quanh năm, lạnh hơn cả vùng biển miền Trung Việt Nam"
       },
       {
+        "icon": "eye",
         "value": "10-15m",
-        "label": "Độ trong vắt"
+        "label": "Độ trong vắt",
+        "color": "text-cyan-500",
+        "bgColor": "bg-cyan-50",
+        "description": "Nước biển trong suốt với độ nhìn từ 10-15m, lý tưởng cho việc quan sát và bảo quản hải sản"
       },
       {
+        "icon": "shell",
         "value": "Rạn san hô",
-        "label": "phong phú"
+        "label": "phong phú",
+        "color": "text-teal-500",
+        "bgColor": "bg-teal-50",
+        "description": "Hệ sinh thái san hô đa dạng với hơn 200 loài, cung cấp môi trường sống tự nhiên cho hải sản"
+      }
+    ],
+    "images": [
+      {
+        "src": "/coto/ngudan.jpg",
+        "alt": "Ngư dân Cô Tô",
+        "caption": "Ngư dân địa phương"
+      },
+      {
+        "src": "/coto/sanho.webp",
+        "alt": "San hô Cô Tô",
+        "caption": "Rạn san hô phong phú"
       }
     ],
     "story": [
@@ -249,77 +289,6 @@
     "quote": {
       "text": "Biển lạnh tạo nên hải sản chất lượng. Đó là lý do chúng tôi chọn Cô Tô.",
       "author": "Nguyễn Văn Hải, Thuyền trưởng 25 năm kinh nghiệm"
-    }
-  },
-  "sustainability": {
-    "title": "Bền vững từ biển đến bàn ăn",
-    "subtitle": "Quy trình khai thác và bảo quản có trách nhiệm",
-    "processTimeline": [
-      {
-        "title": "KHAI THÁC",
-        "description": "Vùng được phê duyệt",
-        "details": [
-          "Lưới chọn lọc",
-          "Nhật ký điện tử"
-        ]
-      },
-      {
-        "title": "LÀM LẠNH",
-        "description": "Trong 30 phút",
-        "details": [
-          "Ice slurry system",
-          "Nhiệt độ tự động"
-        ]
-      },
-      {
-        "title": "VẬN CHUYỂN",
-        "description": "Cold chain -18°C",
-        "details": [
-          "Không gián đoạn",
-          "Tem kiểm soát"
-        ]
-      },
-      {
-        "title": "GIAO HÀNG",
-        "description": "Đến tay khách",
-        "details": [
-          "Trong 24h",
-          "Đóng gói sinh học"
-        ]
-      }
-    ],
-    "commitments": [
-      {
-        "title": "KHÔNG ĐÁNH BẮT",
-        "subtitle": "Mùa sinh sản",
-        "description": "Chúng tôi tuân thủ nghiêm ngặt lịch cấm đánh bắt để bảo vệ nguồn lợi hải sản cho thế hệ sau."
-      },
-      {
-        "title": "GIẢM BYCATCH",
-        "subtitle": "Mục tiêu <5%",
-        "description": "Sử dụng lưới chọn lọc và thả ngay cá non, loài cấm. Hiện tại bycatch chỉ 3.2%."
-      },
-      {
-        "title": "BẢO VỆ HỆ SINH THÁI",
-        "subtitle": "",
-        "description": "Không sử dụng phương thức đánh bắt phá hủy đáy biển. Tham gia phục hồi san hô."
-      }
-    ],
-    "certifications": [
-      {
-        "name": "Marine Stewardship Council",
-        "abbr": "MSC",
-        "description": "Cho khai thác tự nhiên bền vững"
-      },
-      {
-        "name": "Aquaculture Stewardship Council",
-        "abbr": "ASC",
-        "description": "Cho nuôi trồng thủy sản có trách nhiệm"
-      }
-    ],
-    "timeline": {
-      "preAssessment": "12 tháng",
-      "fullCertification": "24-36 tháng"
     }
   },
   "csr": {
@@ -517,8 +486,8 @@
         "href": "/cookies"
       }
     ],
-    "copyright": "© 2025 Ngày Mới - Cô Tô. All rights reserved.",
-    "madeWith": "Made with 💙 in Việt Nam"
+    "copyright": " 2025 Ngày Mới - Cô Tô. All rights reserved.",
+    "madeWith": "Made with  in Việt Nam"
   },
   "company": {
     "legalName": "Công ty TNHH Hải Sản Ngày Mới Cô Tô",
@@ -542,5 +511,78 @@
     ],
     "ogImage": "/images/og-image.jpg",
     "twitterCard": "summary_large_image"
+  },
+  "sustainability": {
+    "title": "Tính Bền Vững",
+    "subtitle": "Cam kết với môi trường và cộng đồng",
+    "processSteps": [
+      {
+        "icon": "ship",
+        "title": "KHAI THÁC",
+        "description": "Được phê duyệt",
+        "details": [
+          "Lưới chọn lọc",
+          "Nhật ký điện tử"
+        ]
+      },
+      {
+        "icon": "snowflake",
+        "title": "LÀM LẠNH",
+        "description": "Trong 30 phút",
+        "details": [
+          "Ice slurry system",
+          "Nhiệt độ tự động"
+        ]
+      },
+      {
+        "icon": "truck",
+        "title": "VẬN CHUYỂN",
+        "description": "Cold chain -18°C",
+        "details": [
+          "Không gián đoạn",
+          "Tem kiểm soát"
+        ]
+      },
+      {
+        "icon": "package",
+        "title": "GIAO HÀNG",
+        "description": "Đến tay khách",
+        "details": [
+          "Trong 24h",
+          "Đóng gói sinh học"
+        ]
+      }
+    ],
+    "commitments": [
+      {
+        "icon": "calendarX",
+        "title": "Không đánh bắt trái mùa",
+        "description": "Tuân thủ nghiêm ngặt lịch đánh bắt theo mùa vụ"
+      },
+      {
+        "icon": "target",
+        "title": "Quản lý nguồn lợi",
+        "description": "Hợp tác với cơ quan quản lý biển để bảo vệ nguồn lợi"
+      },
+      {
+        "icon": "leaf",
+        "title": "Bảo vệ môi trường",
+        "description": "1% doanh thu cho Quỹ Biển Sạch và các hoạt động bảo vệ"
+      }
+    ],
+    "certifications": [
+      {
+        "name": "Marine Stewardship Council",
+        "abbr": "MSC",
+        "description": "Cho khai thác tự nhiên bền vững",
+        "logo": "/images/certifications/msc-logo.svg"
+      },
+      {
+        "name": "Aquaculture Stewardship Council",
+        "abbr": "ASC",
+        "description": "Cho nuôi trồng thủy sản có trách nhiệm",
+        "logo": "/images/certifications/asc-logo.svg"
+      }
+    ]
   }
 }

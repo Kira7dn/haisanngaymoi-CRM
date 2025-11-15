@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { Container } from "../ui/Container";
 import { SectionHeading } from "../ui/SectionHeading";
-import { Card } from "../ui/Card";
+import { Card, CardContent } from "@shared/ui/card";
 import { QrCode, MapPin, Calendar, Ship, Thermometer, CheckCircle2 } from "lucide-react";
 
 export function TraceabilitySection() {
@@ -42,7 +42,7 @@ export function TraceabilitySection() {
   ];
 
   return (
-    <section id="traceability" className="py-20 md:py-32 bg-gradient-to-b from-white to-brand-sand/30">
+    <section id="traceability" className="py-20 md:py-32 bg-linear-to-b from-white to-brand-sand/30">
       <Container>
         <SectionHeading
           level="h2"
@@ -56,38 +56,40 @@ export function TraceabilitySection() {
         <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left: QR Demo */}
           <div className="order-2 lg:order-1">
-            <Card variant="elevated" className="text-center">
-              {/* QR Code */}
-              <div className="inline-flex items-center justify-center w-48 h-48 bg-white rounded-lg border-4 border-brand-crystal/20 mx-auto mb-6">
-                <QrCode className="w-40 h-40 text-brand-charcoal" />
-              </div>
+            <Card className="text-center shadow-lg">
+              <CardContent className="pt-6">
+                {/* QR Code */}
+                <div className="inline-flex items-center justify-center w-48 h-48 bg-white rounded-lg border-4 border-brand-crystal/20 mx-auto mb-6">
+                  <QrCode className="w-40 h-40 text-brand-charcoal" />
+                </div>
 
-              <h3 className="text-2xl font-bold text-brand-charcoal mb-2">
-                Quét để xem chi tiết
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Mỗi sản phẩm có mã QR riêng biệt
-              </p>
+                <h3 className="text-2xl font-bold text-brand-charcoal mb-2">
+                  Quét để xem chi tiết
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Mỗi sản phẩm có mã QR riêng biệt
+                </p>
 
-              {/* Product Info */}
-              <div className="bg-brand-sand/50 rounded-lg p-6 space-y-3 text-left">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Mã sản phẩm:</span>
-                  <span className="font-mono font-semibold">TH-050125-001</span>
+                {/* Product Info */}
+                <div className="bg-brand-sand/50 rounded-lg p-6 space-y-3 text-left">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Mã sản phẩm:</span>
+                    <span className="font-mono font-semibold">TH-050125-001</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Sản phẩm:</span>
+                    <span className="font-semibold">Tôm Hùm Cô Tô</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Trọng lượng:</span>
+                    <span className="font-semibold">1.2 kg</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Ngư dân:</span>
+                    <span className="font-semibold">Nguyễn Văn A</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Sản phẩm:</span>
-                  <span className="font-semibold">Tôm Hùm Cô Tô</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Trọng lượng:</span>
-                  <span className="font-semibold">1.2 kg</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Ngư dân:</span>
-                  <span className="font-semibold">Nguyễn Văn A</span>
-                </div>
-              </div>
+              </CardContent>
             </Card>
           </div>
 
@@ -104,51 +106,50 @@ export function TraceabilitySection() {
               return (
                 <Card
                   key={index}
-                  variant={isActive ? "gradient" : "bordered"}
-                  padding="sm"
-                  hover="scale"
-                  className={`cursor-pointer transition-all ${
-                    isActive ? "border-brand-crystal shadow-md" : ""
-                  }`}
+                  className={`cursor-pointer transition-all p-4 ${isActive
+                    ? "border-brand-crystal shadow-md bg-linear-to-br from-brand-crystal/10 to-brand-golden/10"
+                    : "hover:shadow-md"
+                    }`}
                   onClick={() => setSelectedStep(index)}
                 >
-                  <div className="flex items-start gap-4">
-                    {/* Icon */}
-                    <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
-                      isActive
+                  <CardContent className="p-0">
+                    <div className="flex items-start gap-4">
+                      {/* Icon */}
+                      <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${isActive
                         ? "bg-brand-crystal text-white"
                         : "bg-gray-100 text-gray-600"
-                    }`}>
-                      <Icon className="w-6 h-6" />
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-lg text-brand-charcoal">
-                        {step.title}
-                      </h4>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {step.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {step.date}
-                        </span>
+                        }`}>
+                        <Icon className="w-6 h-6" />
                       </div>
-                      {isActive && (
-                        <p className="text-sm text-gray-700 mt-2 animate-[fade-in-up_0.3s_ease-out]">
-                          {step.detail}
-                        </p>
-                      )}
-                    </div>
 
-                    {/* Step Number */}
-                    <div className="flex-shrink-0 text-4xl font-bold text-gray-200">
-                      {index + 1}
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-lg text-brand-charcoal">
+                          {step.title}
+                        </h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {step.location}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {step.date}
+                          </span>
+                        </div>
+                        {isActive && (
+                          <p className="text-sm text-gray-700 mt-2 animate-[fade-in-up_0.3s_ease-out]">
+                            {step.detail}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Step Number */}
+                      <div className="shrink-0 text-4xl font-bold text-gray-200">
+                        {index + 1}
+                      </div>
                     </div>
-                  </div>
+                  </CardContent>
                 </Card>
               );
             })}

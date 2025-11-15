@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { Container } from "../ui/Container";
 import { SectionHeading } from "../ui/SectionHeading";
-import { Card } from "../ui/Card";
+import { Card, CardContent } from "@shared/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@shared/ui/carousel";
 import { Star, Quote } from "lucide-react";
 
@@ -81,48 +81,50 @@ export function TestimonialsSection() {
             <CarouselContent className="-ml-4">
               {testimonials.map((testimonial) => (
                 <CarouselItem key={testimonial.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                  <Card variant="shadowed" hover="lift" className="h-full">
-                    {/* Quote Icon */}
-                    <div className="text-brand-crystal/20 mb-4">
-                      <Quote className="w-12 h-12" />
-                    </div>
-
-                    {/* Rating */}
-                    <div className="flex gap-1 mb-4">
-                      {Array.from({ length: testimonial.rating }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className="w-5 h-5 fill-brand-golden text-brand-golden"
-                        />
-                      ))}
-                    </div>
-
-                    {/* Comment */}
-                    <p className="text-gray-700 leading-relaxed mb-6 line-clamp-4">
-                      "{testimonial.comment}"
-                    </p>
-
-                    {/* Author */}
-                    <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
-                      <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200">
-                        <Image
-                          src={testimonial.avatar}
-                          alt={testimonial.name}
-                          fill
-                          className="object-cover"
-                        />
+                  <Card className="h-full hover:shadow-lg transition-shadow">
+                    <CardContent className="pt-6">
+                      {/* Quote Icon */}
+                      <div className="text-brand-crystal/20 mb-4">
+                        <Quote className="w-12 h-12" />
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-brand-charcoal">
-                          {testimonial.name}
-                        </h4>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <span>{testimonial.location}</span>
-                          <span>•</span>
-                          <span>{testimonial.date}</span>
+
+                      {/* Rating */}
+                      <div className="flex gap-1 mb-4">
+                        {Array.from({ length: testimonial.rating }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className="w-5 h-5 fill-brand-golden text-brand-golden"
+                          />
+                        ))}
+                      </div>
+
+                      {/* Comment */}
+                      <p className="text-gray-700 leading-relaxed mb-6 line-clamp-4">
+                        "{testimonial.comment}"
+                      </p>
+
+                      {/* Author */}
+                      <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
+                        <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200">
+                          <Image
+                            src={testimonial.avatar}
+                            alt={testimonial.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-brand-charcoal">
+                            {testimonial.name}
+                          </h4>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span>{testimonial.location}</span>
+                            <span>•</span>
+                            <span>{testimonial.date}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </CardContent>
                   </Card>
                 </CarouselItem>
               ))}

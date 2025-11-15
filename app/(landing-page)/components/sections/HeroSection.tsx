@@ -3,7 +3,7 @@
 import * as React from "react";
 import brandConfig from "@/config/brand.json";
 import HeroCarousel from "../HeroCarousel";
-import { CheckCircle2, Snowflake, Recycle } from "lucide-react";
+import { Icon } from "@shared/ui/icon";
 
 export interface HeroSectionProps {
   className?: string;
@@ -69,36 +69,65 @@ export function HeroSection({ className }: HeroSectionProps) {
 
       {/* Content */}
       <div className="container mx-auto px-4 md:px-8 lg:px-12 py-4 md:py-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 md:gap-8 items-center">
           {/* Left: Text Content */}
-          <div className="lg:col-span-4 text-center animate-fade-in-up pr-6 pt-4">
+          <div className="lg:col-span-4 text-center animate-fade-in-up lg:pr-6 pt-4">
             <h1
-              className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-6 flex flex-col items-center"
+              className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight md:mb-6 mb-2 text-center flex flex-col md:flex-col items-center"
               style={{ perspective: '500px', animationDelay: '1s' }}
             >
-              <span
-                className="text-white drop-shadow-lg animate-float"
-                style={{
-                  transform: 'rotateX(20deg) translateZ(30px)',
-                  transformStyle: 'preserve-3d',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15)',
-                  animationDelay: '1.2s',
-                }}
-              >
-                {brandConfig.hero.title.line1}
-              </span>
-              <span
-                className="text-cyan-300 drop-shadow-lg animate-float -mt-7"
-                style={{
-                  transform: 'rotateX(-20deg) translateZ(30px)',
-                  transformStyle: 'preserve-3d',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(6,182,212,0.4)',
-                  animationDelay: '1.8s',
-                }}
-              >
-                {brandConfig.hero.title.line2}
-              </span>
-              <span
+              {/* Mobile: Horizontal layout */}
+              <div className="flex flex-row items-center gap-3 md:hidden">
+                <div
+                  className="text-white drop-shadow-lg animate-float"
+                  style={{
+                    transform: 'rotateX(20deg) translateZ(30px)',
+                    transformStyle: 'preserve-3d',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15)',
+                    animationDelay: '1.2s',
+                  }}
+                >
+                  {brandConfig.hero.title.line1}
+                </div>
+                <div
+                  className="text-cyan-300 drop-shadow-lg animate-float"
+                  style={{
+                    transform: 'rotateX(-20deg) translateZ(30px)',
+                    transformStyle: 'preserve-3d',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(6,182,212,0.4)',
+                    animationDelay: '1.8s',
+                  }}
+                >
+                  {brandConfig.hero.title.line2}
+                </div>
+              </div>
+
+              {/* Desktop: Vertical layout */}
+              <div className="hidden md:flex flex-col items-center">
+                <div
+                  className="text-white drop-shadow-lg animate-float"
+                  style={{
+                    transform: 'rotateX(20deg) translateZ(30px)',
+                    transformStyle: 'preserve-3d',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15)',
+                    animationDelay: '1.2s',
+                  }}
+                >
+                  {brandConfig.hero.title.line1}
+                </div>
+                <div
+                  className="text-cyan-300 drop-shadow-lg animate-float -mt-7"
+                  style={{
+                    transform: 'rotateX(-20deg) translateZ(30px)',
+                    transformStyle: 'preserve-3d',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(6,182,212,0.4)',
+                    animationDelay: '1.8s',
+                  }}
+                >
+                  {brandConfig.hero.title.line2}
+                </div>
+              </div>
+              <div
                 className="animate-pulse mt-3"
                 style={{
                   background: 'var(--brand-golden)',
@@ -113,26 +142,26 @@ export function HeroSection({ className }: HeroSectionProps) {
                 }}
               >
                 {brandConfig.hero.title.line3}
-              </span>
+              </div>
             </h1>
-            <p className="text-lg md:text-xl max-w-xl mx-auto animate-fade-in-up" style={{ color: '#2B2B2B', textShadow: '0 2px 4px rgba(255,255,255,0.3)', animationDelay: '2s' }}>
+            <p className="text-base md:text-xl max-w-xl mx-auto animate-fade-in-up" style={{ color: '#2B2B2B', textShadow: '0 2px 4px rgba(255,255,255,0.3)', animationDelay: '2s' }}>
               {brandConfig.brand.tagline}
             </p>
-            <p className="text-lg md:text-xl mb-4 sm:mb-1 max-w-xl mx-auto animate-fade-in-up" style={{ color: '#2B2B2B', textShadow: '0 2px 4px rgba(255,255,255,0.3)', animationDelay: '2s' }}>
+            <p className="text-base md:text-xl max-w-xl mx-auto animate-fade-in-up md:mb-4 mb-2" style={{ color: '#2B2B2B', textShadow: '0 2px 4px rgba(255,255,255,0.3)', animationDelay: '2s' }}>
               {brandConfig.brand.description}
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4 sm:mb-1 animate-fade-in-up" style={{ animationDelay: '2.2s' }}>
+            <div className="flex flex-row flex-wrap gap-2 justify-center md:mb-4 mb-2 animate-fade-in-up" style={{ animationDelay: '2.2s' }}>
               <a
                 href={brandConfig.hero.cta.primary.link}
-                className="bg-yellow-500 text-gray-900 px-8 py-4 rounded-full font-bold text-lg hover:bg-yellow-400 transition-all transform hover:scale-105 text-center shadow-lg"
+                className="bg-yellow-500 text-gray-900 px-3 py-2 rounded-full font-bold text-sm hover:bg-yellow-400 transition-all transform hover:scale-105 text-center shadow-lg shrink"
               >
                 {brandConfig.hero.cta.primary.text}
               </a>
               <a
                 href={brandConfig.hero.cta.secondary.link}
-                className="px-8 py-4 rounded-full font-bold text-lg hover:opacity-90 transition-all text-center shadow-lg"
+                className="px-3 py-2 rounded-full font-bold text-sm hover:opacity-90 transition-all text-center shadow-lg shrink"
                 style={{
                   background: '#0d9488',
                   color: '#ffffff',
@@ -145,18 +174,12 @@ export function HeroSection({ className }: HeroSectionProps) {
 
             {/* Trust Badges */}
             <div className="flex flex-wrap justify-center gap-6 md:gap-8 animate-fade-in-up" style={{ animationDelay: '2.4s' }}>
-              <div className="flex items-center gap-2" style={{ color: '#ffffff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-                <CheckCircle2 className="w-5 h-5 text-cyan-300" />
-                <span className="text-sm md:text-base">Truy xuất 100%</span>
-              </div>
-              <div className="flex items-center gap-2" style={{ color: '#ffffff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-                <Snowflake className="w-5 h-5 text-cyan-300" />
-                <span className="text-sm md:text-base">Tươi &lt;30 phút</span>
-              </div>
-              <div className="flex items-center gap-2" style={{ color: '#ffffff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-                <Recycle className="w-5 h-5 text-cyan-300" />
-                <span className="text-sm md:text-base">Bền vững</span>
-              </div>
+              {brandConfig.hero.trustBadges.map((badge) => (
+                <div key={badge.icon} className="flex items-center gap-2" style={{ color: '#ffffff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                  <Icon type={badge.icon} />
+                  <span className="text-sm md:text-base">{badge.text}</span>
+                </div>
+              ))}
             </div>
           </div>
 

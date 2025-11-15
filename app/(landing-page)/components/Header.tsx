@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import brandConfig from "@/config/brand.json";
 import { Tabs, TabsList, TabsTrigger } from "@shared/ui/tabs";
+import { Menu, X } from "lucide-react";
 
 const navTabs = [
     { id: "value-props", label: "Giá trị" },
     { id: "products", label: "Sản phẩm" },
-    { id: "traceability", label: "Truy xuất" },
+    // { id: "traceability", label: "Truy xuất" },
     { id: "coto-story", label: "Cô Tô" },
     { id: "sustainability", label: "Bền vững" },
-    { id: "testimonials", label: "Đánh giá" },
+    // { id: "testimonials", label: "Đánh giá" },
     { id: "csr", label: "CSR" },
     { id: "contact", label: "Liên hệ" },
 ];
@@ -19,6 +21,7 @@ const navTabs = [
 export default function Header() {
     const [activeTab, setActiveTab] = useState("");
     const [manualActive, setManualActive] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const handleTabClick = (tabId: string) => {
         setActiveTab(tabId);
@@ -76,28 +79,31 @@ export default function Header() {
         return () => observer.disconnect();
     }, [manualActive]);
 
+    // Close mobile menu when resizing to desktop
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) { // lg breakpoint
+                setIsMobileMenuOpen(false);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
         <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
             <nav className="container mx-auto px-8 md:px-12 lg:px-16 py-2 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="relative">
-                        {/* Nền ánh nắng */}
-                        <div
-                            className="absolute left-0 top-0 w-10 h-10 rounded-full blur-sm animate-pulse"
-                            style={{
-                                background: 'radial-gradient(circle at 20% 20%, rgba(250,222,63,0.9) 0%, rgba(250,222,63,0.7) 20%, rgba(250,222,63,0.4) 40%, rgba(250,222,63,0.2) 60%, rgba(250,222,63,0.1) 80%, transparent 100%)',
-                                boxShadow: '0 0 40px rgba(250,222,63,0.9), 0 0 80px rgba(250,222,63,0.7), 0 0 120px rgba(250,222,63,0.5), 0 0 160px rgba(250,222,63,0.3)',
-                                filter: 'brightness(1.3) saturate(1.4)',
-                                transform: 'translate(4px, 8px) scale(1.2)'
-                            }}
-                        ></div>
+                <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="flex items-center gap-4 hover:opacity-80 transition-opacity"
+                >
+                    <div className="relative shrink-0" style={{ width: '52px', height: '52px' }}>
                         <Image
                             src="/logo-short.svg"
                             alt={brandConfig.brand.shortName}
-                            width={40}
-                            height={40}
-                            priority
-                            className="relative z-10"
+                            fill
+                            className="relative z-10 object-contain"
                             style={{
                                 // boxShadow: '0 0 30px rgba(243, 174, 0, 0.95), 0 0 50px rgba(255,255,255,0.4)',
                                 // filter: 'drop-shadow(0 0 12px rgba(243, 174, 0, 0.8))',
@@ -107,37 +113,40 @@ export default function Header() {
                             }}
                         />
                     </div>
-                    {/* Header Title */}
-                    <div className="flex flex-col items-start text-left">
+                    <div className="flex flex-col items-start text-left h-full">
                         <span
-                            className="text-lg font-bold"
+                            className="text-brand-crystal text-base font-semibold text-shadow-2xs"
                             style={{
-                                background: 'var(--brand-golden)',
-                                backgroundSize: '200% 200%',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                backgroundClip: 'text',
-                                textShadow: '0 0 20px rgba(251,191,36,0.2), 0 0 20px rgba(251,191,36,0.2), 0 0 20px rgba(251,191,36,0.2)',
-                            }}
-                        >
-                            NGÀY MỚI
-                        </span>
-                        <span
-                            className="text-cyan-300 drop-shadow-lg text-sm font-semibold -mt-1"
-                            style={{
-                                textShadow: '0 2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(6,182,212,0.4)',
+                                filter: 'drop-shadow(0 2px 4px rgba(250,204,21,0.3))'
                             }}
                         >
                             HẢI SẢN CÔ TÔ
                         </span>
+                        <span
+                            className="text-brand-golden animate-pulse text-2xl font-bold text-shadow-2xs m"
+                        >
+                            NGÀY MỚI
+                        </span>
                     </div>
-                    <div className="hidden md:flex items-center gap-2">
-                        <span className="px-1 py-1 text-blue-600 text-xs font-medium">#HảiSảnTươi</span>
-                        <span className="px-1 py-1 text-green-600 text-xs font-medium">#AnToàn</span>
-                        <span className="px-1 py-1 text-cyan-600 text-xs font-medium">#BềnVững</span>
-                    </div>
-                </div>
-                <div className="hidden md:flex items-center gap-8">
+                </button>
+                {/* <div className="hidden lg:flex items-center gap-2">
+                    <span className="px-1 py-1 text-blue-600 text-xs font-medium">#HảiSảnTươi</span>
+                    <span className="px-1 py-1 text-green-600 text-xs font-medium">#AnToàn</span>
+                    <span className="px-1 py-1 text-cyan-600 text-xs font-medium">#BềnVững</span>
+                </div> */}
+                {/* Mobile Menu Button */}
+                <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    aria-label="Toggle mobile menu"
+                >
+                    {isMobileMenuOpen ? (
+                        <X className="w-6 h-6 text-gray-700" />
+                    ) : (
+                        <Menu className="w-6 h-6 text-gray-700" />
+                    )}
+                </button>
+                <div className="hidden lg:flex items-center gap-8">
                     <Tabs value={activeTab} className="w-auto">
                         <TabsList className="bg-transparent h-auto p-0 gap-2">
                             {navTabs.map((tab) => (
@@ -157,6 +166,38 @@ export default function Header() {
                     </Tabs>
                 </div>
             </nav>
+
+            {/* Mobile Menu Dropdown */}
+            {isMobileMenuOpen && (
+                <div className="lg:hidden bg-white border-t border-gray-200 shadow-lg">
+                    <div className="container mx-auto px-8 md:px-12 py-4">
+                        <div className="flex flex-col space-y-2">
+                            {navTabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => {
+                                        handleTabClick(tab.id);
+                                        setIsMobileMenuOpen(false); // Close menu after click
+                                    }}
+                                    className={`text-left px-4 py-3 rounded-lg transition-colors ${activeTab === tab.id
+                                        ? 'bg-blue-50 text-blue-800 font-medium'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="mt-6 pt-4 border-t border-gray-200">
+                            <div className="flex flex-wrap gap-2">
+                                <span className="px-2 py-1 text-blue-600 text-xs font-medium bg-blue-50 rounded">#HảiSảnTươi</span>
+                                <span className="px-2 py-1 text-green-600 text-xs font-medium bg-green-50 rounded">#AnToàn</span>
+                                <span className="px-2 py-1 text-cyan-600 text-xs font-medium bg-cyan-50 rounded">#BềnVững</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </header>
     );
 }

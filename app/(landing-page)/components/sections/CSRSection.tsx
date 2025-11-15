@@ -2,7 +2,7 @@ import * as React from "react";
 import Image from "next/image";
 import { Container } from "../ui/Container";
 import { SectionHeading } from "../ui/SectionHeading";
-import { Card } from "../ui/Card";
+import { Card, CardContent } from "@shared/ui/card";
 import { AnimatedCounter } from "../ui/AnimatedCounter";
 import { Users, Heart, Trees, GraduationCap } from "lucide-react";
 
@@ -43,7 +43,7 @@ const impacts = [
 
 export function CSRSection() {
   return (
-    <section id="csr" className="py-20 md:py-32 bg-gradient-to-b from-brand-sand to-white">
+    <section id="csr" className="py-10 md:py-24 bg-linear-to-b from-brand-sand to-white">
       <Container>
         <SectionHeading
           level="h2"
@@ -55,36 +55,36 @@ export function CSRSection() {
         </SectionHeading>
 
         {/* Impact Numbers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
           {impacts.map((impact, index) => {
             const Icon = impact.icon;
             return (
               <Card
                 key={index}
-                variant="shadowed"
-                hover="lift"
-                className="text-center"
+                className="text-center hover:shadow-lg transition-shadow"
               >
-                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${impact.bgColor} mb-4`}>
-                  <Icon className={`w-8 h-8 ${impact.color}`} />
-                </div>
-                <div className="text-3xl md:text-4xl font-bold text-brand-charcoal mb-2">
-                  <AnimatedCounter
-                    value={impact.value}
-                    suffix={impact.suffix}
-                    duration={2500}
-                    separator=","
-                  />
-                </div>
-                <p className="text-gray-600 font-medium">{impact.label}</p>
+                <CardContent className="pt-6">
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${impact.bgColor} mb-4`}>
+                    <Icon className={`w-8 h-8 ${impact.color}`} />
+                  </div>
+                  <div className="text-3xl md:text-4xl font-bold text-brand-charcoal mb-2">
+                    <AnimatedCounter
+                      value={impact.value}
+                      suffix={impact.suffix}
+                      duration={2500}
+                      separator=","
+                    />
+                  </div>
+                  <p className="text-gray-600 font-medium">{impact.label}</p>
+                </CardContent>
               </Card>
             );
           })}
-        </div>
+        </div> */}
 
         {/* Story Section */}
-        <div className="mt-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
+        <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="relative aspect-4/3 rounded-lg overflow-hidden">
             <Image
               src="/coto/nguoi-dan-coto.jpg"
               alt="Cộng đồng ngư dân Cô Tô"
@@ -103,7 +103,7 @@ export function CSRSection() {
             </p>
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-crystal flex items-center justify-center text-white font-bold text-sm mt-0.5">
+                <div className="shrink-0 w-6 h-6 rounded-full bg-brand-crystal flex items-center justify-center text-white font-bold text-sm mt-0.5">
                   ✓
                 </div>
                 <span className="text-gray-700">
@@ -111,7 +111,7 @@ export function CSRSection() {
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-crystal flex items-center justify-center text-white font-bold text-sm mt-0.5">
+                <div className="shrink-0 w-6 h-6 rounded-full bg-brand-crystal flex items-center justify-center text-white font-bold text-sm mt-0.5">
                   ✓
                 </div>
                 <span className="text-gray-700">
@@ -119,7 +119,7 @@ export function CSRSection() {
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-crystal flex items-center justify-center text-white font-bold text-sm mt-0.5">
+                <div className="shrink-0 w-6 h-6 rounded-full bg-brand-crystal flex items-center justify-center text-white font-bold text-sm mt-0.5">
                   ✓
                 </div>
                 <span className="text-gray-700">
