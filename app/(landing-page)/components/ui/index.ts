@@ -16,6 +16,3 @@ export type { BadgeProps } from "./Badge";
 
 export { AnimatedCounter } from "./AnimatedCounter";
 export type { AnimatedCounterProps } from "./AnimatedCounter";
-
-export { ZaloIcon } from "./ZaloIcon";
-export type { ZaloIconProps } from "./ZaloIcon";
