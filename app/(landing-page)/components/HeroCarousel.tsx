@@ -6,7 +6,7 @@ export default function HeroCarousel() {
   const [isMuted, setIsMuted] = useState(true);
   const videoItem = {
     type: 'video',
-    src: '/1115.mp4',
+    src: 'https://haisanngaymoi.s3.ap-southeast-1.amazonaws.com/1115.mp4',
     alt: 'Video giới thiệu hải sản tươi ngon',
     description: 'Khám phá quy trình cung cấp hải sản tươi sống từ biển đến bàn ăn'
   };
