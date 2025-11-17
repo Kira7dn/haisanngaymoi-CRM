@@ -103,24 +103,46 @@ export class ZaloPayGateway implements PaymentGateway {
     const paymentResult = await this.checkPaymentStatus(checkoutSdkOrderId, miniAppId);
 
     if (paymentResult.success) {
-      // Update order status to success
+      // Get the current order to preserve existing payment data
+      const order = await this.orderService.getById(orderId);
+      
+      if (!order) {
+        console.error(`[ZaloPayGateway] Order ${orderId} not found`);
+        return;
+      }
+
+      // Update order with payment success
       const updatedOrder = await this.orderService.update({
         id: orderId,
-        paymentStatus: 'success',
+        payment: {
+          ...order.payment,
+          status: 'success',
+          paidAt: new Date()
+        },
         updatedAt: new Date()
       });
 
       if (updatedOrder) {
         console.log(`[ZaloPayGateway] Updated order ${orderId} to success`);
-
         // Send webhook notification
         await notifyOrderWebhook(updatedOrder);
       }
     } else if (paymentResult.status === 'failed') {
-      // Update order status to failed
+      // Get the current order to preserve existing payment data
+      const order = await this.orderService.getById(orderId);
+      
+      if (!order) {
+        console.error(`[ZaloPayGateway] Order ${orderId} not found`);
+        return;
+      }
+
+      // Update order with payment failure
       await this.orderService.update({
         id: orderId,
-        paymentStatus: 'failed',
+        payment: {
+          ...order.payment,
+          status: 'failed'
+        },
         updatedAt: new Date()
       });
 

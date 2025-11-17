@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb"
 import type { AdminUserService } from "@/core/application/interfaces/admin-user-service"
 
 export interface DeleteAdminUserRequest {
@@ -20,8 +21,19 @@ export class DeleteAdminUserUseCase {
       }
     }
 
+    // Convert string ID to ObjectId
+    let userId: ObjectId
+    try {
+      userId = new ObjectId(request.userId)
+    } catch (error) {
+      return {
+        success: false,
+        message: "Invalid user ID format",
+      }
+    }
+
     // Check if user exists
-    const user = await this.adminUserService.getById(request.userId)
+    const user = await this.adminUserService.getById(userId)
     if (!user) {
       return {
         success: false,
@@ -43,7 +55,7 @@ export class DeleteAdminUserUseCase {
     }
 
     // Delete user
-    const success = await this.adminUserService.delete(request.userId)
+    const success = await this.adminUserService.delete(userId)
 
     return {
       success,

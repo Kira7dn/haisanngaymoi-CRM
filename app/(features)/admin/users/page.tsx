@@ -1,20 +1,14 @@
 import { UserList } from "./components/UserList"
 import { CreateUserButton } from "./components/CreateUserButton"
-
-async function getUsers() {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/auth/users`, {
-    cache: "no-store",
-  })
-
-  if (!response.ok) {
-    return []
-  }
-
-  return response.json()
-}
+import { createGetAllUsersUseCase } from "@/app/api/auth/depends"
 
 export default async function UsersPage() {
-  const users = await getUsers()
+  // Get users using injected use case
+  const useCase = await createGetAllUsersUseCase()
+  const result = await useCase.execute({})
+
+  // Serialize users to plain objects (convert ObjectId, Date, etc.)
+  const users = JSON.parse(JSON.stringify(result.users))
 
   return (
     <div className="p-8">

@@ -1,9 +1,10 @@
 import type { OrderService } from "@/core/application/interfaces/order-service";
-import type { Order } from "@/core/domain/order";
+import type { Order, OrderStatus } from "@/core/domain/order";
 
 export interface GetOrdersRequest {
-  status?: string;
-  zaloUserId?: string;
+  status?: OrderStatus;
+  customerId?: string;
+  platformSource?: string;
 }
 
 export interface GetOrdersResponse {
@@ -13,8 +14,12 @@ export interface GetOrdersResponse {
 export class GetOrdersUseCase {
   constructor(private orderService: OrderService) {}
 
-  async execute(request: GetOrdersRequest): Promise<GetOrdersResponse> {
-    const orders = await this.orderService.getAll(request as any);
+  async execute(request: GetOrdersRequest = {}): Promise<GetOrdersResponse> {
+    const orders = await this.orderService.getAll({
+      status: request.status,
+      customerId: request.customerId,
+      platformSource: request.platformSource,
+    });
     return { orders };
   }
 }

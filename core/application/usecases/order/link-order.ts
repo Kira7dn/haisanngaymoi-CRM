@@ -4,14 +4,15 @@ import type { QueueService } from "@/core/application/interfaces/queue-service";
 
 export interface LinkOrderRequest {
   orderId: number;
-  checkoutSdkOrderId: string;
+  platformOrderId: string; // e.g., Zalo Checkout SDK Order ID
+  platformSource?: string; // e.g., "zalo", "zalopay", "momo"
   miniAppId?: string;
 }
 
 export interface LinkOrderResponse {
   message: string;
   orderId: number;
-  checkoutSdkOrderId: string;
+  platformOrderId: string;
 }
 
 export class LinkOrderUseCase {
@@ -21,14 +22,14 @@ export class LinkOrderUseCase {
   ) {}
 
   async execute(request: LinkOrderRequest): Promise<LinkOrderResponse> {
-    const { orderId, checkoutSdkOrderId, miniAppId } = request;
+    const { orderId, platformOrderId, platformSource, miniAppId } = request;
 
     if (typeof orderId !== "number" || Number.isNaN(orderId)) {
       throw new Error("orderId phải là số hợp lệ.");
     }
 
-    if (typeof checkoutSdkOrderId !== "string" || checkoutSdkOrderId.length === 0) {
-      throw new Error("checkoutSdkOrderId phải là chuỗi hợp lệ.");
+    if (typeof platformOrderId !== "string" || platformOrderId.length === 0) {
+      throw new Error("platformOrderId phải là chuỗi hợp lệ.");
     }
 
     const existing = await this.orderService.getById(orderId);
@@ -36,11 +37,16 @@ export class LinkOrderUseCase {
     if (!existing) {
       throw new Error("Không tìm thấy đơn hàng");
     }
-    if (existing.paymentStatus === "success") {
+    if (existing.payment.status === "success") {
       throw new Error("Đơn hàng đã được thanh toán");
     }
 
-    const updated = await this.orderService.update({ id: orderId, checkoutSdkOrderId, updatedAt: new Date() });
+    const updated = await this.orderService.update({
+      id: orderId,
+      platformOrderId,
+      platformSource: platformSource || "zalo",
+      updatedAt: new Date()
+    });
 
     if (!updated) {
       throw new Error("Không thể cập nhật đơn hàng");
@@ -54,7 +60,8 @@ export class LinkOrderUseCase {
         type: "checkPaymentStatus",
         data: {
           orderId,
-          checkoutSdkOrderId,
+          platformOrderId,
+          platformSource: platformSource || "zalo",
           miniAppId: miniAppId ?? process.env.APP_ID
         }
       },
@@ -64,7 +71,7 @@ export class LinkOrderUseCase {
     return {
       message: "Đã liên kết đơn hàng thành công!",
       orderId: updated.id,
-      checkoutSdkOrderId
+      platformOrderId
     };
   }
 }

@@ -1,29 +1,11 @@
 import type { AdminUser } from "@/core/domain/admin-user"
+import { ObjectId } from "mongodb"
 
 // Payload interfaces extending from domain
 export interface AdminUserPayload extends Partial<AdminUser> {}
 
-export interface CreateAdminUserPayload {
-  email: string
-  password: string
-  name: string
-  role: "admin" | "sale" | "warehouse"
-  phone?: string
-  avatar?: string
-  status?: "active" | "inactive"
-}
-
-export interface UpdateAdminUserPayload {
-  id: string
-  name?: string
-  phone?: string
-  avatar?: string
-  status?: "active" | "inactive"
-  role?: "admin" | "sale" | "warehouse"
-}
-
 export interface ChangePasswordPayload {
-  userId: string
+  userId: ObjectId
   oldPassword: string
   newPassword: string
 }
@@ -32,11 +14,11 @@ export interface ChangePasswordPayload {
 export interface AdminUserService {
   // Basic CRUD
   getAll(): Promise<AdminUser[]>
-  getById(id: string): Promise<AdminUser | null>
+  getById(id: ObjectId): Promise<AdminUser | null>
   getByEmail(email: string): Promise<AdminUser | null>
-  create(payload: CreateAdminUserPayload): Promise<AdminUser>
-  update(payload: UpdateAdminUserPayload): Promise<AdminUser | null>
-  delete(id: string): Promise<boolean>
+  create(payload: AdminUserPayload): Promise<AdminUser>
+  update(payload: AdminUserPayload & { id: ObjectId }): Promise<AdminUser | null>
+  delete(id: ObjectId): Promise<boolean>
 
   // Authentication specific
   verifyCredentials(email: string, password: string): Promise<AdminUser | null>
@@ -44,8 +26,8 @@ export interface AdminUserService {
   resetPassword(email: string, newPassword: string): Promise<boolean>
 
   // Status management
-  activate(id: string): Promise<boolean>
-  deactivate(id: string): Promise<boolean>
+  activate(id: ObjectId): Promise<boolean>
+  deactivate(id: ObjectId): Promise<boolean>
 
   // Search/filter
   searchByName(name: string): Promise<AdminUser[]>

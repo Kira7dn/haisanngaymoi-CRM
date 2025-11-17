@@ -3,7 +3,8 @@ import type { QueueService } from '@/core/application/interfaces/queue-service';
 
 export interface CheckPaymentStatusRequest {
   orderId: number;
-  checkoutSdkOrderId: string;
+  platformOrderId: string;
+  platformSource?: string;
   miniAppId?: string;
 }
 
@@ -19,22 +20,22 @@ export class CheckPaymentStatusUseCase {
   ) {}
 
   async execute(request: CheckPaymentStatusRequest): Promise<CheckPaymentStatusResponse> {
-    const { orderId, checkoutSdkOrderId, miniAppId } = request;
+    const { orderId, platformOrderId, platformSource, miniAppId } = request;
 
     try {
       // Check payment status immediately
-      const result = await this.paymentGateway.checkPaymentStatus(checkoutSdkOrderId, miniAppId);
+      const result = await this.paymentGateway.checkPaymentStatus(platformOrderId, miniAppId);
 
       if (result.success) {
         // Process successful payment
-        await this.paymentGateway.processPaymentUpdate(orderId, checkoutSdkOrderId, miniAppId);
+        await this.paymentGateway.processPaymentUpdate(orderId, platformOrderId, miniAppId);
         return {
           success: true,
           message: 'Payment processed successfully'
         };
       } else if (result.status === 'failed') {
         // Process failed payment
-        await this.paymentGateway.processPaymentUpdate(orderId, checkoutSdkOrderId, miniAppId);
+        await this.paymentGateway.processPaymentUpdate(orderId, platformOrderId, miniAppId);
         return {
           success: false,
           message: 'Payment failed'
@@ -46,7 +47,7 @@ export class CheckPaymentStatusUseCase {
           'checkPaymentStatus',
           {
             type: 'checkPaymentStatus',
-            data: { orderId, checkoutSdkOrderId, miniAppId }
+            data: { orderId, platformOrderId, platformSource, miniAppId }
           },
           { delay: 20 * 60 * 1000 } // 20 minutes
         );

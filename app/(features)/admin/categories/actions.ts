@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getCategoriesUseCase, createCategoryUseCase, updateCategoryUseCase, deleteCategoryUseCase } from "../../api/categories/depends"
+import { getCategoriesUseCase, createCategoryUseCase, updateCategoryUseCase, deleteCategoryUseCase } from "@/app/api/categories/depends"
 
 export async function createCategoryAction(formData: FormData) {
   const useCase = await createCategoryUseCase()

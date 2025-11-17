@@ -1,19 +1,23 @@
 // Domain entity for Admin users with role-based access control
 
+import { ObjectId } from "mongodb"
+
 export type AdminRole = "admin" | "sale" | "warehouse"
 export type AdminStatus = "active" | "inactive"
 
-export interface AdminUser {
-  id: string                // MongoDB ObjectId or generated UUID
-  email: string
-  passwordHash: string
-  name: string
-  role: AdminRole
-  status: AdminStatus
-  avatar?: string
-  phone?: string
-  createdAt: Date
-  updatedAt: Date
+export class AdminUser {
+  constructor(
+    public readonly id: ObjectId = new ObjectId(),
+    public email: string,
+    public password: string,
+    public name: string="",
+    public role: AdminRole="sale",
+    public status: AdminStatus="active",
+    public avatar?: string,
+    public phone?: string,
+    public readonly createdAt: Date = new Date(),
+    public updatedAt: Date = new Date()
+  ) {}
 }
 
 // Validation function for admin user creation/update

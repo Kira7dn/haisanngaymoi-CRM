@@ -1,7 +1,18 @@
-import { PostRepository } from "@/infrastructure/repositories/post-repo"
+import type { PostService } from "@/core/application/interfaces/post-service"
 
-const postRepository = new PostRepository()
+export interface DeletePostRequest {
+  id: string
+}
 
-export async function deletePostUseCase(id: string) {
-  return postRepository.delete(id)
+export interface DeletePostResponse {
+  success: boolean
+}
+
+export class DeletePostUseCase {
+  constructor(private postService: PostService) {}
+
+  async execute(request: DeletePostRequest): Promise<DeletePostResponse> {
+    const success = await this.postService.delete(request.id)
+    return { success }
+  }
 }

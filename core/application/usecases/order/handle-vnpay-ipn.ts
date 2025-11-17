@@ -57,9 +57,17 @@ export class HandleVnpayIpnUseCase {
     }
 
     // Update order status
+    const paymentStatus = result.isSuccess ? "success" : "failed";
     const updatePayload = {
-      paymentStatus: (result.isSuccess ? "success" : "failed") as PaymentStatus,
-      checkoutSdkOrderId: params.vnp_TxnRef?.trim(),
+      payment: {
+        method: "vnpay" as const,
+        status: paymentStatus as PaymentStatus,
+        amount: Number(params.vnp_Amount) / 100, // Convert from VNĐ to VND (divide by 100)
+        paidAt: paymentStatus === "success" ? new Date() : undefined,
+      },
+      platformOrderId: params.vnp_TxnRef?.trim(),
+      platformSource: "vnpay",
+      updatedAt: new Date(),
     };
 
     try {

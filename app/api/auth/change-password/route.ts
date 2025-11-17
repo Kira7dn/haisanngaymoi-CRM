@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createChangePasswordUseCase } from "../depends"
 import { cookies } from "next/headers"
+import { ObjectId } from "mongodb"
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const useCase = await createChangePasswordUseCase()
     const result = await useCase.execute({
-      userId,
+      userId: new ObjectId(userId),
       oldPassword: body.oldPassword,
       newPassword: body.newPassword,
     })

@@ -7,7 +7,7 @@ export interface GetAllUsersRequest {
 }
 
 export interface GetAllUsersResponse {
-  users: Omit<AdminUser, "passwordHash">[]
+  users: Omit<AdminUser, "password">[]
 }
 
 export class GetAllUsersUseCase {
@@ -26,7 +26,7 @@ export class GetAllUsersUseCase {
     }
 
     // Remove password hashes from all users
-    const usersWithoutPasswords = users.map(({ passwordHash, ...user }) => user)
+    const usersWithoutPasswords = users.map(({ password, ...user }) => user)
 
     return { users: usersWithoutPasswords }
   }

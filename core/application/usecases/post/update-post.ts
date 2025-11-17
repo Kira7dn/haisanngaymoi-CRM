@@ -1,8 +1,19 @@
 import type { Post } from "@/core/domain/post"
-import { PostRepository } from "@/infrastructure/repositories/post-repo"
+import type { PostService, PostPayload } from "@/core/application/interfaces/post-service"
 
-const postRepository = new PostRepository()
+export interface UpdatePostRequest extends PostPayload {
+  id: string
+}
 
-export async function updatePostUseCase(id: string, data: Partial<Post>) {
-  return postRepository.update({ id, ...data })
+export interface UpdatePostResponse {
+  post: Post | null
+}
+
+export class UpdatePostUseCase {
+  constructor(private postService: PostService) {}
+
+  async execute(request: UpdatePostRequest): Promise<UpdatePostResponse> {
+    const post = await this.postService.update(request)
+    return { post }
+  }
 }

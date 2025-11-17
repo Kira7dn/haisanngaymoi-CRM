@@ -19,7 +19,7 @@ export class CheckOrderStatusUseCase {
     return {
       orderId: order.id,
       status: order.status,
-      paymentStatus: order.paymentStatus,
+      paymentStatus: order.payment.status,
     };
   }
 }

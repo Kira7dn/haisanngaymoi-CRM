@@ -8,7 +8,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   success: boolean
-  user?: Omit<AdminUser, "passwordHash">
+  user?: Omit<AdminUser, "password">
   message?: string
 }
 
@@ -45,8 +45,8 @@ export class LoginUseCase {
       }
     }
 
-    // Remove password hash from response
-    const { passwordHash, ...userWithoutPassword } = user
+    // Remove password from response
+    const { password, ...userWithoutPassword } = user
 
     return {
       success: true,

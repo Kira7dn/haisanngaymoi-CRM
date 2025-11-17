@@ -1,17 +1,21 @@
 import type { OrderService, OrderPayload } from "@/core/application/interfaces/order-service";
-import type { Order } from "@/core/domain/order";
+import type { Order, OrderItem, Delivery, PaymentMethod } from "@/core/domain/order";
+import { validateOrder, calculateOrderTotal } from "@/core/domain/order";
 
 export interface CreateOrderRequest {
-  zaloUserId: string;
-  items: Order['items'];
-  total: number;
-  delivery: {
-    address: string;
-    name: string;
-    phone: string;
+  customerId: string;
+  items: OrderItem[];
+  delivery: Delivery;
+  payment?: {
+    method: PaymentMethod;
+    amount?: number;
   };
+  platformOrderId?: string;
+  platformSource?: string;
+  shippingFee?: number;
+  discount?: number;
   note?: string;
-  checkoutSdkOrderId?: string;
+  tags?: string[];
 }
 
 export interface CreateOrderResponse {
@@ -25,52 +29,57 @@ export class CreateOrderUseCase {
     console.log('[CreateOrderUseCase] Starting order creation with data:', request);
 
     // Validate required fields
-    if (!request.zaloUserId || !request.items || request.items.length === 0) {
+    if (!request.customerId || !request.items || request.items.length === 0) {
       console.error('[CreateOrderUseCase] Validation failed: missing required fields');
-      throw new Error('Missing required fields: zaloUserId and items');
+      throw new Error('Missing required fields: customerId and items');
+    }
+
+    if (!request.delivery || !request.delivery.name || !request.delivery.phone || !request.delivery.address) {
+      throw new Error('Missing required delivery information');
     }
 
     console.log('[CreateOrderUseCase] Creating order with validated data');
 
-    // Create order object
-    const order: Order = {
-      id: 0, // Will be set by repository
-      zaloUserId: request.zaloUserId,
+    // Calculate pricing
+    const subtotal = request.items.reduce((sum, item) => sum + item.totalPrice, 0);
+    const shippingFee = request.shippingFee || 0;
+    const discount = request.discount || 0;
+    const total = calculateOrderTotal(request.items, shippingFee, discount);
+
+    // Create order payload
+    const orderPayload: OrderPayload = {
+      customerId: request.customerId,
       status: 'pending',
-      paymentStatus: 'pending',
       items: request.items,
-      total: request.total,
+      delivery: request.delivery,
+      subtotal,
+      shippingFee,
+      discount,
+      total,
+      payment: {
+        method: request.payment?.method || 'cod',
+        status: 'pending',
+        amount: request.payment?.amount || total,
+      },
+      tags: request.tags || [],
+      platformOrderId: request.platformOrderId,
+      platformSource: request.platformSource,
+      note: request.note,
       createdAt: new Date(),
       updatedAt: new Date(),
-      checkoutSdkOrderId: request.checkoutSdkOrderId,
-      delivery: {
-        address: request.delivery.address,
-        name: request.delivery.name,
-        phone: request.delivery.phone,
-        // location will be set later by another service
-      },
-      note: request.note || '',
     };
 
-    console.log('[CreateOrderUseCase] Created order object:', order);
+    // Validate order data
+    const validationErrors = validateOrder(orderPayload as Partial<Order>);
+    if (validationErrors.length > 0) {
+      throw new Error(`Order validation failed: ${validationErrors.join(', ')}`);
+    }
+
+    console.log('[CreateOrderUseCase] Created order payload:', orderPayload);
 
     try {
-      // Map Order to CreateOrderPayload for the service (don't set id, let repository generate it)
-      const createPayload: OrderPayload = {
-        zaloUserId: order.zaloUserId,
-        checkoutSdkOrderId: order.checkoutSdkOrderId,
-        status: order.status,
-        paymentStatus: order.paymentStatus,
-        createdAt: order.createdAt,
-        updatedAt: order.updatedAt,
-        items: order.items,
-        delivery: order.delivery,
-        total: order.total,
-        note: order.note,
-      };
-
       // Save to database
-      const createdOrder = await this.orderService.create(createPayload);
+      const createdOrder = await this.orderService.create(orderPayload);
       console.log('[CreateOrderUseCase] Order saved to database:', createdOrder);
 
       return { order: createdOrder };
@@ -79,7 +88,6 @@ export class CreateOrderUseCase {
         error: error.message,
         stack: error.stack,
         request,
-        order,
       });
       throw error;
     }

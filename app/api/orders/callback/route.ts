@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (result.returnCode === 1 && result.order) {
       console.info("[paymentCallback] Đã cập nhật trạng thái đơn hàng", {
         orderId: result.order.id,
-        paymentStatus: result.order.paymentStatus,
+        paymentStatus: result.order.payment.status,
       });
     } else if (result.returnCode === 0) {
       // Log failures for debugging - matches Express controller behavior

@@ -23,6 +23,9 @@ const nextConfig: NextConfig = {
       },
       { protocol: "http",
         hostname: "*"
+      },
+      { protocol: "https",
+        hostname: "zalo-miniapp.github.io"
       }
     ],
   },

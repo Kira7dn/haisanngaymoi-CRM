@@ -1,5 +1,5 @@
 import { createHmac } from "crypto";
-import type { Order } from "@/core/domain/order";
+import type { Order, PaymentMethod } from "@/core/domain/order";
 import type { OrderService } from "@/core/application/interfaces/order-service";
 import { notifyOrderWebhook } from "@/lib/webhook";
 
@@ -63,14 +63,36 @@ export class PaymentCallbackUseCase {
 
       // Update payment status
       const paymentStatus = resultCode === 1 ? "success" : "failed";
-      const updatedOrder = await this.orderService.update({ id: orderId, paymentStatus, updatedAt: new Date() });
+      
+      // Get payment method from data or use a default value
+      const paymentMethod = (typeof data['paymentMethod'] === 'string' 
+        ? data['paymentMethod'] 
+        : 'bank_transfer') as PaymentMethod;
+      
+      // Get amount from data or use 0 as fallback
+      const amount = typeof data['amount'] === 'number' 
+        ? data['amount'] 
+        : typeof data['amount'] === 'string' 
+          ? parseFloat(data['amount']) || 0 
+          : 0;
+
+      const updatedOrder = await this.orderService.update({
+        id: orderId,
+        payment: {
+          method: paymentMethod,
+          status: paymentStatus,
+          amount: amount,
+          paidAt: paymentStatus === "success" ? new Date() : undefined,
+        },
+        updatedAt: new Date()
+      });
 
       if (!updatedOrder) {
         return { returnCode: 0, returnMessage: "Order not found" };
       }
 
       // Send webhook notification for successful payments
-      if (updatedOrder.paymentStatus === "success") {
+      if (updatedOrder.payment.status === "success") {
         void notifyOrderWebhook(updatedOrder);
       }
 

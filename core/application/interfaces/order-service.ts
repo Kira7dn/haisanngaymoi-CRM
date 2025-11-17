@@ -1,8 +1,9 @@
-import type { Order, OrderItem, Delivery, OrderStatus, PaymentStatus } from "@/core/domain/order";
+import type { Order, OrderItem, Delivery, OrderStatus, PaymentStatus, PaymentInfo } from "@/core/domain/order";
 
 export interface GetOrdersParams {
   status?: OrderStatus;
-  zaloUserId?: string;
+  customerId?: string;
+  platformSource?: string;
 }
 
 export interface OrderPayload extends Partial<Order> {}
@@ -13,4 +14,7 @@ export interface OrderService {
   create(payload: OrderPayload): Promise<Order>;
   update(payload: OrderPayload & { id: number }): Promise<Order | null>;
   delete(id: number): Promise<boolean>;
+
+  // Platform-specific queries
+  getByPlatformOrderId(platformOrderId: string, platformSource: string): Promise<Order | null>;
 }

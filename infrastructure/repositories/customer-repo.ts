@@ -1,126 +1,87 @@
+import { BaseRepository } from "@/infrastructure/db/base-repository"
 import type { Customer } from "@/core/domain/customer"
 import type {
   CustomerService,
   CustomerPayload
 } from "@/core/application/interfaces/customer-service"
-import clientPromise from "@/infrastructure/db/mongo"
 
-/**
- * MongoDB document - uses Customer type with external ID as _id
- */
-type CustomerDocument = Omit<Customer, 'id'> & { _id: string };
 
-/**
- * Converts MongoDB document to domain Customer entity
- */
-function toCustomer(doc: CustomerDocument): Customer {
-  const { _id, ...customerData } = doc
-  return {
-    ...customerData,
-    id: _id, // External ID is stored in _id
-  }
-}
+export class CustomerRepository extends BaseRepository<Customer, string> implements CustomerService {
+  protected collectionName = "customers"
 
-export const customerRepository: CustomerService = {
   async getAll(): Promise<Customer[]> {
-    const client = await clientPromise
-    const db = client.db(process.env.MONGODB_DB)
-    const docs = await db.collection<CustomerDocument>("customers")
-      .find({})
+    const collection = await this.getCollection()
+    const docs = await collection.find({})
       .sort({ createdAt: -1 })
       .toArray()
-    return docs.map(toCustomer)
-  },
+    return docs.map(doc => this.toDomain(doc))
+  }
 
   async getById(id: string): Promise<Customer | null> {
-    const client = await clientPromise
-    const db = client.db(process.env.MONGODB_DB)
-
-    const doc = await db.collection<CustomerDocument>("customers")
-      .findOne({ _id: id }) // Find by external ID as _id
-
-    return doc ? toCustomer(doc) : null
-  },
+    const collection = await this.getCollection()
+    const doc = await collection.findOne({ _id: id } as any)
+    return doc ? this.toDomain(doc) : null
+  }
 
   async create(payload: CustomerPayload): Promise<Customer> {
-    const client = await clientPromise
-    const db = client.db(process.env.MONGODB_DB)
-    const now = new Date()
-
-    // For CRM, id should be provided (external platform ID)
     if (!payload.id) {
       throw new Error("Customer ID is required for creation")
     }
 
-    const doc: CustomerDocument = {
-      _id: payload.id, // Use external ID as MongoDB _id
-      name: payload.name,
-      email: payload.email,
-      phone: payload.phone,
-      address: payload.address,
-      avatar: payload.avatar || "",
-      foundation: payload.foundation || "", // Provide default empty string
+    const now = new Date()
+
+    const doc = this.toDocument({
+      ...payload,
       createdAt: now,
       updatedAt: now,
-    }
-
-    await db.collection<CustomerDocument>("customers").insertOne(doc)
-
-    return toCustomer(doc)
-  },
+    })
+    const collection = await this.getCollection()
+    await collection.insertOne(doc)
+    return this.toDomain(doc) 
+  }
 
   async update(payload: CustomerPayload): Promise<Customer | null> {
-    const client = await clientPromise
-    const db = client.db(process.env.MONGODB_DB)
-
-    // For updates, id must be provided to know which customer to update
     if (!payload.id) {
-      throw new Error("Customer ID is required for updates")
+      throw new Error("Customer ID is required for update")
     }
 
     const now = new Date()
-    const { id, ...updateFields } = payload // id is external ID
+    const { id, ...updateData } = payload
 
-    const update: Partial<Omit<CustomerDocument, '_id'>> = {
-      ...updateFields,
-      updatedAt: now,
+    const updateObj: Partial<CustomerPayload> = {
+      ...updateData,
+      updatedAt: now
     }
 
-    const doc = await db.collection<CustomerDocument>("customers").findOneAndUpdate(
-      { _id: payload.id }, // Find by external ID as _id
-      { $set: update },
-      { returnDocument: "after" }
+    const collection = await this.getCollection()
+    const result = await collection.findOneAndUpdate(
+      { _id: id } as any,
+      { $set: updateObj },
+      { returnDocument: 'after' }
     )
 
-    return doc ? toCustomer(doc) : null
-  },
+    return result && result.value ? this.toDomain(result.value) : null
+  }
 
   async delete(id: string): Promise<boolean> {
-    const client = await clientPromise
-    const db = client.db(process.env.MONGODB_DB)
-
-    const result = await db.collection<CustomerDocument>("customers")
-      .deleteOne({ _id: id }) // Delete by external ID as _id
-
+    const collection = await this.getCollection()
+    const result = await collection.deleteOne({ _id: id } as any)
     return result.deletedCount > 0
-  },
+  }
 
   async searchByName(name: string): Promise<Customer[]> {
-    const client = await clientPromise
-    const db = client.db(process.env.MONGODB_DB)
-
-    const docs = await db.collection<CustomerDocument>("customers")
-      .find({
-        name: {
-          $exists: true,
-          $regex: name,
-          $options: 'i'
-        }
-      })
-      .sort({ createdAt: -1 })
-      .toArray()
-
-    return docs.map(toCustomer)
-  },
+    const collection = await this.getCollection()
+    const docs = await collection.find({
+      $or: [
+        { name: { $regex: name, $options: 'i' } },
+        { email: { $regex: name, $options: 'i' } },
+        { phone: { $regex: name, $options: 'i' } }
+      ]
+    })
+    .sort({ createdAt: -1 })
+    .toArray()
+      
+    return docs.map(doc => this.toDomain(doc))
+  }
 
 }

@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb"
 import type { AdminUser } from "@/core/domain/admin-user"
 import type { AdminUserService } from "@/core/application/interfaces/admin-user-service"
 
@@ -6,7 +7,7 @@ export interface GetCurrentUserRequest {
 }
 
 export interface GetCurrentUserResponse {
-  user: Omit<AdminUser, "passwordHash"> | null
+  user: Omit<AdminUser, "password"> | null
 }
 
 export class GetCurrentUserUseCase {
@@ -17,14 +18,21 @@ export class GetCurrentUserUseCase {
       return { user: null }
     }
 
-    const user = await this.adminUserService.getById(request.userId)
+    let userId: ObjectId
+    try {
+      userId = new ObjectId(request.userId)
+    } catch (error) {
+      return { user: null }
+    }
+
+    const user = await this.adminUserService.getById(userId)
 
     if (!user) {
       return { user: null }
     }
 
     // Remove password hash from response
-    const { passwordHash, ...userWithoutPassword } = user
+    const { password, ...userWithoutPassword } = user
 
     return { user: userWithoutPassword }
   }

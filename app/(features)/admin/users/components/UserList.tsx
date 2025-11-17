@@ -3,6 +3,8 @@
 import { useState } from "react"
 import type { AdminUser } from "@/core/domain/admin-user"
 import { deleteUserAction } from "../actions"
+import { ObjectId } from "mongodb"
+import { Button } from "@shared/ui/button"
 
 interface UserListProps {
   initialUsers: Omit<AdminUser, "passwordHash">[]
@@ -16,14 +18,14 @@ export function UserList({ initialUsers }: UserListProps) {
     ? users
     : users.filter((user) => user.role === filter)
 
-  const handleDelete = async (userId: string) => {
+  const handleDelete = async (userId: ObjectId) => {
     if (!confirm("Are you sure you want to delete this user?")) {
       return
     }
 
     try {
-      await deleteUserAction(userId)
-      setUsers(users.filter((u) => u.id !== userId))
+      await deleteUserAction(userId.toString())
+      setUsers(users.filter((u) => !u.id.equals(userId)))
     } catch (error) {
       alert(error instanceof Error ? error.message : "Failed to delete user")
     }
@@ -54,41 +56,37 @@ export function UserList({ initialUsers }: UserListProps) {
       <div className="mb-6 flex gap-2">
         <button
           onClick={() => setFilter("all")}
-          className={`px-4 py-2 rounded-lg font-medium transition ${
-            filter === "all"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-          }`}
+          className={`px-4 py-2 rounded-lg font-medium transition ${filter === "all"
+            ? "bg-blue-600 text-white"
+            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
         >
           All ({users.length})
         </button>
         <button
           onClick={() => setFilter("admin")}
-          className={`px-4 py-2 rounded-lg font-medium transition ${
-            filter === "admin"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-          }`}
+          className={`px-4 py-2 rounded-lg font-medium transition ${filter === "admin"
+            ? "bg-blue-600 text-white"
+            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
         >
           Admin ({users.filter((u) => u.role === "admin").length})
         </button>
         <button
           onClick={() => setFilter("sale")}
-          className={`px-4 py-2 rounded-lg font-medium transition ${
-            filter === "sale"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-          }`}
+          className={`px-4 py-2 rounded-lg font-medium transition ${filter === "sale"
+            ? "bg-blue-600 text-white"
+            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
         >
           Sale ({users.filter((u) => u.role === "sale").length})
         </button>
         <button
           onClick={() => setFilter("warehouse")}
-          className={`px-4 py-2 rounded-lg font-medium transition ${
-            filter === "warehouse"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-          }`}
+          className={`px-4 py-2 rounded-lg font-medium transition ${filter === "warehouse"
+            ? "bg-blue-600 text-white"
+            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
         >
           Warehouse ({users.filter((u) => u.role === "warehouse").length})
         </button>
@@ -121,10 +119,10 @@ export function UserList({ initialUsers }: UserListProps) {
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
+              <tr key={user.id.toString()} className="hover:bg-gray-50 dark:hover:bg-gray-750">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10">
+                    <div className="shrink-0 h-10 w-10">
                       <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
                         {user.name.charAt(0).toUpperCase()}
                       </div>
@@ -164,12 +162,14 @@ export function UserList({ initialUsers }: UserListProps) {
                   {new Date(user.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleDelete(user.id)}
-                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 ml-4"
+                    className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     Delete
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

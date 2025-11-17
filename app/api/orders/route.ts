@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrdersUseCase, createOrderUseCase } from "./depends";
+import type { OrderStatus } from "@/core/domain/order";
 
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
-    const status = url.searchParams.get("status") || undefined;
-    const zaloUserId = url.searchParams.get("zaloUserId") || undefined;
+    const status = url.searchParams.get("status") as OrderStatus | undefined;
+    const customerId = url.searchParams.get("customerId") || undefined;
+    const platformSource = url.searchParams.get("platformSource") || undefined;
     const useCase = await getOrdersUseCase();
-    const result = await useCase.execute({ status, zaloUserId });
+    const result = await useCase.execute({ status, customerId, platformSource });
     return NextResponse.json(result.orders);
   } catch (error) {
     return NextResponse.json({ message: "Error fetching orders" }, { status: 500 });

@@ -1,9 +1,15 @@
 import type { Post } from "@/core/domain/post"
 import type { PostService } from "@/core/application/interfaces/post-service"
-import { PostRepository } from "@/infrastructure/repositories/post-repo"
 
-const postRepository = new PostRepository()
+export interface GetPostsResponse {
+  posts: Post[]
+}
 
-export async function getPostsUseCase(repo: PostService = postRepository): Promise<Post[]> {
-  return repo.getAll()
+export class GetPostsUseCase {
+  constructor(private postService: PostService) {}
+
+  async execute(): Promise<GetPostsResponse> {
+    const posts = await this.postService.getAll()
+    return { posts }
+  }
 }

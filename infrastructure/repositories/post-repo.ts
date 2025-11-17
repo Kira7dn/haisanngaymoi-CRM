@@ -1,5 +1,5 @@
 import { BaseRepository } from "@/infrastructure/db/base-repository";
-import { Post } from "@/core/domain/post";
+import { Post, PostMetrics, PlatformMetadata, PostMedia } from "@/core/domain/post";
 import type { PostService, PostPayload } from "@/core/application/interfaces/post-service";
 import { ObjectId } from "mongodb";
 
@@ -23,6 +23,21 @@ export class PostRepository extends BaseRepository<Post, string> implements Post
     const doc: any = {
       title: payload.title || "",
       body: payload.body,
+      contentType: payload.contentType || "post",
+      platforms: payload.platforms || [],
+      media: payload.media || [],
+      scheduledAt: payload.scheduledAt,
+      hashtags: payload.hashtags || [],
+      mentions: payload.mentions || [],
+      campaignId: payload.campaignId,
+      metrics: payload.metrics || {
+        views: 0,
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        reach: 0,
+        engagement: 0
+      },
       createdAt: now,
       updatedAt: now
     };
@@ -67,6 +82,21 @@ export class PostRepository extends BaseRepository<Post, string> implements Post
       _id.toString(),
       postData.title,
       postData.body,
+      postData.contentType || "post",
+      postData.platforms || [],
+      postData.media || [],
+      postData.scheduledAt,
+      postData.hashtags || [],
+      postData.mentions || [],
+      postData.campaignId,
+      postData.metrics || {
+        views: 0,
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        reach: 0,
+        engagement: 0
+      },
       postData.createdAt,
       postData.updatedAt
     );

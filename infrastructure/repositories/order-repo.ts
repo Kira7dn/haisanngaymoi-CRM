@@ -10,7 +10,8 @@ export class OrderRepository extends BaseRepository<Order, number> implements Or
     const collection = await this.getCollection();
     const query: Record<string, unknown> = {};
     if (params.status) query.status = params.status;
-    if (params.zaloUserId) query.zaloUserId = params.zaloUserId;
+    if (params.customerId) query.customerId = params.customerId;
+    if (params.platformSource) query.platformSource = params.platformSource;
     const docs = await collection.find(query).sort({ _id: -1 }).toArray();
     return docs.map(doc => this.toDomain(doc));
   }
@@ -28,21 +29,10 @@ export class OrderRepository extends BaseRepository<Order, number> implements Or
 
     const client = await this.getClient();
     const id = payload.id ?? (await getNextId(client, this.collectionName));
-    const now = new Date();
 
     const doc = this.toDocument({
       ...payload,
-      id,
-      zaloUserId: payload.zaloUserId || "",
-      checkoutSdkOrderId: payload.checkoutSdkOrderId,
-      status: payload.status ?? "pending",
-      paymentStatus: payload.paymentStatus ?? "pending",
-      createdAt: now,
-      updatedAt: payload.updatedAt ?? now,
-      items: payload.items || [],
-      delivery: payload.delivery,
-      total: payload.total ?? 0,
-      note: payload.note
+      id
     });
 
     const collection = await this.getCollection();
@@ -53,12 +43,11 @@ export class OrderRepository extends BaseRepository<Order, number> implements Or
   async update(payload: OrderPayload): Promise<Order | null> {
     if (!payload.id) throw new Error("Order ID is required for update");
 
-    const now = new Date();
     const { id, ...updateFields } = payload;
 
     const updateObj: any = {
       ...updateFields,
-      updatedAt: now
+      updatedAt: new Date()
     };
 
     const collection = await this.getCollection();
@@ -77,20 +66,13 @@ export class OrderRepository extends BaseRepository<Order, number> implements Or
     return result.deletedCount > 0;
   }
 
-  protected toDomain(doc: any): Order {
-    const { _id, ...orderData } = doc;
-    return new Order(
-      _id,
-      orderData.zaloUserId,
-      orderData.checkoutSdkOrderId,
-      orderData.status,
-      orderData.paymentStatus,
-      orderData.createdAt,
-      orderData.updatedAt,
-      orderData.items,
-      orderData.delivery,
-      orderData.total,
-      orderData.note
-    );
+  async getByPlatformOrderId(platformOrderId: string, platformSource: string): Promise<Order | null> {
+    const collection = await this.getCollection();
+    const doc = await collection.findOne({
+      platformOrderId,
+      platformSource
+    });
+    return doc ? this.toDomain(doc) : null;
   }
+
 }

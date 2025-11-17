@@ -5,7 +5,7 @@ export const notifyOrderWebhook = async (order: Order): Promise<void> => {
   // we just log successful payments for monitoring
   console.log("[notifyOrderWebhook] Payment processed successfully", {
     orderId: order.id,
-    paymentStatus: order.paymentStatus,
+    paymentStatus: order.payment.status,
     timestamp: new Date().toISOString()
   });
 

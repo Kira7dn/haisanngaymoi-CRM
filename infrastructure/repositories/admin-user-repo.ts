@@ -1,8 +1,7 @@
 import type { AdminUser } from "@/core/domain/admin-user"
 import type {
   AdminUserService,
-  CreateAdminUserPayload,
-  UpdateAdminUserPayload,
+  AdminUserPayload,
   ChangePasswordPayload,
 } from "@/core/application/interfaces/admin-user-service"
 import bcrypt from "bcryptjs"
@@ -10,7 +9,7 @@ import { ObjectId } from "mongodb"
 import { BaseRepository } from "../db/base-repository"
 
 export class AdminUserRepository
-  extends BaseRepository<AdminUser, string>
+  extends BaseRepository<AdminUser, ObjectId>
   implements AdminUserService
 {
   protected collectionName = "admin_users"
@@ -24,10 +23,10 @@ export class AdminUserRepository
   }
 
   // Get user by ID
-  async getById(id: string): Promise<AdminUser | null> {
+  async getById(id: ObjectId): Promise<AdminUser | null> {
     const collection = await this.getCollection()
 
-    const doc = await collection.findOne({ _id: new ObjectId(id) })
+    const doc = await collection.findOne({ _id: id })
     return doc ? this.toDomain(doc) : null
   }
 
@@ -40,45 +39,34 @@ export class AdminUserRepository
   }
 
   // Create new admin user
-  async create(payload: CreateAdminUserPayload): Promise<AdminUser> {
+  async create(payload: AdminUserPayload): Promise<AdminUser> {
+    if (!payload.password || !payload.email) throw new Error("Password and email are required for admin user creation");
+    
     const collection = await this.getCollection()
-
     // Hash password
-    const passwordHash = await bcrypt.hash(payload.password, 10)
-
-    const doc = {
-      _id: new ObjectId(),
-      email: payload.email.toLowerCase(),
-      passwordHash,
-      name: payload.name,
-      role: payload.role,
-      status: payload.status || "active",
-      phone: payload.phone,
-      avatar: payload.avatar,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-
+    const password = await bcrypt.hash(payload.password, 10)
+    const doc = this.toDocument({
+      ...payload,
+      password,
+    })
     await collection.insertOne(doc)
     return this.toDomain(doc)
   }
 
   // Update user
-  async update(payload: UpdateAdminUserPayload): Promise<AdminUser | null> {
+  async update(payload: AdminUserPayload & { id: ObjectId }): Promise<AdminUser | null> {
+    if (!payload.id) throw new Error("Admin user ID is required for update");
+    
     const collection = await this.getCollection()
-
+    const now = new Date();
+    const { id, ...updateFields } = payload;
     const updateData: Partial<AdminUser> = {
-      updatedAt: new Date(),
+      ...updateFields,
+      updatedAt: now,
     }
 
-    if (payload.name) updateData.name = payload.name
-    if (payload.phone !== undefined) updateData.phone = payload.phone
-    if (payload.avatar !== undefined) updateData.avatar = payload.avatar
-    if (payload.status) updateData.status = payload.status
-    if (payload.role) updateData.role = payload.role
-
     const result = await collection.findOneAndUpdate(
-      { _id: new ObjectId(payload.id) },
+      { _id: id },
       { $set: updateData },
       { returnDocument: "after" }
     )
@@ -87,10 +75,10 @@ export class AdminUserRepository
   }
 
   // Delete user
-  async delete(id: string): Promise<boolean> {
+  async delete(id: ObjectId): Promise<boolean> {
     const collection = await this.getCollection()
 
-    const result = await collection.deleteOne({ _id: new ObjectId(id) })
+    const result = await collection.deleteOne({ _id: id })
     return result.deletedCount ? result.deletedCount > 0 : false
   }
 
@@ -99,13 +87,25 @@ export class AdminUserRepository
     email: string,
     password: string
   ): Promise<AdminUser | null> {
+    // Validate inputs
+    if (!email || !password) {
+      console.error("verifyCredentials: email or password is missing", { email, password: !!password })
+      return null
+    }
+
     const user = await this.getByEmail(email)
 
     if (!user) {
       return null
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash)
+    // Ensure user has a password hash
+    if (!user.password) {
+      console.error("verifyCredentials: user has no password hash", { userId: user.id, email: user.email })
+      return null
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password)
 
     if (!isPasswordValid) {
       return null
@@ -126,7 +126,7 @@ export class AdminUserRepository
 
     const isOldPasswordValid = await bcrypt.compare(
       payload.oldPassword,
-      user.passwordHash
+      user.password
     )
 
     if (!isOldPasswordValid) {
@@ -138,10 +138,10 @@ export class AdminUserRepository
 
     // Update password
     const result = await collection.updateOne(
-      { _id: new ObjectId(payload.userId) },
+      { _id: payload.userId },
       {
         $set: {
-          passwordHash: newPasswordHash,
+          password: newPasswordHash,
           updatedAt: new Date(),
         },
       }
@@ -167,7 +167,7 @@ export class AdminUserRepository
       { email: email.toLowerCase() },
       {
         $set: {
-          passwordHash: newPasswordHash,
+          password: newPasswordHash,
           updatedAt: new Date(),
         },
       }
@@ -177,11 +177,11 @@ export class AdminUserRepository
   }
 
   // Activate user
-  async activate(id: string): Promise<boolean> {
+  async activate(id: ObjectId): Promise<boolean> {
     const collection = await this.getCollection()
 
     const result = await collection.updateOne(
-      { _id: new ObjectId(id) },
+      { _id: id },
       {
         $set: {
           status: "active",
@@ -194,11 +194,11 @@ export class AdminUserRepository
   }
 
   // Deactivate user
-  async deactivate(id: string): Promise<boolean> {
+  async deactivate(id: ObjectId): Promise<boolean> {
     const collection = await this.getCollection()
 
     const result = await collection.updateOne(
-      { _id: new ObjectId(id) },
+      { _id: id },
       {
         $set: {
           status: "inactive",
@@ -248,15 +248,5 @@ export class AdminUserRepository
       .toArray()
 
     return docs.map((doc) => this.toDomain(doc))
-  }
-
-  // Convert domain entity to MongoDB document
-  protected toDocument(entity: AdminUser): any {
-    const doc = super.toDocument(entity);
-    // Ensure _id is ObjectId if it exists
-    if (entity.id) {
-      doc._id = new ObjectId(entity.id);
-    }
-    return doc;
   }
 }
