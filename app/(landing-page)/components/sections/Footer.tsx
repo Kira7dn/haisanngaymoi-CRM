@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Container } from "../ui/Container";
 import brandConfig from "@/config/brand.json";
-import { Facebook, Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react";
+import { Instagram, Mail, Phone, MapPin } from "lucide-react";
 
 const footerLinks = {
   company: brandConfig.footer.columns.company.links,
@@ -12,9 +12,9 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { icon: Facebook, href: brandConfig.contact.socialMedia.facebook, label: "Facebook" },
-  { icon: Instagram, href: brandConfig.contact.socialMedia.instagram, label: "Instagram" },
-  { icon: Youtube, href: brandConfig.contact.socialMedia.youtube, label: "YouTube" },
+  { icon: "/icons/Facebook.svg", href: brandConfig.contact.socialMedia.facebook, label: "Facebook", hoverShadow: "hover:drop-shadow-[0_8px_16px_rgba(24,119,242,0.4)]" },
+  { icon: "/icons/Zalo.svg", href: brandConfig.contact.socialMedia.zalo, label: "Zalo", hoverShadow: "hover:drop-shadow-[0_8px_16px_rgba(0,104,255,0.4)]" },
+  { icon: "/icons/YouTube.png", href: brandConfig.contact.socialMedia.youtube, label: "YouTube", hoverShadow: "hover:drop-shadow-[0_8px_16px_rgba(255,0,0,0.4)]" },
 ];
 
 export function Footer() {
@@ -78,17 +78,22 @@ export function Footer() {
               </p>
               <div className="flex gap-3">
                 {socialLinks.map((social) => {
-                  const Icon = social.icon;
                   return (
                     <a
                       key={social.label}
                       href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-brand-crystal hover:text-white hover:scale-110 transition-all"
+                      className={`w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:text-brand-golden hover:scale-105 transition-all duration-300 ${social.hoverShadow}`}
                       aria-label={social.label}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Image
+                        src={social.icon}
+                        alt={social.label}
+                        width={20}
+                        height={20}
+                        className="w-5 h-5"
+                      />
                     </a>
                   );
                 })}

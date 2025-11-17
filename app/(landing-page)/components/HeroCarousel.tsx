@@ -60,6 +60,7 @@ export default function HeroCarousel() {
                   src={image.src}
                   alt={image.alt}
                   fill
+                  sizes="100vw"
                   className="rounded-2xl object-cover"
                   priority={index === 0}
                 />

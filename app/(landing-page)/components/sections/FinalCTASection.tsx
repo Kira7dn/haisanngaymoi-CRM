@@ -38,13 +38,13 @@ export function FinalCTASection() {
             >
               {brandConfig.finalCTA.buttons.primary.text}
             </Button>
-            <Button
+            {/* <Button
               size="lg"
               variant="outline"
               className="border-2 border-white text-primary hover:bg-white/20 backdrop-blur-sm font-semibold px-8 py-6 text-lg"
             >
               {brandConfig.finalCTA.buttons.secondary.text}
-            </Button>
+            </Button> */}
           </div>
 
           {/* Contact Info */}
