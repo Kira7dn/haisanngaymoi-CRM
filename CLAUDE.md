@@ -4,7 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js 16 frontend application built using **Clean/Onion Architecture** principles. The project demonstrates a full-stack approach with Server Components, Client Components, MongoDB integration, Zustand state management, and Server Actions.
+This is a **production-ready CRM and E-commerce platform** for Hải Sản Ngày Mới (Fresh Seafood from Cô Tô Island) built with **Next.js 16** using **Clean/Onion Architecture** principles.
+
+The system includes:
+- **Admin CRM**: Complete order, customer, product, and campaign management
+- **Multi-platform Integration**: Zalo, Facebook, TikTok, YouTube social media publishing
+- **Payment Gateways**: VNPay & ZaloPay with webhook/IPN support
+- **Queue System**: BullMQ + Redis for background job processing
+- **Cloud Storage**: AWS S3 for image uploads
+- **Role-based Access**: Admin, Sales, and Warehouse user roles
+- **Real-time Analytics**: Dashboard with business metrics and visualizations
 
 ## Architecture
 
@@ -79,9 +88,39 @@ npm run test:cov      # Run tests with coverage report
 
 Required in `.env.local`:
 
-```
+```env
+# Database
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/?appName=ClusterName
-MONGODB_DB=database_name
+MONGODB_DB=crm_db
+
+# AWS S3 (Image Storage)
+AWS_REGION=ap-southeast-1
+AWS_S3_BUCKET=haisanngaymoi
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+
+# Payment Gateways
+VNP_HASH_SECRET=your_vnpay_secret
+CHECKOUT_SDK_PRIVATE_KEY=your_zalopay_key
+
+# Zalo Integration
+ZALO_APP_SECRET=your_app_secret
+ZALO_APP_ID=your_app_id
+ZALO_OA_ID=your_oa_id
+
+# Queue System
+REDIS_URL=redis://default:password@host:port
+ENABLE_ORDER_WORKER=true
+
+# Social Media APIs (Optional)
+FACEBOOK_APP_ID=your_facebook_app_id
+FACEBOOK_APP_SECRET=your_facebook_secret
+TIKTOK_CLIENT_KEY=your_tiktok_key
+YOUTUBE_API_KEY=your_youtube_key
+
+# Webhook
+NGROK_TUNNEL=https://your-ngrok-url.ngrok.io
+N8N_WEBHOOK_URL=https://n8n.example.com/webhook/haisan-webhook
 ```
 
 ## Working with Features
@@ -239,14 +278,38 @@ export class CreateCustomerUseCase {
 
 ## Technology Stack
 
-- **Framework**: Next.js 16 (App Router)
+### Core Framework
+- **Framework**: Next.js 16.0.1 (App Router)
 - **Runtime**: React 19.2.0
-- **Database**: MongoDB (via official `mongodb` driver)
-- **State Management**: Zustand
+- **TypeScript**: 5.0 (strict mode)
+
+### Backend & Data
+- **Database**: MongoDB 6.20.0 (official driver)
+- **Queue System**: BullMQ 5.63.0 + Redis 5.9.0
+- **Storage**: AWS S3 (@aws-sdk/client-s3 ^3.932.0)
+- **Authentication**: bcryptjs 3.0.3 (cookie-based sessions)
+
+### UI & Styling
+- **UI Components**: Radix UI primitives (@radix-ui/react-*)
 - **Styling**: Tailwind CSS v4 (PostCSS)
-- **Testing**: Vitest + @testing-library/react + happy-dom
-- **Type Safety**: TypeScript (strict mode)
-- **UI Components**: Radix UI primitives (via shadcn/ui pattern)
+- **Icons**: Lucide React 0.552.0
+- **Carousel**: embla-carousel-react 8.6.0
+- **Utilities**: class-variance-authority, clsx, tailwind-merge
+
+### State Management
+- **Client State**: Zustand 5.0.8
+- **Server State**: Server Components + Server Actions
+
+### Testing
+- **Test Runner**: Vitest 4.0.7
+- **UI Testing**: @testing-library/react 16.3.0
+- **Environment**: happy-dom 20.0.10
+- **Integration**: mongodb-memory-server 10.3.0
+
+### Payment & Integration
+- **Payment Gateways**: VNPay, ZaloPay (custom implementations)
+- **Social Media**: Facebook Graph API, TikTok API, Zalo OA API, YouTube Data API
+- **Webhooks**: n8n integration
 
 ## Important Notes
 
@@ -258,17 +321,77 @@ export class CreateCustomerUseCase {
 - **BaseRepository methods**: `getClient()`, `getCollection()`, `convertId()`, `toDomain()`, `toDocument()`
 - **Vitest config**: Uses path alias, happy-dom environment, and global test utilities
 
-## Module Organization
+## Implemented Modules
 
-### Order & Payment Module
+### ✅ Complete Modules
 
-All order-related functionality (including checkout/payment operations) is consolidated in the **orders** module:
+All modules below are **fully implemented** with domain entities, use cases, repositories, API routes, and UI:
 
-**Use Cases** (`core/application/usecases/order/`):
-- CRUD Operations: `get-orders.ts`, `create-order.ts`, `get-order-by-id.ts`, `update-order.ts`, `delete-order.ts`
-- Payment Operations: `link-order.ts`, `payment-callback.ts`, `check-payment-status.ts`, `check-order-status.ts`, `mac-request.ts`
+1. **Authentication & Authorization** (`app/(auth)/`, `core/application/usecases/admin-user/`)
+   - Cookie-based sessions with bcrypt password hashing
+   - Role-based access control (Admin, Sales, Warehouse)
+   - User management UI (admin only)
+   - 7 use cases: Login, Register, GetCurrentUser, ChangePassword, GetAllUsers, UpdateUser, DeleteUser
 
-**API Routes** (`app/api/orders/`):
-- Base: `route.ts` (GET/POST), `[id]/route.ts` (GET/PATCH/DELETE)
-- Payment: `link/route.ts`, `callback/route.ts`, `status/route.ts`, `mac/route.ts`
-- Dependencies: `depends.ts` - **Single consolidated file** for all order/payment use cases
+2. **Products** (`app/(features)/admin/products/`, `core/application/usecases/product/`)
+   - Product catalog with categories
+   - Size and color variants
+   - AWS S3 image uploads
+   - 5 use cases: Filter, GetById, Create, Update, Delete
+
+3. **Orders** (`app/(features)/admin/orders/`, `core/application/usecases/order/`)
+   - Full order lifecycle management
+   - Payment gateway integration (VNPay, ZaloPay)
+   - Status tracking (pending → confirmed → processing → shipping → delivered → completed)
+   - 11 use cases: CRUD + Link, PaymentCallback, CheckPaymentStatus, CheckOrderStatus, MacRequest, HandleVNPayIPN
+
+4. **Customers** (`app/(features)/admin/customers/`, `core/application/usecases/customer/`)
+   - Multi-platform customer tracking (Zalo, Facebook, TikTok, Telegram, Website)
+   - Customer tier system (new, regular, vip, premium)
+   - Customer statistics and search
+   - 6 use cases: GetAll, GetById, SearchByName, Create, Update, Delete
+
+5. **Categories** (`app/(features)/admin/categories/`, `core/application/usecases/category/`)
+   - Product category management
+   - Image support
+   - 5 use cases: Get, GetById, Create, Update, Delete
+
+6. **Banners** (`app/(features)/admin/banners/`, `core/application/usecases/banner/`)
+   - Promotional banner system
+   - Image URL management
+   - 5 use cases: Get, GetById, Create, Update, Delete
+
+7. **Posts** (`app/(features)/admin/posts/`, `core/application/usecases/post/`)
+   - Multi-platform social media content management
+   - Content types: post, feed, reel, short, video, story
+   - Platform integrations: Facebook, TikTok, Zalo, YouTube
+   - Media attachments and engagement metrics
+   - 4 use cases: Get, Create, Update, Delete
+
+8. **Campaigns** (`app/(features)/admin/campaigns/`, `core/application/usecases/campaign/`)
+   - Marketing campaign management
+   - Multi-platform tracking (Facebook, TikTok, Zalo, Shopee)
+   - UTM parameters and metrics
+   - 6 use cases: GetAll, GetById, GetByStatus, Create, Update, Delete
+
+9. **Stations** (`app/api/stations/`, `core/application/usecases/station/`)
+   - Physical location management
+   - GPS coordinates and addresses
+   - 5 use cases: Get, GetById, Create, Update, Delete
+
+10. **Dashboard** (`app/(features)/admin/dashboard/`)
+    - Real-time analytics and KPIs
+    - Order status breakdown
+    - Revenue tracking
+    - Recent activity feed
+
+### Module Organization Pattern
+
+All modules follow this structure:
+- **Domain**: `core/domain/[module].ts`
+- **Use Cases**: `core/application/usecases/[module]/`
+- **Repository**: `infrastructure/repositories/[module]-repo.ts`
+- **API Routes**: `app/api/[module]/route.ts` + `depends.ts`
+- **UI**: `app/(features)/admin/[module]/page.tsx` + `actions.ts` + `components/`
+
+**Important**: Payment operations are consolidated in the **orders** module (not separate)

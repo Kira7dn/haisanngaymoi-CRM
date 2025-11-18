@@ -5,7 +5,7 @@ import type { QueueService } from "@/core/application/interfaces/queue-service";
 export interface LinkOrderRequest {
   orderId: number;
   platformOrderId: string; // e.g., Zalo Checkout SDK Order ID
-  platformSource?: string; // e.g., "zalo", "zalopay", "momo"
+  platformSource?: string; // e.g., "zalo", "facebook", "tiktok", "website"
   miniAppId?: string;
 }
 

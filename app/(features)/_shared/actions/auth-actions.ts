@@ -7,7 +7,6 @@ import { createGetCurrentUserUseCase } from "@/app/api/auth/depends"
 export async function getCurrentUserAction() {
   const cookieStore = await cookies()
   const userId = cookieStore.get("admin_user_id")?.value
-  console.log("userId:",userId)
   if (!userId) {
     return null
   }
@@ -15,7 +14,6 @@ export async function getCurrentUserAction() {
   try {
     const useCase = await createGetCurrentUserUseCase()
     const result = await useCase.execute({ userId })
-    console.log("result:",result);
     
     return result.user
   } catch (error) {

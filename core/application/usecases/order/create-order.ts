@@ -2,21 +2,23 @@ import type { OrderService, OrderPayload } from "@/core/application/interfaces/o
 import type { Order, OrderItem, Delivery, PaymentMethod } from "@/core/domain/order";
 import { validateOrder, calculateOrderTotal } from "@/core/domain/order";
 
-export interface CreateOrderRequest {
-  customerId: string;
-  items: OrderItem[];
-  delivery: Delivery;
-  payment?: {
-    method: PaymentMethod;
-    amount?: number;
-  };
-  platformOrderId?: string;
-  platformSource?: string;
-  shippingFee?: number;
-  discount?: number;
-  note?: string;
-  tags?: string[];
-}
+// export interface CreateOrderRequest {
+//   customerId: string;
+//   items: OrderItem[];
+//   delivery: Delivery;
+//   payment?: {
+//     method: PaymentMethod;
+//     amount?: number;
+//   };
+//   platformOrderId?: string;
+//   platformSource?: string;
+//   shippingFee?: number;
+//   discount?: number;
+//   note?: string;
+//   tags?: string[];
+// }
+
+export interface CreateOrderRequest extends OrderPayload {}
 
 export interface CreateOrderResponse {
   order: Order;

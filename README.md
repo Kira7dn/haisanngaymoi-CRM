@@ -1,15 +1,39 @@
-# 🧭 NextJS 16 Fullstack Clean Architecture - Hải Sản Ngay Mới CRM
+# 🧭 Hải Sản Ngày Mới - CRM & E-commerce Platform
 
-### 🚀 Mục tiêu
+**A comprehensive CRM and e-commerce management system for Hải Sản Ngày Mới (Fresh Seafood from Cô Tô Island)**
 
-* Xây dựng ứng dụng **Next.js 16** theo mô hình **Clean / Onion Architecture**
-* Kết hợp **Server Components + Client Components**
-* **Full-stack E-commerce** với MongoDB, Payment Gateway, Queue System
-* Quản lý **state bằng Zustand**
-* **API Routes** với Clean Architecture + **Server Actions** cho UI mutations
-* Viết **unit / integration / UI tests** đầy đủ bằng **Vitest**
-* **Payment Integration**: VNPay, ZaloPay với webhook handling
-* **Queue System**: BullMQ cho background job processing
+[![Next.js](https://img.shields.io/badge/Next.js-16.0.1-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.0-blue)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-6.20.0-green)](https://www.mongodb.com/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+---
+
+## 🚀 Features
+
+### Business Modules
+- **🛒 Order Management**: Full e-commerce order lifecycle with multi-status tracking
+- **💳 Payment Integration**: VNPay & ZaloPay with webhook/IPN support
+- **👥 Customer Management**: Multi-platform customer tracking (Zalo, Facebook, TikTok, Telegram, Website)
+- **📦 Product Catalog**: Product management with categories, variants (sizes, colors), and image uploads
+- **📢 Marketing Campaigns**: Multi-platform campaign tracking with UTM parameters and analytics
+- **📱 Social Media Marketing**: Multi-platform content publishing (Facebook, TikTok, Zalo, YouTube)
+- **🎨 Banner Management**: Promotional banner system
+- **🏪 Station Management**: Physical location management
+- **📊 Analytics Dashboard**: Real-time business metrics and visualizations
+- **👤 Admin Panel**: Role-based access control (Admin, Sales, Warehouse)
+
+### Technical Features
+- **🏗️ Clean/Onion Architecture**: Strict layered architecture with dependency inversion
+- **⚡ Next.js 16**: App Router with Server Components and Server Actions
+- **🔐 Authentication**: Cookie-based session with bcrypt password hashing
+- **🎯 Type Safety**: Full TypeScript coverage with strict mode
+- **🧪 Testing**: Comprehensive unit, integration, and UI tests with Vitest
+- **📦 Queue System**: Background job processing with BullMQ + Redis
+- **☁️ Cloud Storage**: AWS S3 integration for image uploads
+- **🌐 External APIs**: Zalo Mini App integration (location, phone decoding)
+- **🎨 Modern UI**: Radix UI primitives with Tailwind CSS v4
 
 ---
 
@@ -128,22 +152,76 @@
 
 ---
 
-## ⚙️ 1. Cài đặt
+## ⚙️ Quick Start
+
+### Prerequisites
+- Node.js 20+ and npm
+- MongoDB Atlas account (or local MongoDB instance)
+- Redis instance (Upstash or local)
+- AWS S3 bucket (for image uploads)
+- Optional: VNPay/ZaloPay merchant accounts
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/your-org/haisanngaymoi-crm.git
+cd haisanngaymoi-crm
+
+# Install dependencies
 npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your credentials
+
+# Seed initial admin user
+npm run seed-admin
+# Default: admin@haisanngaymoi.com / Admin@123456
+
+# Run development server
+npm run dev
 ```
 
-File `.env.local`:
+Visit `http://localhost:3000/admin/login` to access the admin panel.
 
-```
+### Environment Variables
+
+Create `.env.local` with the following variables:
+
+```env
+# Database
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/?appName=ClusterName
-MONGODB_DB=database_name
+MONGODB_DB=crm_db
+
+# AWS S3 (Image Storage)
+AWS_REGION=ap-southeast-1
+AWS_S3_BUCKET=haisanngaymoi
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+
+# Payment Gateways
 VNP_HASH_SECRET=your_vnpay_secret
-CHECKOUT_SDK_PRIVATE_KEY=your_checkout_key
+CHECKOUT_SDK_PRIVATE_KEY=your_zalopay_key
+
+# Zalo Integration
 ZALO_APP_SECRET=your_zalo_app_secret
-REDIS_URL=redis://localhost:6379
+ZALO_APP_ID=your_app_id
+ZALO_OA_ID=your_oa_id
+
+# Queue System
+REDIS_URL=redis://default:password@host:port
 ENABLE_ORDER_WORKER=true
+
+# Social Media APIs (Optional)
+FACEBOOK_APP_ID=your_facebook_app_id
+FACEBOOK_APP_SECRET=your_facebook_secret
+TIKTOK_CLIENT_KEY=your_tiktok_key
+YOUTUBE_API_KEY=your_youtube_key
+
+# Webhook
+NGROK_TUNNEL=https://your-ngrok-url.ngrok.io
+N8N_WEBHOOK_URL=https://n8n.example.com/webhook/haisan-webhook
 ```
 
 ---
@@ -590,24 +668,54 @@ describe("Order API", () => {
 
 ---
 
-## 🚀 11. Chạy ứng dụng
+## 🚀 Development Scripts
 
 ```bash
 # Development
-npm run dev
+npm run dev                 # Start dev server (http://localhost:3000)
 
-# Build production
-npm run build
-
-# Start production
-npm start
+# Production
+npm run build              # Build for production
+npm start                  # Start production server
 
 # Testing
-npm test              # Unit tests
-npm run test:ui       # Test UI
-npm run test:cov      # Coverage report
-npm run test:integration # Integration tests
+npm test                   # Run tests in watch mode
+npm run test:ui            # Open Vitest UI
+npm run test:unit          # Run unit tests once
+npm run test:cov           # Generate coverage report
+npm run test:integration   # Run integration tests
+
+# Database
+npm run seed-admin         # Create initial admin user
+
+# Code Quality
+npm run lint               # Run ESLint
 ```
+
+## 📊 Admin Panel Overview
+
+After logging in at `/admin/login`, you'll have access to:
+
+### Dashboard (`/admin/dashboard`)
+- **KPI Cards**: Total revenue, orders, customers, products
+- **Charts**: Order status breakdown, payment analytics
+- **Recent Activity**: Last 5 orders with details
+- **Quick Actions**: Navigate to all modules
+
+### Module Pages
+- **Products** (`/admin/products`): Product catalog with variants and images
+- **Orders** (`/admin/orders`): Order management with status tracking
+- **Customers** (`/admin/customers`): Customer database with platform tracking
+- **Categories** (`/admin/categories`): Product category management
+- **Banners** (`/admin/banners`): Promotional banner system
+- **Posts** (`/admin/posts`): Social media content management
+- **Campaigns** (`/admin/campaigns`): Marketing campaign tracking
+- **Users** (`/admin/users`): Admin user management (Admin only)
+
+### Role-Based Access
+- **Admin**: Full access to all features
+- **Sales**: View/manage orders, customers, products
+- **Warehouse**: Update order status, view inventory
 
 ---
 
@@ -711,29 +819,80 @@ const useCase = await linkOrderUseCase();
 
 ---
 
-## ✅ 14. Tổng kết
+## 📚 Documentation
+
+- **[PRD/Admin.md](PRD/Admin.md)** - Complete product requirements and implementation status
+- **[CLAUDE.md](CLAUDE.md)** - Developer guide for working with this codebase
+- **[AUTH_README.md](AUTH_README.md)** - Authentication system documentation
+- **[docs/S3_INTEGRATION_GUIDE.md](docs/S3_INTEGRATION_GUIDE.md)** - AWS S3 integration guide
+- **[docs/DOMAIN_MIGRATION_GUIDE.md](docs/DOMAIN_MIGRATION_GUIDE.md)** - Domain entity migration guide
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+- Follow Clean Architecture principles
+- Write tests for all new features
+- Use TypeScript strict mode
+- Follow the established code patterns
+- Update documentation as needed
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [Next.js 16](https://nextjs.org/)
+- UI components from [Radix UI](https://www.radix-ui.com/)
+- Icons from [Lucide React](https://lucide.dev/)
+- Styled with [Tailwind CSS v4](https://tailwindcss.com/)
+
+## 📞 Support
+
+For support and questions:
+- Create an issue on GitHub
+- Contact: admin@haisanngaymoi.com
+
+---
+
+## ✅ Technology Stack Summary
 
 | Thành phần | Công nghệ | Vai trò |
 |-----------|-----------|---------|
-| **Framework** | Next.js 16 (App Router) | Full-stack React |
+| **Framework** | Next.js 16 (App Router) | Full-stack React framework |
 | **Architecture** | Clean/Onion Architecture | Separation of concerns |
 | **Dependency Injection** | Factory Pattern (`depends.ts`) | Type-safe, per-request instances |
 | **Data Access** | BaseRepository<T, ID> | Automatic MongoDB client management |
-| **Database** | MongoDB | Data persistence |
-| **Payment** | ZaloPay + VNPay | Payment processing |
-| **Queue** | BullMQ + Redis | Background jobs |
-| **External APIs** | Zalo Open API | Location/Phone decode |
-| **State** | Zustand | Client state management |
-| **Testing** | Vitest + RTL + MongoDB Memory Server | Unit/Integration/UI tests |
-| **Type Safety** | TypeScript (strict) | Full type coverage |
+| **Database** | MongoDB 6.20.0 | Document-based data persistence |
+| **Payment** | VNPay + ZaloPay | Multi-gateway payment processing |
+| **Queue** | BullMQ 5.63.0 + Redis | Background job processing |
+| **External APIs** | Zalo Open API | Social media integration |
+| **Storage** | AWS S3 | Cloud file storage |
+| **State** | Zustand 5.0.8 | Client state management |
+| **UI Components** | Radix UI + Tailwind CSS v4 | Accessible, customizable components |
+| **Testing** | Vitest 4.0.7 + RTL + MongoDB Memory Server | Comprehensive testing suite |
+| **Type Safety** | TypeScript 5.0 (strict) | Full type coverage |
+| **Authentication** | Cookie-based + bcrypt | Secure session management |
 
 ### **🎯 Key Architectural Decisions**
 
 1. **Consolidated Modules**: Payment operations are part of order module (not separate)
-2. **Factory Pattern**: `depends.ts` files replace global DI container
-3. **BaseRepository**: All repositories extend base class for consistency
-4. **Hybrid Approach**: API Routes for external integrations + Server Actions for UI
-5. **Domain-First**: Payload interfaces extend from domain entities
+2. **Factory Pattern**: `depends.ts` files replace global DI container for serverless compatibility
+3. **BaseRepository**: All repositories extend base class for MongoDB client management
+4. **Hybrid Approach**: API Routes for webhooks + Server Actions for UI mutations
+5. **Domain-First**: Payload interfaces extend from domain entities (single source of truth)
 6. **Class-based Use Cases**: Request/Response interfaces with dependency injection
+7. **Multi-platform**: Unified customer entity across Zalo, Facebook, TikTok, Telegram, Website
+8. **Role-based Access**: Granular permissions (Admin, Sales, Warehouse)
 
-**🎉 Đây là một full-stack e-commerce application hoàn chỉnh với Clean Architecture!**
+---
+
+**🎉 A production-ready CRM & E-commerce platform built with Clean Architecture principles!**
+
+**Made with ❤️ for Hải Sản Ngày Mới - Fresh Seafood from Cô Tô Island**

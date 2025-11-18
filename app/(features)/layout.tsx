@@ -7,8 +7,6 @@ export default async function FeaturesLayout({
   children: React.ReactNode
 }) {
   const user = await getCurrentUserAction()
-  console.log("user:",user)
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <AdminHeader userName={user?.name} userRole={user?.role} />
