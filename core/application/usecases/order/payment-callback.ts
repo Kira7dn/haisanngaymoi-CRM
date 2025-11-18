@@ -20,7 +20,6 @@ export class PaymentCallbackUseCase {
   async execute(request: PaymentCallbackRequest): Promise<PaymentCallbackResponse> {
     try {
       const { data, overallMac } = request;
-
       if (!data || typeof overallMac !== "string") {
         return { returnCode: 0, returnMessage: "Thiếu dữ liệu callback" };
       }
@@ -53,7 +52,7 @@ export class PaymentCallbackUseCase {
             orderId = parsed.orderId;
           }
         } catch {
-          // ignore parse errors
+          console.log("[paymentCallback] Failed to parse extradata", { extradata });
         }
       }
 
@@ -65,8 +64,8 @@ export class PaymentCallbackUseCase {
       const paymentStatus = resultCode === 1 ? "success" : "failed";
       
       // Get payment method from data or use a default value
-      const paymentMethod = (typeof data['paymentMethod'] === 'string' 
-        ? data['paymentMethod'] 
+      const paymentMethod = (typeof data['method'] === 'string' 
+        ? data['method'] 
         : 'bank_transfer') as PaymentMethod;
       
       // Get amount from data or use 0 as fallback
@@ -75,7 +74,8 @@ export class PaymentCallbackUseCase {
         : typeof data['amount'] === 'string' 
           ? parseFloat(data['amount']) || 0 
           : 0;
-
+      console.log("[paymentCallback] Updated order", { orderId, paymentStatus, paymentMethod, amount });
+        
       const updatedOrder = await this.orderService.update({
         id: orderId,
         payment: {
@@ -86,7 +86,7 @@ export class PaymentCallbackUseCase {
         },
         updatedAt: new Date()
       });
-
+      console.log("[paymentCallback] Updated order", { updatedOrder });
       if (!updatedOrder) {
         return { returnCode: 0, returnMessage: "Order not found" };
       }
