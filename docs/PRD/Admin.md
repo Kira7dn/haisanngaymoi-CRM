@@ -188,18 +188,19 @@ npm run seed-admin
 
 ### **5.0.2 Authorization Matrix**
 
-| Module         | Admin | Sale       | Warehouse  |
-| -------------- | ----- | ---------- | ---------- |
-| **Dashboard**  | Full  | Read       | Read       |
-| **Products**   | Full  | Read       | Read/Write (stock) |
-| **Categories** | Full  | Read       | No         |
-| **Orders**     | Full  | Read/Write | Read/Write (status) |
-| **Customers**  | Full  | Read       | No         |
-| **Banners**    | Full  | Read       | No         |
-| **Posts**      | Full  | Read       | No         |
-| **Stations**   | Full  | Read       | No         |
-| **Users**      | Full  | No         | No         |
-| **Campaigns**  | Full  | Read       | No         |
+| Module     | Base Path           | Admin | Sale       | Warehouse           |
+| ---------- | ------------------- | ----- | ---------- | ------------------- |
+| Dashboard  | `/admin/dashboard`  | Full  | Read       | Read                |
+| Products   | `/admin/products`   | Full  | Read       | Read/Write (stock)  |
+| Categories | `/admin/categories` | Full  | Read       | No                  |
+| Orders     | `/admin/orders`     | Full  | Read/Write | Read/Write (status) |
+| Customers  | `/admin/customers`  | Full  | Read       | No                  |
+| Banners    | `/admin/banners`    | Full  | Read       | No                  |
+| Posts      | `/admin/posts`      | Full  | Read       | No                  |
+| Stations   | `/admin/stations`   | Full  | Read       | No                  |
+| Users      | `/admin/users`      | Full  | No         | No                  |
+| Campaigns  | `/admin/campaigns`  | Full  | Read       | No                  |
+
 
 ---
 
@@ -238,7 +239,7 @@ interface Category {
 - `PATCH /api/categories/[id]` - Update
 - `DELETE /api/categories/[id]` - Delete
 
-**UI Page:** [app/(features)/categories/page.tsx](app/(features)/categories/page.tsx)
+**UI Page:** [app/(features)/admin/dashboard/categories/page.tsx](app/(features)/admin/dashboard/categories/page.tsx)
 - ✅ List view with inline editing
 - ✅ Create form
 - ✅ Update form
@@ -301,7 +302,7 @@ interface SizeOption {
 - `PATCH /api/products/[id]` - Update
 - `DELETE /api/products/[id]` - Delete
 
-**UI Pages:** [app/(features)/products/](app/(features)/products/)
+**UI Pages:** [app/(features)/admin/dashboard/products/](app/(features)/admin/dashboard/products/)
 - ✅ `page.tsx` - Main products page with grid layout
 - ✅ `actions.ts` - Server Actions for CRUD operations
 - ✅ `components/ProductList.tsx` - Product grid with filtering
@@ -396,7 +397,7 @@ interface DeliveryInfo {
 
 **UI Implementation:** ✅ **COMPLETE**
 
-**Server Actions:** [app/(features)/orders/actions.ts](app/(features)/orders/actions.ts)
+**Server Actions:** [app/(features)/admin/dashboard/orders/actions.ts](app/(features)/admin/dashboard/orders/actions.ts)
 - ✅ `getOrdersAction()` - Get orders with filters
 - ✅ `createOrderAction()` - Create new order
 - ✅ `updateOrderAction()` - Update order status/payment
@@ -404,13 +405,13 @@ interface DeliveryInfo {
 - ✅ Uses injected use cases from `depends.ts`
 - ✅ Proper `revalidatePath()` after mutations
 
-**Main Page:** [app/(features)/orders/page.tsx](app/(features)/orders/page.tsx)
+**Main Page:** [app/(features)/admin/dashboard/orders/page.tsx](app/(features)/admin/dashboard/orders/page.tsx)
 - ✅ Server Component with data fetching
 - ✅ Uses `getOrdersUseCase()` for initial data
 - ✅ JSON serialization for Date objects
 - ✅ Passes data to OrderList component
 
-**Components:** [app/(features)/orders/components/](app/(features)/orders/components/)
+**Components:** [app/(features)/admin/dashboard/orders/components/](app/(features)/admin/dashboard/orders/components/)
 
 1. **OrderList.tsx** - Main table component with:
    - ✅ Status filter (All, Pending, Shipping, Completed) with counts
@@ -482,7 +483,7 @@ interface Customer {
 - `DELETE /api/customers/[id]` - Delete
 - `GET /api/customers/search?name=...` - Search by name
 
-**UI Pages:** [app/(features)/customers/](app/(features)/customers/)
+**UI Pages:** [app/(features)/admin/dashboard/customers/](app/(features)/admin/dashboard/customers/)
 - ✅ `page.tsx` - Main customers page with table layout
 - ✅ `actions.ts` - Server Actions for CRUD operations
 - ✅ `components/CustomerList.tsx` - Customer table with filtering
@@ -535,7 +536,7 @@ interface Banner {
 - `PATCH /api/banners/[id]` - Update
 - `DELETE /api/banners/[id]` - Delete
 
-**UI Pages:** [app/(features)/banners/](app/(features)/banners/)
+**UI Pages:** [app/(features)/admin/dashboard/banners/](app/(features)/admin/dashboard/banners/)
 - ✅ `page.tsx` - Main banners page with grid layout
 - ✅ `actions.ts` - Server Actions for CRUD operations
 - ✅ `components/BannerList.tsx` - Banner grid with previews
@@ -572,7 +573,7 @@ interface Post {
 
 **Use Cases:** ✅ 4 use cases (Create, Get, Update, Delete)
 
-**UI Page:** [app/(features)/posts/page.tsx](app/(features)/posts/page.tsx)
+**UI Page:** [app/(features)/admin/dashboard/posts/page.tsx](app/(features)/admin/dashboard/posts/page.tsx)
 - ✅ PostForm component
 - ✅ PostList component
 - ✅ PostFilter component
@@ -715,7 +716,7 @@ interface CampaignPlatform {
 - `PATCH /api/campaigns/[id]` - Update
 - `DELETE /api/campaigns/[id]` - Delete
 
-**UI Pages:** [app/(features)/admin/campaigns/](app/(features)/admin/campaigns/)
+**UI Pages:** [app/(features)/admin/dashboard/campaigns/](app/(features)/admin/dashboard/campaigns/)
 - ✅ `page.tsx` - Main campaigns page
 - ✅ `actions.ts` - Server Actions for CRUD
 - ✅ `components/CampaignList.tsx` - Campaign listing

@@ -1,9 +1,9 @@
 import Link from "next/link"
 import { getCurrentUserAction } from "../../_shared/actions/auth-actions"
 import { getDashboardStats } from "../actions"
-import { DashboardStats } from "../components/DashboardStats"
-import { OrdersChart } from "../components/OrdersChart"
-import { RecentOrders } from "../components/RecentOrders"
+import { DashboardStats } from "./components/DashboardStats"
+import { OrdersChart } from "./components/OrdersChart"
+import { RecentOrders } from "./components/RecentOrders"
 
 
 export default async function DashboardPage() {

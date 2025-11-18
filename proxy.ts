@@ -1,107 +1,149 @@
-import type { NextRequest } from 'next/server'
-import { NextResponse } from 'next/server'
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-// CORS configuration
+// ===== Types =====
+type Role = "admin" | "sale" | "warehouse";
+type Permission = "full" | "read" | "write" | "stock" | "status" | "none";
+
+interface AuthRule {
+  path: string;
+  admin: Permission;
+  sale: Permission;
+  warehouse: Permission;
+}
+
+// ===== Authorization Matrix =====
+const AUTH_RULES: AuthRule[] = [
+  { path: "/admin/dashboard", admin: "full", sale: "read", warehouse: "read" },
+  { path: "/admin/products", admin: "full", sale: "read", warehouse: "stock" },
+  { path: "/admin/categories", admin: "full", sale: "read", warehouse: "none" },
+  { path: "/admin/orders", admin: "full", sale: "write", warehouse: "status" },
+  { path: "/admin/customers", admin: "full", sale: "read", warehouse: "none" },
+  { path: "/admin/banners", admin: "full", sale: "read", warehouse: "none" },
+  { path: "/admin/posts", admin: "full", sale: "read", warehouse: "none" },
+  { path: "/admin/stations", admin: "full", sale: "read", warehouse: "none" },
+  { path: "/admin/users", admin: "full", sale: "none", warehouse: "none" },
+  { path: "/admin/campaigns", admin: "full", sale: "read", warehouse: "none" }
+];
+
+// ===== CORS Configuration =====
 const ALLOWED_ORIGINS = new Set([
   'https://h5.zdn.vn',
   'http://localhost:3000',
-  'https://linkstrategy.io.vn',
-])
+  'https://linkstrategy.io.vn'
+]);
+const ALLOW_CREDENTIALS = true;
 
-const ALLOW_ALL = true
-const ALLOW_CREDENTIALS = false
-
-// Paths that require authentication
-const protectedPaths = [
-  "/admin/dashboard",
-  "/admin/users",
-  "/admin/profile",
-  "/admin/products",
-  "/admin/orders",
-  "/admin/customers",
-  "/admin/banners",
-  "/admin/stations",
-  "/admin/posts",
-  "/admin/campaigns",
-]
-
-// Paths that require admin role
-const adminOnlyPaths = ["/admin/users"]
-
-export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl
-  
-  // Handle CORS for API routes
-  if (pathname.startsWith('/api/')) {
-    return handleCors(request)
-  }
-
-  // Check if the path requires authentication
-  const isProtectedPath = protectedPaths.some((path) =>
-    pathname.startsWith(path)
-  )
-
-  if (!isProtectedPath) {
-    return NextResponse.next()
-  }
-
-  // Get user session from cookies
-  const userId = request.cookies.get("admin_user_id")?.value
-  const userRole = request.cookies.get("admin_user_role")?.value
-
-  // If no user session, redirect to login
-  if (!userId) {
-    const loginUrl = new URL("/admin/login", request.url)
-    loginUrl.searchParams.set("redirect", pathname)
-    return NextResponse.redirect(loginUrl)
-  }
-
-  // Check if admin-only path
-  const isAdminOnlyPath = adminOnlyPaths.some((path) =>
-    pathname.startsWith(path)
-  )
-
-  if (isAdminOnlyPath && userRole !== "admin") {
-    // Redirect to dashboard if not admin
-    return NextResponse.redirect(new URL("/admin/dashboard", request.url))
-  }
-
-  // Allow request to proceed
-  return NextResponse.next()
+// ===== Helper to match module =====
+function matchModule(pathname: string) {
+  return AUTH_RULES.find(rule => pathname.startsWith(rule.path));
 }
 
-function handleCors(request: NextRequest) {
-  const origin = request.headers.get('origin') || ''
-  const isAllowed = ALLOWED_ORIGINS.has(origin)
-  const allowOrigin = isAllowed ? origin : (ALLOW_ALL && origin ? origin : '*')
+// ===== CORS handler =====
+function handleCors(request: NextRequest): NextResponse | null {
+  const origin = request.headers.get('origin') || '';
+  const isAllowed = ALLOWED_ORIGINS.has(origin);
+  const allowOrigin = isAllowed ? origin : '*';
 
+  // Preflight OPTIONS request
   if (request.method === 'OPTIONS') {
-    const res = new NextResponse(null, { status: 204 })
-    setCorsHeaders(res, allowOrigin)
-    return res
+    const res = new NextResponse(null, { status: 204 });
+    res.headers.set('Access-Control-Allow-Origin', allowOrigin);
+    res.headers.set('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
+    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (ALLOW_CREDENTIALS && allowOrigin !== '*') {
+      res.headers.set('Access-Control-Allow-Credentials', 'true');
+    }
+    return res;
   }
 
-  const res = NextResponse.next()
-  setCorsHeaders(res, allowOrigin)
-  return res
-}
-
-function setCorsHeaders(response: NextResponse, allowOrigin: string) {
-  response.headers.set('Access-Control-Allow-Origin', allowOrigin)
-  response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  // For other requests, just set CORS headers
+  const res = NextResponse.next();
+  res.headers.set('Access-Control-Allow-Origin', allowOrigin);
   if (ALLOW_CREDENTIALS && allowOrigin !== '*') {
-    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    res.headers.set('Access-Control-Allow-Credentials', 'true');
   }
+  return res;
 }
 
-// Configure which paths the middleware should run on
-export const config = {
-  matcher: [
-    // Match all request paths except for the ones starting with:
-    // - _next/static (static files)
-    // - _next/image (image optimization files)
-    // - favicon.ico (favicon file)
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
+// ===== Proxy Middleware =====
+export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Handle CORS first
+  const corsRes = handleCors(request);
+  if (request.method === 'OPTIONS') return corsRes;
+
+  // Only protect /admin routes
+  if (!pathname.startsWith("/admin")) {
+    return corsRes;
+  }
+
+  // Allow login page
+  if (pathname.startsWith("/admin/login")) {
+    return corsRes;
+  }
+
+  // Get session cookies
+  const userId = request.cookies.get("admin_user_id")?.value;
+  const role = request.cookies.get("admin_user_role")?.value as Role | undefined;
+
+  // Not logged in → redirect
+  if (!userId) {
+    const loginUrl = new URL("/admin/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Identify module
+  const module = matchModule(pathname);
+
+  // If module not found → allow
+  if (!module) {
+    return corsRes;
+  }
+
+  // Get permission
+  const permission: Permission = role ? module[role] : "none";
+
+  // No access → redirect to dashboard
+  if (permission === "none") {
+    return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+  }
+
+  // Read-only restriction
+  if (permission === "read" && request.method !== "GET") {
+    return new NextResponse(
+      JSON.stringify({ message: "You do not have permission to modify this module." }),
+      { status: 403, headers: corsRes?.headers || {} }
+    );
+  }
+
+  // Stock-only for warehouse in Products
+  if (permission === "stock") {
+    if (request.method !== "GET" && !pathname.includes("stock")) {
+      return new NextResponse(
+        JSON.stringify({ message: "Warehouse can only modify stock." }),
+        { status: 403, headers: corsRes?.headers || {} }
+      );
+    }
+  }
+
+  // Order status-only for warehouse
+  if (permission === "status") {
+    if (request.method !== "GET" && !pathname.includes("status")) {
+      return new NextResponse(
+        JSON.stringify({ message: "Warehouse can only update order status." }),
+        { status: 403, headers: corsRes?.headers || {} }
+      );
+    }
+  }
+
+  // Full access → allow
+  return corsRes;
 }
+
+// ===== Middleware matcher =====
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"]
+};

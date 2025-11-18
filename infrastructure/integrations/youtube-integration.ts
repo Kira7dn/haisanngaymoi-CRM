@@ -12,7 +12,6 @@ export interface YouTubeConfig {
   apiKey: string;
   clientId: string;
   clientSecret: string;
-  accessToken: string;
   refreshToken: string;
   channelId: string;
 }
@@ -85,8 +84,20 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
   private baseUrl = "https://www.googleapis.com/youtube/v3";
   private uploadUrl = "https://www.googleapis.com/upload/youtube/v3";
 
+  private _accessToken: string = ""; // Lưu trữ accessToken hiện tại
   constructor(private config: YouTubeConfig) {}
 
+  // Phương thức để lấy accessToken hiện tại, đảm bảo nó đã được làm mới
+  private async getValidAccessToken(): Promise<string> {
+  // Nếu chưa có accessToken hoặc nó có vẻ đã hết hạn (chúng ta không có expire_in chính xác ở đây,
+  // nhưng một ứng dụng thực tế sẽ lưu trữ nó)
+  // Để đơn giản, chúng ta sẽ làm mới mỗi lần nếu _accessToken rỗng, hoặc dựa vào lỗi API.
+    if (!this._accessToken) {
+      this._accessToken = await this.refreshAccessToken();
+    }
+    return this._accessToken;
+  }
+  
   /**
    * Publish video to YouTube
    */
@@ -131,6 +142,7 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
    */
   async update(postId: string, request: PlatformPublishRequest): Promise<PlatformPublishResponse> {
     try {
+      const token = await this.getValidAccessToken(); // Lấy token hợp lệ
       const url = `${this.baseUrl}/videos`;
       const params = new URLSearchParams({
         part: "snippet,status",
@@ -139,7 +151,7 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
       const response = await fetch(`${url}?${params.toString()}`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${this.config.accessToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -183,6 +195,7 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
    */
   async delete(postId: string): Promise<boolean> {
     try {
+      const token = await this.getValidAccessToken(); // Lấy token hợp lệ
       const url = `${this.baseUrl}/videos`;
       const params = new URLSearchParams({
         id: postId,
@@ -191,7 +204,7 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
       const response = await fetch(`${url}?${params.toString()}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${this.config.accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -207,6 +220,7 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
    */
   async getMetrics(postId: string): Promise<PostMetrics> {
     try {
+      const token = await this.getValidAccessToken(); // Lấy token hợp lệ
       const url = `${this.baseUrl}/videos`;
       const params = new URLSearchParams({
         part: "statistics,snippet",
@@ -215,7 +229,7 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
 
       const response = await fetch(`${url}?${params.toString()}`, {
         headers: {
-          Authorization: `Bearer ${this.config.accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -256,6 +270,7 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
    */
   async verifyAuth(): Promise<boolean> {
     try {
+      const token = await this.getValidAccessToken(); // Lấy token hợp lệ
       const url = `${this.baseUrl}/channels`;
       const params = new URLSearchParams({
         part: "snippet",
@@ -264,7 +279,7 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
 
       const response = await fetch(`${url}?${params.toString()}`, {
         headers: {
-          Authorization: `Bearer ${this.config.accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -280,6 +295,8 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
    */
   async uploadVideo(media: PostMedia, title: string, description?: string): Promise<string> {
     try {
+      const token = await this.getValidAccessToken(); // Lấy token hợp lệ
+
       // Step 1: Initialize upload with metadata
       const url = `${this.uploadUrl}/videos`;
       const params = new URLSearchParams({
@@ -304,7 +321,7 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
       const initResponse = await fetch(`${url}?${params.toString()}`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${this.config.accessToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
           "X-Upload-Content-Type": "video/*",
         },
@@ -345,6 +362,8 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
    */
   async getVideoStatus(videoId: string): Promise<"processing" | "ready" | "failed"> {
     try {
+      const token = await this.getValidAccessToken(); // Lấy token hợp lệ
+
       const url = `${this.baseUrl}/videos`;
       const params = new URLSearchParams({
         part: "status,processingDetails",
@@ -353,7 +372,7 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
 
       const response = await fetch(`${url}?${params.toString()}`, {
         headers: {
-          Authorization: `Bearer ${this.config.accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -385,6 +404,8 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
    */
   async addToPlaylist(videoId: string, playlistId: string): Promise<boolean> {
     try {
+      const token = await this.getValidAccessToken(); // Lấy token hợp lệ
+
       const url = `${this.baseUrl}/playlistItems`;
       const params = new URLSearchParams({
         part: "snippet",
@@ -393,7 +414,7 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
       const response = await fetch(`${url}?${params.toString()}`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${this.config.accessToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -482,19 +503,22 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
 /**
  * Factory function to create YouTubeIntegration
  */
-export function createYouTubeIntegration(): YouTubeIntegration {
+
+export async function createYouTubeIntegration(): Promise<YouTubeIntegration> {
   const config: YouTubeConfig = {
     apiKey: process.env.YOUTUBE_API_KEY || "",
     clientId: process.env.YOUTUBE_CLIENT_ID || "",
     clientSecret: process.env.YOUTUBE_CLIENT_SECRET || "",
-    accessToken: process.env.YOUTUBE_ACCESS_TOKEN || "",
-    refreshToken: process.env.YOUTUBE_REFRESH_TOKEN || "",
-    channelId: process.env.YOUTUBE_CHANNEL_ID || "",
+    refreshToken: process.env.YOUTUBE_APP_REFRESH_TOKEN || "",
+    channelId: process.env.YOUTUBE_APP_CHANNEL_ID || "",
   };
 
-  if (!config.apiKey || !config.clientId || !config.clientSecret || !config.accessToken || !config.channelId) {
-    throw new Error("Missing YouTube configuration. Please set YOUTUBE_API_KEY, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_ACCESS_TOKEN, and YOUTUBE_CHANNEL_ID environment variables.");
+  if (!config.apiKey || !config.clientId || !config.clientSecret || !config.refreshToken || !config.channelId) {
+    throw new Error("Missing YouTube configuration. Please set YOUTUBE_API_KEY, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_APP_REFRESH_TOKEN, and YOUTUBE_APP_CHANNEL_ID environment variables.");
   }
 
-  return new YouTubeIntegration(config);
+  const integration = new YouTubeIntegration(config);
+  // Ngay lập tức làm mới token để có accessToken hợp lệ sẵn sàng sử dụng
+  await integration.refreshAccessToken();
+  return integration;
 }
