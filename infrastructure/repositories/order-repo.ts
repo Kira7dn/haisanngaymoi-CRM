@@ -44,6 +44,7 @@ export class OrderRepository extends BaseRepository<Order, number> implements Or
     if (!payload.id) throw new Error("Order ID is required for update");
 
     const { id, ...updateFields } = payload;
+    console.log(`[OrderRepository] Updating order ${id} with:`, updateFields);
 
     const updateObj: any = {
       ...updateFields,
@@ -51,13 +52,32 @@ export class OrderRepository extends BaseRepository<Order, number> implements Or
     };
 
     const collection = await this.getCollection();
-    const result = await collection.findOneAndUpdate(
-      { _id: id } as any,
-      { $set: updateObj },
-      { returnDocument: "after" }
-    );
+    try {
+      const result = await collection.findOneAndUpdate(
+        { _id: id } as any,
+        { $set: updateObj },
+        { 
+          returnDocument: 'after',
+          includeResultMetadata: true
+        }
+      );
+      
+      console.log('[OrderRepository] Update result:', {
+        ok: result.ok,
+        lastErrorObject: result.lastErrorObject,
+        value: result.value
+      });
 
-    return result && result.value ? this.toDomain(result.value) : null;
+      if (!result.value) {
+        console.error(`[OrderRepository] Order with ID ${id} not found`);
+        return null;
+      }
+
+      return this.toDomain(result.value);
+    } catch (error) {
+      console.error('[OrderRepository] Error updating order:', error);
+      throw error;
+    }
   }
 
   async delete(id: number): Promise<boolean> {
