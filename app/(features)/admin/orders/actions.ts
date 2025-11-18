@@ -28,12 +28,22 @@ export async function createOrderAction(formData: FormData) {
 
   // Parse payment
   const paymentMethod = formData.get("paymentMethod")?.toString() as "cod" | "bank_transfer" | "zalopay" | "momo" | undefined
+  const shippingFee = parseFloat(formData.get("shippingFee")?.toString() || "0")
+  const discount = parseFloat(formData.get("discount")?.toString() || "0")
+  
+  // Calculate total amount from items
+  const totalAmount = items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0)
+  const finalAmount = totalAmount + shippingFee - discount
 
   await useCase.execute({
     customerId: formData.get("customerId")?.toString() || "",
     items,
     delivery,
-    payment: paymentMethod ? { method: paymentMethod } : undefined,
+    payment: paymentMethod ? { 
+      method: paymentMethod, 
+      status: "pending", 
+      amount: finalAmount 
+    } : undefined,
     shippingFee: parseFloat(formData.get("shippingFee")?.toString() || "0"),
     discount: parseFloat(formData.get("discount")?.toString() || "0"),
     platformOrderId: formData.get("platformOrderId")?.toString(),
