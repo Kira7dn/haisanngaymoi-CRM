@@ -4,6 +4,7 @@ import { getDashboardStats } from "../actions"
 import { DashboardStats } from "./_components/DashboardStats"
 import { OrdersChart } from "./_components/OrdersChart"
 import { RecentOrders } from "./_components/RecentOrders"
+import { DashboardWithChatbot } from "./_components/DashboardWithChatbot"
 
 
 export default async function DashboardPage() {
@@ -11,6 +12,7 @@ export default async function DashboardPage() {
   const stats = await getDashboardStats()
 
   return (
+    <DashboardWithChatbot userId={user?.id?.toString() || ""} userName={user?.name}>
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
         {/* Welcome Section */}
@@ -297,5 +299,6 @@ export default async function DashboardPage() {
         </div>
       </div>
     </div>
+    </DashboardWithChatbot>
   )
 }

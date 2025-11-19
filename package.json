@@ -15,6 +15,7 @@
     "seed-admin": "npx tsx --env-file=.env.local scripts/seed-admin.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0",
     "@aws-sdk/client-s3": "^3.932.0",
     "@aws-sdk/s3-request-presigner": "^3.932.0",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -52,7 +53,7 @@
     "@vitest/ui": "^4.0.7",
     "cross-env": "^10.1.0",
     "dotenv": "^17.2.3",
-    "eslint": "^9",
+    "eslint": "^9.39.1",
     "eslint-config-next": "16.0.1",
     "happy-dom": "^20.0.10",
     "mongodb-memory-server": "^10.3.0",

@@ -39,7 +39,7 @@ export default function CookiesPolicyPage() {
               </h2>
               <p>
                 Cookies là các tệp văn bản nhỏ được lưu trữ trên thiết bị của bạn (máy tính, điện thoại,
-                máy tính bảng) khi bạn truy cập website. Cookies giúp website "nhớ" thông tin về lượt
+                máy tính bảng) khi bạn truy cập website. Cookies giúp website &quot;nhớ&quot; thông tin về lượt
                 truy cập của bạn, chẳng hạn như ngôn ngữ ưa thích, giỏ hàng, hoặc thông tin đăng nhập,
                 giúp trải nghiệm của bạn thuận tiện và cá nhân hóa hơn.
               </p>
@@ -193,7 +193,7 @@ export default function CookiesPolicyPage() {
 
               <div className="space-y-3">
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-32 font-semibold text-brand-charcoal">
+                  <div className="shrink-0 w-32 font-semibold text-brand-charcoal">
                     Session cookies
                   </div>
                   <div className="flex-1 text-gray-600">
@@ -201,7 +201,7 @@ export default function CookiesPolicyPage() {
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-32 font-semibold text-brand-charcoal">
+                  <div className="shrink-0 w-32 font-semibold text-brand-charcoal">
                     Persistent cookies
                   </div>
                   <div className="flex-1 text-gray-600">
@@ -284,7 +284,7 @@ export default function CookiesPolicyPage() {
                 7. Do Not Track (DNT)
               </h2>
               <p>
-                Một số trình duyệt hỗ trợ tính năng "Do Not Track" (DNT), yêu cầu website không theo dõi
+                Một số trình duyệt hỗ trợ tính năng &quot;Do Not Track&quot; (DNT), yêu cầu website không theo dõi
                 hoạt động người dùng. Hiện tại chưa có tiêu chuẩn chung về DNT, nhưng chúng tôi tôn trọng
                 lựa chọn của người dùng và giảm thiểu việc thu thập dữ liệu không cần thiết.
               </p>
@@ -320,7 +320,7 @@ export default function CookiesPolicyPage() {
             </section>
 
             {/* Additional Info Box */}
-            <div className="bg-gradient-to-r from-brand-crystal/10 to-brand-golden/10 border-2 border-brand-crystal/20 rounded-xl p-6 mt-8">
+            <div className="bg-linear-to-r from-brand-crystal/10 to-brand-golden/10 border-2 border-brand-crystal/20 rounded-xl p-6 mt-8">
               <h3 className="text-xl font-bold text-brand-charcoal mb-3">
                 Cam kết của chúng tôi
               </h3>

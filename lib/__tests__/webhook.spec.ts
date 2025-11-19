@@ -20,18 +20,14 @@ afterEach(() => {
 describe('Webhook Notification', () => {
   const mockOrder: Order = {
     id: 123, // number
-    zaloUserId: 'user-123',
+    customerId: 'user-123',
     status: 'completed',
-    paymentStatus: 'success',
     items: [],
     delivery: {
-      alias: 'Home',
       address: '123 Test St',
       name: 'Test User',
       phone: '123456789',
-      stationId: 1,
-      image: '',
-      location: { lat: 21.0278, lng: 105.8342 }
+      location: { lat: 21.0278, lon: 105.8342 }
     },
     total: 100000,
     note: 'Test order',
@@ -49,7 +45,7 @@ describe('Webhook Notification', () => {
         '[notifyOrderWebhook] Payment processed successfully',
         expect.objectContaining({
           orderId: 123, // number
-          paymentStatus: 'success',
+          status: 'completed',
         })
       )
 
