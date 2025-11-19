@@ -11,26 +11,73 @@ interface AdminHeaderProps {
   userRole?: string
 }
 
-export function AdminHeader({ userName, userRole }: AdminHeaderProps) {
+export function AdminHeader({ userName, userRole = 'sale' }: AdminHeaderProps) {
 
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navItems = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
-    { href: "/admin/products", label: "Products", icon: "📦" },
-    { href: "/admin/orders", label: "Orders", icon: "🛒" },
-    { href: "/admin/customers", label: "Customers", icon: "👥" },
-    { href: "/admin/campaigns", label: "Campaigns", icon: "📢" },
-    { href: "/admin/categories", label: "Categories", icon: "🏷️" },
-    { href: "/admin/banners", label: "Banners", icon: "🖼️" },
-    { href: "/admin/posts", label: "Posts", icon: "📝" },
-  ]
-
-  // Add Users nav only for admins
-  if (userRole === "admin") {
-    navItems.push({ href: "/admin/users", label: "Users", icon: "👤" })
-  }
+    {
+      href: "/admin/dashboard",
+      label: "Tổng quan",
+      icon: "🏠",
+      roles: ["admin", "sale", "warehouse"]
+    },
+    {
+      href: "/admin/dashboard/products",
+      label: "Sản phẩm",
+      icon: "📦",
+      roles: ["admin", "sale", "warehouse"]
+    },
+    {
+      href: "/admin/dashboard/orders",
+      label: "Đơn hàng",
+      icon: "🛒",
+      roles: ["admin", "sale", "warehouse"]
+    },
+    {
+      href: "/admin/dashboard/customers",
+      label: "Khách hàng",
+      icon: "👥",
+      roles: ["admin", "sale"]
+    },
+    {
+      href: "/admin/dashboard/campaigns",
+      label: "Chiến dịch",
+      icon: "📢",
+      roles: ["admin", "sale"]
+    },
+    {
+      href: "/admin/dashboard/categories",
+      label: "Danh mục",
+      icon: "🏷️",
+      roles: ["admin", "sale"]
+    },
+    {
+      href: "/admin/dashboard/banners",
+      label: "Banner",
+      icon: "🖼️",
+      roles: ["admin", "sale"]
+    },
+    {
+      href: "/admin/dashboard/posts",
+      label: "Bài viết",
+      icon: "📝",
+      roles: ["admin", "sale"]
+    },
+    {
+      href: "/admin/users",
+      label: "Người dùng",
+      icon: "👤",
+      roles: ["admin"]
+    },
+    {
+      href: "/admin/analytics",
+      label: "Analytics & Reports",
+      icon: "📊",
+      roles: ["admin", "sale"]
+    },
+  ].filter(item => item.roles.includes(userRole))
 
   const isActive = (href: string) => {
     if (href === "/admin/dashboard") {
@@ -53,7 +100,10 @@ export function AdminHeader({ userName, userRole }: AdminHeaderProps) {
               <Image src="/logo-full.png" alt="Logo" width={32} height={32} />
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
-                  CRM
+                  Hải Sản Ngày Mới
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Management
                 </span>
               </div>
             </Link>

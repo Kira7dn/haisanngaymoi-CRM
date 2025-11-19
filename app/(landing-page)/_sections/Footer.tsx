@@ -1,9 +1,9 @@
-import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Container } from "../ui/Container";
+import { Container } from "../_components/Container";
 import brandConfig from "@/config/brand.json";
-import { Instagram, Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
+import React from "react";
 
 const footerLinks = {
   company: brandConfig.footer.columns.company.links,

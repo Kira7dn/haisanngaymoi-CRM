@@ -1,9 +1,7 @@
 import * as React from "react";
 import Image from "next/image";
-import { Container } from "../ui/Container";
-import { SectionHeading } from "../ui/SectionHeading";
-import { Card, CardContent } from "@shared/ui/card";
-import { AnimatedCounter } from "../ui/AnimatedCounter";
+import { Container } from "../_components/Container";
+import { SectionHeading } from "../_components/SectionHeading";
 import { Users, Heart, Trees, GraduationCap } from "lucide-react";
 
 const impacts = [

@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Container } from "../ui/Container";
-import { SectionHeading } from "../ui/SectionHeading";
+import { Container } from "../_components/Container";
+import { SectionHeading } from "../_components/SectionHeading";
 import { Card, CardContent } from "@shared/ui/card";
-import { Badge } from "../ui/Badge";
+import { Badge } from "../_components/Badge";
 import { Button } from "@shared/ui/button";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@shared/ui/carousel";
 import { ShoppingCart, Star } from "lucide-react";

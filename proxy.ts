@@ -15,15 +15,14 @@ interface AuthRule {
 // ===== Authorization Matrix =====
 const AUTH_RULES: AuthRule[] = [
   { path: "/admin/dashboard", admin: "full", sale: "read", warehouse: "read" },
-  { path: "/admin/products", admin: "full", sale: "read", warehouse: "stock" },
-  { path: "/admin/categories", admin: "full", sale: "read", warehouse: "none" },
-  { path: "/admin/orders", admin: "full", sale: "write", warehouse: "status" },
-  { path: "/admin/customers", admin: "full", sale: "read", warehouse: "none" },
-  { path: "/admin/banners", admin: "full", sale: "read", warehouse: "none" },
-  { path: "/admin/posts", admin: "full", sale: "read", warehouse: "none" },
-  { path: "/admin/stations", admin: "full", sale: "read", warehouse: "none" },
-  { path: "/admin/users", admin: "full", sale: "none", warehouse: "none" },
-  { path: "/admin/campaigns", admin: "full", sale: "read", warehouse: "none" }
+  { path: "/admin/dashboard/products", admin: "full", sale: "read", warehouse: "stock" },
+  { path: "/admin/dashboard/categories", admin: "full", sale: "read", warehouse: "none" },
+  { path: "/admin/dashboard/orders", admin: "full", sale: "write", warehouse: "status" },
+  { path: "/admin/dashboard/customers", admin: "full", sale: "read", warehouse: "none" },
+  { path: "/admin/dashboard/banners", admin: "full", sale: "read", warehouse: "none" },
+  { path: "/admin/dashboard/posts", admin: "full", sale: "read", warehouse: "none" },
+  { path: "/admin/dashboard/campaigns", admin: "full", sale: "read", warehouse: "none" },
+  { path: "/admin/users", admin: "full", sale: "none", warehouse: "none" }
 ];
 
 // ===== CORS Configuration =====

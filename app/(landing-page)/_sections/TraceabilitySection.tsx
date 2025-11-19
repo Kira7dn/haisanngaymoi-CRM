@@ -1,11 +1,10 @@
 "use client";
 
-import * as React from "react";
-import Image from "next/image";
-import { Container } from "../ui/Container";
-import { SectionHeading } from "../ui/SectionHeading";
+import { Container } from "../_components/Container";
+import { SectionHeading } from "../_components/SectionHeading";
 import { Card, CardContent } from "@shared/ui/card";
 import { QrCode, MapPin, Calendar, Ship, Thermometer, CheckCircle2 } from "lucide-react";
+import React from "react";
 
 export function TraceabilitySection() {
   const [selectedStep, setSelectedStep] = React.useState(0);

@@ -1,5 +1,5 @@
-import { getCurrentUserAction } from "./_shared/actions/auth-actions"
-import { AdminHeader } from "./_shared/components/AdminHeader"
+import { getCurrentUserAction } from "../../_shared/actions/auth-actions"
+import { AdminHeader } from "../../_shared/components/AdminHeader"
 
 export default async function FeaturesLayout({
   children,

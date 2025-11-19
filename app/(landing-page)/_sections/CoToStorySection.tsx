@@ -1,8 +1,6 @@
-import * as React from "react";
 import Image from "next/image";
-import { Container } from "../ui/Container";
-import { SectionHeading } from "../ui/SectionHeading";
-import { Card, CardContent } from "@shared/ui/card";
+import { Container } from "../_components/Container";
+import { SectionHeading } from "../_components/SectionHeading";
 import { Icon } from "@shared/ui/icon";
 import brandConfig from "@/config/brand.json";
 

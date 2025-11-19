@@ -1,6 +1,5 @@
-import * as React from "react";
-import { Container } from "../ui/Container";
-import { SectionHeading } from "../ui/SectionHeading";
+import { Container } from "../_components/Container";
+import { SectionHeading } from "../_components/SectionHeading";
 import { Card, CardContent } from "@shared/ui/card";
 import { ArrowRight } from "lucide-react";
 import { Icon } from "@shared/ui/icon";

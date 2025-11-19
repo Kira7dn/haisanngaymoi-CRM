@@ -7,10 +7,10 @@ export default async function UsersPage() {
     // Add Users nav only for admins
     if (user?.role === "admin") {
         // navigate to Dashboard
-        redirect("/admin/dashboard")
+        redirect("/admin/managements")
     }
     if (user?.role === "sale") {
-        redirect("/sale/orders")
+        redirect("/admin/managements/orders")
     }
 
     return (

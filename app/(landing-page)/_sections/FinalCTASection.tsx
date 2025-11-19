@@ -1,8 +1,8 @@
-import { Container } from "../ui/Container";
 import { Button } from "@shared/ui/button";
 import { CheckCircle2, Phone } from "lucide-react";
 import brandConfig from "@/config/brand.json";
 import Image from "next/image";
+import { Container } from "../_components/Container";
 
 export function FinalCTASection() {
   return (

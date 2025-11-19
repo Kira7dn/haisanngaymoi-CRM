@@ -1,14 +1,14 @@
 import Header from "./_components/Header";
-import { HeroSection } from "./sections/HeroSection";
-import { ValuePropsSection } from "./sections/ValuePropsSection";
-import { ProductsSection } from "./sections/ProductsSection";
-import { TraceabilitySection } from "./sections/TraceabilitySection";
-import { CoToStorySection } from "./sections/CoToStorySection";
-import { SustainabilitySection } from "./sections/SustainabilitySection";
-import { TestimonialsSection } from "./sections/TestimonialsSection";
-import { CSRSection } from "./sections/CSRSection";
-import { FinalCTASection } from "./sections/FinalCTASection";
-import { Footer } from "./sections/Footer";
+import { HeroSection } from "./_sections/HeroSection";
+import { ValuePropsSection } from "./_sections/ValuePropsSection";
+import { ProductsSection } from "./_sections/ProductsSection";
+import { TraceabilitySection } from "./_sections/TraceabilitySection";
+import { CoToStorySection } from "./_sections/CoToStorySection";
+import { SustainabilitySection } from "./_sections/SustainabilitySection";
+import { TestimonialsSection } from "./_sections/TestimonialsSection";
+import { CSRSection } from "./_sections/CSRSection";
+import { FinalCTASection } from "./_sections/FinalCTASection";
+import { Footer } from "./_sections/Footer";
 
 /**
  * Landing Page - Ngày Mới Cô Tô

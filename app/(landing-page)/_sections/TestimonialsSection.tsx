@@ -1,9 +1,7 @@
 "use client";
-
-import * as React from "react";
 import Image from "next/image";
-import { Container } from "../ui/Container";
-import { SectionHeading } from "../ui/SectionHeading";
+import { Container } from "../_components/Container";
+import { SectionHeading } from "../_components/SectionHeading";
 import { Card, CardContent } from "@shared/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@shared/ui/carousel";
 import { Star, Quote } from "lucide-react";

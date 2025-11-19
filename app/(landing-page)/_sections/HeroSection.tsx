@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import brandConfig from "@/config/brand.json";
-import HeroCarousel from "../HeroCarousel";
 import { Icon } from "@shared/ui/icon";
+import HeroCarousel from "../_components/HeroCarousel";
 
 export interface HeroSectionProps {
   className?: string;
