@@ -1,9 +1,5 @@
 import '@testing-library/jest-dom'
 import { expect, vi } from 'vitest'
-import dotenv from 'dotenv'
-
-// Load .env.local into process.env for tests (if available)
-dotenv.config({ path: '.env.local' })
 
 declare global {
   var testServer: import('http').Server;

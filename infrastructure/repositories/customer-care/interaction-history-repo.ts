@@ -18,8 +18,7 @@ interface InteractionHistoryDocument extends Omit<InteractionHistory, "id"> {
 
 export class InteractionHistoryRepository
   extends BaseRepository<InteractionHistory, string>
-  implements InteractionHistoryService
-{
+  implements InteractionHistoryService {
   protected collectionName = "interaction_history";
 
   /**
@@ -132,18 +131,28 @@ export class InteractionHistoryRepository
   ): Promise<CustomerInteractionSummary | null> {
     const collection = await this.getCollection();
 
-    const interactions = await collection
+    const docs = await collection
       .find({ customerId })
       .sort({ occurredAt: -1 })
       .toArray();
 
-    if (interactions.length === 0) {
+    if (docs.length === 0) {
       return null;
     }
 
+    const interactions = docs.map((doc) =>
+      this.toDomain(doc as any)
+    ) as InteractionHistory[];
+
     // Calculate summary statistics
-    const byChannel: Record<InteractionChannel, number> = {} as any;
-    const byType: Record<InteractionType, number> = {} as any;
+    const byChannel: Record<InteractionChannel, number> = {} as Record<
+      InteractionChannel,
+      number
+    >;
+    const byType: Record<InteractionType, number> = {} as Record<
+      InteractionType,
+      number
+    >;
     let totalSentiment = 0;
     let sentimentCount = 0;
     let requiresFollowUpCount = 0;

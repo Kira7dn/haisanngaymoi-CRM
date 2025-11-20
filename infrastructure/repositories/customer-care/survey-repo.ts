@@ -27,10 +27,21 @@ interface SurveyResponseDocument extends Omit<SurveyResponse, "id"> {
 
 export class SurveyRepository
   extends BaseRepository<Survey, string>
-  implements SurveyService
-{
+  implements SurveyService {
   protected collectionName = "surveys";
   private responsesCollectionName = "survey_responses";
+
+  private toResponseDomain(doc: SurveyResponseDocument): SurveyResponse {
+    const { _id, ...data } = doc;
+    return { ...data, id: _id.toString() };
+  }
+
+  private toResponseDocument(
+    entity: Partial<SurveyResponse>
+  ): Omit<SurveyResponseDocument, "_id"> {
+    const { id, ...data } = entity;
+    return data as Omit<SurveyResponseDocument, "_id">;
+  }
 
   /**
    * Get responses collection
@@ -126,10 +137,7 @@ export class SurveyRepository
    */
   async submitResponse(payload: SurveyResponsePayload): Promise<SurveyResponse> {
     const collection = await this.getResponsesCollection();
-    const doc = this.toDocument(payload as any) as Omit<
-      SurveyResponseDocument,
-      "_id"
-    >;
+    const doc = this.toResponseDocument(payload as any);
 
     const result = await collection.insertOne({
       ...doc,
@@ -140,7 +148,7 @@ export class SurveyRepository
     if (!created) {
       throw new Error("Failed to submit response");
     }
-    return this.toDomain(created as any);
+    return this.toResponseDomain(created as SurveyResponseDocument);
   }
 
   /**
@@ -159,7 +167,9 @@ export class SurveyRepository
       .limit(limit || 1000)
       .toArray();
 
-    return docs.map((doc) => this.toDomain(doc as any));
+    return docs.map((doc) =>
+      this.toResponseDomain(doc as SurveyResponseDocument)
+    );
   }
 
   /**
@@ -168,7 +178,9 @@ export class SurveyRepository
   async getResponseById(responseId: string): Promise<SurveyResponse | null> {
     const collection = await this.getResponsesCollection();
     const doc = await collection.findOne({ _id: new ObjectId(responseId) });
-    return doc ? (this.toDomain(doc as any) as SurveyResponse) : null;
+    return doc
+      ? this.toResponseDomain(doc as SurveyResponseDocument)
+      : null;
   }
 
   /**

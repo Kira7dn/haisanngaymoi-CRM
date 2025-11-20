@@ -5,7 +5,7 @@
  * Background job processor for sending email campaigns using BullMQ.
  */
 
-import { Worker, Job } from "bullmq";
+import { Worker, Job, Queue } from "bullmq";
 import Redis from "ioredis";
 import { getEmailService } from "../services/email-service";
 
@@ -35,6 +35,7 @@ export interface EmailJobData {
 
 export class CampaignWorker {
   private worker: Worker<CampaignJobData | EmailJobData> | null = null;
+  private emailQueue: Queue<EmailJobData> | null = null;
   private emailService = getEmailService();
 
   constructor() {
@@ -70,6 +71,8 @@ export class CampaignWorker {
         },
       }
     );
+
+    this.emailQueue = new Queue<EmailJobData>("campaigns", { connection });
 
     this.worker.on("completed", (job) => {
       console.log(`[CampaignWorker] Job ${job.id} completed`);
@@ -109,18 +112,17 @@ export class CampaignWorker {
       }),
       text: template.text
         ? this.replaceVariables(template.text, {
-            ...variables,
-            customerName: recipient.name,
-          })
+          ...variables,
+          customerName: recipient.name,
+        })
         : undefined,
       campaignId,
       customerId: recipient.customerId,
     }));
 
     // Add individual email jobs to queue
-    const queue = this.worker?.queue;
-    if (queue) {
-      await queue.addBulk(
+    if (this.emailQueue) {
+      await this.emailQueue.addBulk(
         emailJobs.map((data, index) => ({
           name: "send-email",
           data,

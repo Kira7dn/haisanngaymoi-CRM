@@ -1,10 +1,11 @@
 import { Button } from "@shared/ui/button";
 import { Plus } from "lucide-react";
 import { CampaignList } from "./_components/CampaignList";
+import type { MessageCampaign } from "@/core/domain/customer-care/message-campaign";
 
 export default async function CampaignsPage() {
   // Mock data for now - will be replaced with API call
-  const campaigns = [];
+  const campaigns: MessageCampaign[] = [];
 
   return (
     <div className="container mx-auto py-8">

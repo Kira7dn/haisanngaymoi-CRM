@@ -1,20 +1,4 @@
 {
-    // ESLint Configuration
-    "eslint.enable": true,
-    "eslint.lintOnSave": true,
-    "eslint.run": "onSave", // Run ESLint on typing, not just on save
-    "eslint.problems.showCurrentDocumentOnly": false, // Show problems from all files
-    "eslint.validate": [
-        "javascript",
-        "javascriptreact",
-        "typescript",
-        "typescriptreact"
-    ],
-    "eslint.workingDirectories": [
-        {
-            "mode": "auto"
-        }
-    ],
     // Problem Matcher - Show all problems in Problems panel
     "problems.showCurrentInStatus": false,
     "problems.sortOrder": "severity",
