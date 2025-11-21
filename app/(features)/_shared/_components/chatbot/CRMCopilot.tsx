@@ -1,10 +1,11 @@
 'use client';
 
-import { CopilotSidebar } from '@copilotkit/react-ui';
+import { CopilotKitCSSProperties, CopilotSidebar } from '@copilotkit/react-ui';
 import { useCopilotAction, useCopilotReadable } from '@copilotkit/react-core';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useConversationHistory } from './hooks/useConversationHistory';
+import { ConversationHistory } from './_components/ConversationHistory';
 import {
   getOrderByIdAction,
   createOrderAction,
@@ -16,12 +17,14 @@ import {
 
 interface CRMCopilotProps {
   userId: string;
-  userRole: 'admin' | 'sales' | 'warehouse';
+  userRole: 'admin' | 'sales' | 'warehouse'
+  children: React.ReactNode
 }
 
-export function CRMCopilot({ userId, userRole }: CRMCopilotProps) {
+export function CRMCopilot({ userId, userRole, children }: CRMCopilotProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [themeColor, setThemeColor] = useState("#6366f1");
   const [currentContext, setCurrentContext] = useState<{
     orderId?: number;
     customerId?: string;
@@ -32,10 +35,32 @@ export function CRMCopilot({ userId, userRole }: CRMCopilotProps) {
   const {
     conversations,
     currentConversationId,
+    loading: conversationsLoading,
     saveCurrentConversation,
     loadConversation,
     startNewConversation,
   } = useConversationHistory(userId);
+  function createInstruction({ userRole }: { userRole: 'admin' | 'sales' | 'warehouse' }): string {
+
+    return `You are an intelligent CRM assistant for Hải Sản Ngày Mới (Fresh Seafood from Cô Tô Island). 
+    Current user role: ${userRole}
+    
+    You help users:
+    - Manage orders (get details, create, update status, generate payment links)
+    - Search and manage customers
+    - View analytics and reports (revenue, top products, customer metrics)
+    - Navigate the CRM system
+
+    Always be helpful, concise, and action-oriented. After completing an action, suggest relevant next steps.
+    Respond in Vietnamese when appropriate.
+
+    Role permissions:
+    - Admin: Full access to all features
+    - Sales: Can manage orders, customers, products, and posts
+    - Warehouse: Can view orders and update order status to processing/shipping
+
+    When suggesting actions, respect the user's role permissions.`
+  }
 
   // Auto-save conversation periodically
   useEffect(() => {
@@ -64,6 +89,18 @@ export function CRMCopilot({ userId, userRole }: CRMCopilotProps) {
       module: pathname.split('/')[2] || 'dashboard',
       ...currentContext
     }
+  });
+
+  useCopilotAction({
+    name: "setThemeColor",
+    parameters: [{
+      name: "themeColor",
+      description: "The theme color to set. Make sure to pick nice colors.",
+      required: true,
+    }],
+    handler({ themeColor }) {
+      setThemeColor(themeColor);
+    },
   });
 
   // ===== ORDER ACTIONS =====
@@ -380,8 +417,6 @@ export function CRMCopilot({ userId, userRole }: CRMCopilotProps) {
             email: customer.email,
             tier: customer.tier,
             primarySource: customer.primarySource,
-            totalOrders: customer.stats.totalOrders || 0,
-            totalSpent: customer.stats.totalSpent || 0
           }
         };
       } catch (error) {
@@ -441,35 +476,33 @@ export function CRMCopilot({ userId, userRole }: CRMCopilotProps) {
   });
 
   return (
-    <CopilotSidebar
-      defaultOpen={false}
-      clickOutsideToClose={true}
-      labels={{
-        title: 'CRM Assistant',
-        initial: 'Xin chào! Tôi có thể giúp gì cho bạn?',
-        placeholder: 'Nhập câu hỏi hoặc yêu cầu...'
-      }}
-      instructions={`You are an intelligent CRM assistant for Hải Sản Ngày Mới (Fresh Seafood from Cô Tô Island).
+    <>
 
-Current user role: ${userRole}
-
-You help users:
-- Manage orders (get details, create, update status, generate payment links)
-- Search and manage customers
-- View analytics and reports (revenue, top products, customer metrics)
-- Navigate the CRM system
-
-Always be helpful, concise, and action-oriented. After completing an action, suggest relevant next steps.
-Respond in Vietnamese when appropriate.
-
-Role permissions:
-- Admin: Full access to all features
-- Sales: Can manage orders, customers, products, and posts
-- Warehouse: Can view orders and update order status to processing/shipping
-
-When suggesting actions, respect the user's role permissions.`}
-      className="custom-copilot-sidebar"
-    />
+      {/* CopilotKit Chat Interface */}
+      <div
+      // style={{
+      //   height: "420px",
+      //   maxHeight: "420px",
+      //   position: "fixed",
+      //   bottom: "20px",
+      //   right: "20px",
+      //   zIndex: 100,
+      // }}
+      >
+        <CopilotSidebar
+          defaultOpen={false}
+          clickOutsideToClose={true}
+          labels={{
+            title: 'CRM Assistant',
+            initial: 'Xin chào! Tôi có thể giúp gì cho bạn?',
+            placeholder: 'Nhập câu hỏi hoặc yêu cầu...'
+          }}
+          instructions={createInstruction({ userRole })}
+        >
+          {children}
+        </CopilotSidebar>
+      </div>
+    </>
   );
 }
 

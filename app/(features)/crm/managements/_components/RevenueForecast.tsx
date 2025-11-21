@@ -84,7 +84,7 @@ export function RevenueForecast({ forecast }: RevenueForecastProps) {
             return (
               <div
                 key={pred.period}
-                className="p-3 rounded-lg border dark:border-gray-700 bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-gray-900"
+                className="p-3 rounded-lg border dark:border-gray-700 bg-linear-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-gray-900"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">

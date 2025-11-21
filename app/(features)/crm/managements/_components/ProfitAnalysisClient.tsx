@@ -201,7 +201,7 @@ export function ProfitAnalysisClient() {
               {data.topProfitProducts.map((product, idx) => (
                 <div
                   key={product.productId}
-                  className="p-2 rounded-lg bg-gradient-to-r from-green-50 to-white dark:from-green-950/20 dark:to-gray-900 border border-green-200 dark:border-green-800"
+                  className="p-2 rounded-lg bg-linear-to-r from-green-50 to-white dark:from-green-950/20 dark:to-gray-900 border border-green-200 dark:border-green-800"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">

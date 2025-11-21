@@ -1,14 +1,97 @@
 "use client"
 
 import { Card, CardHeader, CardTitle, CardContent } from "@shared/ui/card"
+import { Skeleton } from "@shared/ui/skeleton"
 import { Shield, AlertTriangle, CheckCircle, TrendingUp } from "lucide-react"
 import type { RiskAssessment } from "@/infrastructure/ai/risk-assessment-service"
 
 interface AIRiskAssessmentProps {
   assessment: RiskAssessment | null
+  isLoading?: boolean
 }
 
-export function AIRiskAssessment({ assessment }: AIRiskAssessmentProps) {
+export function AIRiskAssessment({ assessment, isLoading = false }: AIRiskAssessmentProps) {
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {/* Overall Risk Score Skeleton */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                AI Risk Assessment
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-8 w-16" />
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardContent>
+        </Card>
+
+        {/* Identified Risks Skeleton */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+              <Skeleton className="h-5 w-40" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {[1, 2, 3].map((idx) => (
+              <div key={idx} className="p-3 rounded-lg border-l-4 border-gray-300 bg-gray-50 dark:bg-gray-950/20">
+                <div className="flex items-start gap-3">
+                  <Skeleton className="w-8 h-8 rounded" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-4 w-32" />
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-5 w-16" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-4/5" />
+                    <Skeleton className="h-3 w-3/4" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Business Opportunities Skeleton */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <Skeleton className="h-5 w-48" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {[1, 2].map((idx) => (
+              <div key={idx} className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   if (!assessment) {
     return (
       <Card>

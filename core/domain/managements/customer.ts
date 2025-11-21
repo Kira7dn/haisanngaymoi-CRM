@@ -21,15 +21,6 @@ export interface CustomerPlatformId {
   platformUserId: string; // External platform user ID (e.g., Zalo User ID, Facebook User ID)
 }
 
-/**
- * Customer statistics
- */
-export interface CustomerStats {
-  totalOrders: number;
-  totalSpent: number;
-  averageOrderValue: number;
-  lastOrderDate?: Date;
-}
 
 /**
  * Unified Customer domain entity
@@ -53,9 +44,6 @@ export type Customer = {
   tier: CustomerTier;
   status: CustomerStatus;
   tags: string[]; // For segmentation (e.g., "high-value", "frequent-buyer")
-
-  // Statistics
-  stats: CustomerStats;
 
   // Notes for customer management
   notes?: string;

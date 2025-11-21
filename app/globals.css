@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "gridstack/dist/gridstack.min.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -153,6 +154,17 @@
 
   html {
     scroll-behavior: smooth;
+  }
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
   }
 }
 
@@ -502,4 +514,9 @@
 
 .bubbles-small g:nth-of-type(10) circle {
   animation: wobble 3s 2.4s infinite;
+}
+
+.copilotKitWindow {
+  z-index: 1000 !important;
+  min-height: calc(100vh - 64px) !important;
 }

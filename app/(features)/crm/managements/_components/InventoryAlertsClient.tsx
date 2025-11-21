@@ -103,7 +103,7 @@ export function InventoryAlertsClient() {
       <CardContent className="space-y-3">
         {/* Out of Stock */}
         {alerts.outOfStock.length > 0 && (
-          <div className="space-y-2">
+          <div key="out-of-stock-section" className="space-y-2">
             <h4 className="text-sm font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
               <PackageX className="w-4 h-4" />
               Hết hàng ({alerts.outOfStock.length})
@@ -131,7 +131,7 @@ export function InventoryAlertsClient() {
 
         {/* Low Stock */}
         {alerts.lowStock.length > 0 && (
-          <div className="space-y-2">
+          <div key="low-stock-section" className="space-y-2">
             <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
               <PackageOpen className="w-4 h-4" />
               Sắp hết hàng ({alerts.lowStock.length})

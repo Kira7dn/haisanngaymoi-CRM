@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { sendChatMessageAction } from "../actions";
-import { Button } from "@/@shared/ui/button";
-import { Input } from "@/@shared/ui/input";
+import { Button } from "@shared/ui/button";
+import { Input } from "@shared/ui/input";
 import {
   MessageSquare,
   X,
@@ -146,7 +146,7 @@ export function ChatbotWidget({ userId, userName = "User" }: ChatbotWidgetProps)
 
   // Chat widget
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[400px] h-[600px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl flex flex-col border border-gray-200 dark:border-gray-700">
+    <div className="fixed bottom-6 right-6 z-50 w-[400px] h-[400px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl flex flex-col border border-gray-200 dark:border-gray-700">
       {/* Header */}
       <div className="bg-linear-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center gap-2">

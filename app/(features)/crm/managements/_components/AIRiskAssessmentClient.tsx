@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@shared/ui/card"
-import { Shield, Loader2 } from "lucide-react"
+import { Shield } from "lucide-react"
 import { AIRiskAssessment } from "./AIRiskAssessment"
 import { generateRiskAssessment } from "../ai-actions"
 import type { RiskAssessment } from "@/infrastructure/ai/risk-assessment-service"
@@ -25,7 +25,7 @@ export function AIRiskAssessmentClient() {
             setError(result.error || "Failed to load risk assessment")
           }
         }
-      } catch (err) {
+      } catch {
         if (mounted) {
           setError("Failed to load risk assessment")
         }
@@ -42,27 +42,6 @@ export function AIRiskAssessmentClient() {
       mounted = false
     }
   }, [])
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Shield className="w-5 h-5" />
-            AI Risk Assessment
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
-            <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-              Analyzing business risks...
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
 
   if (error) {
     return (
@@ -82,5 +61,5 @@ export function AIRiskAssessmentClient() {
     )
   }
 
-  return <AIRiskAssessment assessment={assessment} />
+  return <AIRiskAssessment assessment={assessment} isLoading={loading} />
 }

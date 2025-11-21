@@ -134,9 +134,9 @@ const DesktopNavDropdown = ({
   if (group.items.length === 0) return null
 
   return (
-    <NavigationMenuItem>
-      <NavigationMenuTrigger>{group.label}</NavigationMenuTrigger>
-      <NavigationMenuContent>
+    <NavigationMenuItem suppressHydrationWarning>
+      <NavigationMenuTrigger suppressHydrationWarning>{group.label}</NavigationMenuTrigger>
+      <NavigationMenuContent suppressHydrationWarning>
         <div className="grid gap-3 p-4 w-[200px] md:w-[200px] md:grid-cols-1">
           {group.items.map((item) => (
             <NavigationMenuLink key={item.href} asChild>
@@ -241,7 +241,7 @@ export function AdminHeader({ userName, userRole = 'sale' }: AdminHeaderProps) {
           </div>
 
           {/* Desktop Navigation */}
-          <NavigationMenu className="hidden lg:flex" viewport={false}>
+          <NavigationMenu className="hidden lg:flex" viewport={false} suppressHydrationWarning>
             <NavigationMenuList>
               {/* Dynamic navigation groups */}
               {filteredNavGroups.map((group) => (

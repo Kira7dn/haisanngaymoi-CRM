@@ -12,13 +12,27 @@ export default async function FeaturesLayout({
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <AdminHeader userName={user?.name} userRole={user?.role} />
-      <main>{children}</main>
       {user && (
         <CRMCopilot
           userId={user.id?.toString() || ""}
           userRole={(user.role as 'admin' | 'sales' | 'warehouse') || 'admin'}
-        />
+        >
+          <main>{children}</main>
+        </CRMCopilot>
       )}
     </div>
+    // <div>
+    //   {user && (
+    //     <CRMCopilot
+    //       userId={user.id?.toString() || ""}
+    //       userRole={(user.role as 'admin' | 'sales' | 'warehouse') || 'admin'}
+    //     >
+    //       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    //         <AdminHeader userName={user?.name} userRole={user?.role} />
+    //         <main>{children}</main>
+    //       </div>
+    //     </CRMCopilot>
+    //   )}
+    // </div>
   )
 }

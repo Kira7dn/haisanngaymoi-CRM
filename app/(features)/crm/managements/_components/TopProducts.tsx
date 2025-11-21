@@ -68,7 +68,7 @@ export function TopProducts({ products }: TopProductsProps) {
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all"
+                    className="bg-linear-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
