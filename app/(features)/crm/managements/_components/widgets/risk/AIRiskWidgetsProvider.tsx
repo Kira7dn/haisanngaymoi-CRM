@@ -1,11 +1,18 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { AIRiskOpportunitiesWidget } from "./AIRiskOpportunitiesWidget"
-import { generateRiskAssessment } from "../../ai-actions"
+import { generateRiskAssessment } from "../../../ai-actions"
 import type { RiskAssessment } from "@/infrastructure/ai/risk-assessment-service"
 
-export function AIRiskOpportunitiesWidgetClient() {
+/**
+ * Provider component that fetches risk assessment data once
+ * and provides it to child components via render props
+ */
+interface AIRiskWidgetsProviderProps {
+  children: (assessment: RiskAssessment | null, isLoading: boolean) => React.ReactNode
+}
+
+export function AIRiskWidgetsProvider({ children }: AIRiskWidgetsProviderProps) {
   const [assessment, setAssessment] = useState<RiskAssessment | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -36,5 +43,5 @@ export function AIRiskOpportunitiesWidgetClient() {
     }
   }, [])
 
-  return <AIRiskOpportunitiesWidget assessment={assessment} isLoading={loading} />
+  return <>{children(assessment, loading)}</>
 }

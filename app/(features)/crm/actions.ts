@@ -58,6 +58,21 @@ export async function getDashboardStats() {
     const lastMonthRevenue = calculateRevenue(lastMonthOrders)
     const last7DaysRevenue = calculateRevenue(last7DaysOrders)
 
+    // Calculate 30-day trailing data
+    const last30DaysOrders = filterOrdersByDate(orders, last30DaysStart)
+    const last30DaysRevenue = calculateRevenue(last30DaysOrders)
+
+    // Calculate previous 7-day and 30-day for comparison
+    const prev7DaysStart = new Date(last7DaysStart)
+    prev7DaysStart.setDate(prev7DaysStart.getDate() - 7)
+    const prev7DaysOrders = filterOrdersByDate(orders, prev7DaysStart, last7DaysStart)
+    const prev7DaysRevenue = calculateRevenue(prev7DaysOrders)
+
+    const prev30DaysStart = new Date(last30DaysStart)
+    prev30DaysStart.setDate(prev30DaysStart.getDate() - 30)
+    const prev30DaysOrders = filterOrdersByDate(orders, prev30DaysStart, last30DaysStart)
+    const prev30DaysRevenue = calculateRevenue(prev30DaysOrders)
+
     // Calculate percentage changes
     const revenueChangeVsYesterday = yesterdayRevenue > 0
       ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
@@ -265,6 +280,20 @@ export async function getDashboardStats() {
     // Note: AI predictions are now loaded separately via client-side actions
     // to prevent blocking the initial page load
 
+    // Calculate change percentages for trailing data
+    const revenueChangeVsPrev7Days = prev7DaysRevenue > 0
+      ? ((last7DaysRevenue - prev7DaysRevenue) / prev7DaysRevenue) * 100
+      : 0
+    const revenueChangeVsPrev30Days = prev30DaysRevenue > 0
+      ? ((last30DaysRevenue - prev30DaysRevenue) / prev30DaysRevenue) * 100
+      : 0
+
+    // Calculate 7-day trailing metrics (orders, profit will be calculated in widgets)
+    const last7DaysOrderCount = last7DaysOrders.length
+    const prev7DaysOrderCount = prev7DaysOrders.length
+    const last30DaysOrderCount = last30DaysOrders.length
+    const prev30DaysOrderCount = prev30DaysOrders.length
+
     return {
       // Revenue metrics
       todayRevenue,
@@ -273,6 +302,18 @@ export async function getDashboardStats() {
       lastMonthRevenue,
       revenueChangeVsYesterday,
       revenueChangeVsLastMonth,
+
+      // Trailing metrics (7-day and 30-day)
+      last7DaysRevenue,
+      prev7DaysRevenue,
+      revenueChangeVsPrev7Days,
+      last7DaysOrderCount,
+      prev7DaysOrderCount,
+      last30DaysRevenue,
+      prev30DaysRevenue,
+      revenueChangeVsPrev30Days,
+      last30DaysOrderCount,
+      prev30DaysOrderCount,
 
       // Order metrics
       totalOrders: orders.length,

@@ -83,6 +83,27 @@ export interface CacheConfig {
 export function generateCacheKey(prefix: string, data: unknown): string {
   const crypto = require("crypto")
 
+  // Normalize numbers to avoid floating-point precision issues
+  const normalize = (obj: unknown): unknown => {
+    if (obj === null || obj === undefined) return obj
+    if (typeof obj === "number") {
+      // Round to 2 decimal places to avoid floating-point precision issues
+      return Math.round(obj * 100) / 100
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(normalize)
+    }
+    if (typeof obj === "object") {
+      return Object.keys(obj as Record<string, unknown>)
+        .sort()
+        .reduce((acc, key) => {
+          acc[key] = normalize((obj as Record<string, unknown>)[key])
+          return acc
+        }, {} as Record<string, unknown>)
+    }
+    return obj
+  }
+
   // Sort object keys for stable serialization
   const serialize = (obj: unknown): string => {
     if (obj === null || obj === undefined) return "null"
@@ -99,7 +120,8 @@ export function generateCacheKey(prefix: string, data: unknown): string {
     return JSON.stringify(sorted)
   }
 
-  const serialized = serialize(data)
+  const normalized = normalize(data)
+  const serialized = serialize(normalized)
   const hash = crypto.createHash("sha256").update(serialized).digest("hex")
 
   return `${prefix}:${hash}`

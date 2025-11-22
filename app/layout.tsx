@@ -81,7 +81,6 @@ export const metadata: Metadata = {
     shortcut: '/logo-full.svg',
     apple: '/logo-full.png',
   },
-  manifest: '/manifest.json',
   // themeColor moved to generateViewport
 };
 

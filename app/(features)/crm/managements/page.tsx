@@ -1,40 +1,36 @@
 import { getCurrentUserAction } from "../../_shared/actions/auth-actions"
 import { getDashboardStats } from "../actions"
-import { RiskAlerts } from "./_components/widgets/RiskAlerts"
-import { TopProducts } from "./_components/TopProducts"
-import { RevenueForecastClient } from "./_components/RevenueForecastClient"
-import { AIRiskAssessmentClient } from "./_components/AIRiskAssessmentClient"
-import { InventoryAlertsClient } from "./_components/InventoryAlertsClient"
-import { ProfitAnalysisClient } from "./_components/ProfitAnalysisClient"
-import { OrdersChart } from "./_components/OrdersChart"
-import { RecentOrders } from "./_components/RecentOrders"
+import { RiskAlerts } from "./_components/widgets/Alerts/RiskAlerts"
+import { TopProducts } from "./_components/widgets/order/TopProducts"
 import { CustomizableDashboardClient } from "./_components/CustomizableDashboardClient"
 import { Widget } from "./_components/GridStackDashboard"
 
 // Individual modular widgets
-import { TodayRevenueWidget } from "./_components/widgets/TodayRevenueWidget"
-import { MonthRevenueWidget } from "./_components/widgets/MonthRevenueWidget"
-import { NewCustomersWidget } from "./_components/widgets/NewCustomersWidget"
-import { TodayOrdersWidget } from "./_components/widgets/TodayOrdersWidget"
-import { AverageOrderValueWidget } from "./_components/widgets/AverageOrderValueWidget"
-import { ChurnRiskWidget } from "./_components/widgets/ChurnRiskWidget"
-import { ErrorRateWidget } from "./_components/widgets/ErrorRateWidget"
-import { TotalProductsWidget } from "./_components/widgets/TotalProductsWidget"
-import { ReturningCustomersWidget } from "./_components/widgets/ReturningCustomersWidget"
-import { CustomerLTVWidget } from "./_components/widgets/CustomerLTVWidget"
-import { LateOrdersWidget } from "./_components/widgets/LateOrdersWidget"
-import { ProcessingTimeWidget } from "./_components/widgets/ProcessingTimeWidget"
-import { TopProfitProductsWidget } from "./_components/widgets/TopProfitProductsWidget"
-import { DecliningProductsWidget } from "./_components/widgets/DecliningProductsWidget"
-import { TopStaffWidget } from "./_components/widgets/TopStaffWidget"
-import { MonthProfitWidget } from "./_components/widgets/MonthProfitWidget"
-import { TodayProfitWidget } from "./_components/widgets/TodayProfitWidget"
-import { AIRiskOverallWidgetClient } from "./_components/widgets/AIRiskOverallWidgetClient"
-import { AIRiskIdentifiedWidgetClient } from "./_components/widgets/AIRiskIdentifiedWidgetClient"
-import { AIRiskOpportunitiesWidgetClient } from "./_components/widgets/AIRiskOpportunitiesWidgetClient"
-import { OrderStatusWidget } from "./_components/widgets/OrderStatusWidget"
-import { PaymentStatusWidget } from "./_components/widgets/PaymentStatusWidget"
-import { useCopilotReadable } from "@copilotkit/react-core"
+import { RevenueForecast } from "./_components/widgets/forecast/RevenueForecast"
+import { RecentOrders } from "./_components/widgets/order/RecentOrders"
+import { InventoryAlertsWidget } from "./_components/widgets/Alerts/InventoryAlertsWidget"
+import { WeekRevenueWidget } from "./_components/widgets/finance/WeekRevenueWidget"
+import { MonthRevenueWidget } from "./_components/widgets/finance/MonthRevenueWidget"
+import { NewCustomersWidget } from "./_components/widgets/customer/NewCustomersWidget"
+import { WeekOrdersWidget } from "./_components/widgets/finance/WeekOrdersWidget"
+import { AverageOrderValueWidget } from "./_components/widgets/order/AverageOrderValueWidget"
+import { ChurnRiskWidget } from "./_components/widgets/customer/ChurnRiskWidget"
+import { ErrorRateWidget } from "./_components/widgets/order/ErrorRateWidget"
+import { TotalProductsWidget } from "./_components/widgets/product/TotalProductsWidget"
+import { ReturningCustomersWidget } from "./_components/widgets/customer/ReturningCustomersWidget"
+import { CustomerLTVWidget } from "./_components/widgets/customer/CustomerLTVWidget"
+import { LateOrdersWidget } from "./_components/widgets/order/LateOrdersWidget"
+import { ProcessingTimeWidget } from "./_components/widgets/order/ProcessingTimeWidget"
+import { TopProfitProductsWidget } from "./_components/widgets/product/TopProfitProductsWidget"
+import { DecliningProductsWidget } from "./_components/widgets/product/DecliningProductsWidget"
+import { TopStaffWidget } from "./_components/widgets/order/TopStaffWidget"
+import { MonthProfitWidget } from "./_components/widgets/finance/MonthProfitWidget"
+import { WeekProfitWidget } from "./_components/widgets/finance/WeekProfitWidget"
+import { AIRiskOverallWidgetClient } from "./_components/widgets/risk/AIRiskOverallWidgetClient"
+import { AIRiskIdentifiedWidgetClient } from "./_components/widgets/risk/AIRiskIdentifiedWidgetClient"
+import { AIRiskOpportunitiesWidgetClient } from "./_components/widgets/risk/AIRiskOpportunitiesWidgetClient"
+import { OrderStatusWidget } from "./_components/widgets/order/OrderStatusWidget"
+import { PaymentStatusWidget } from "./_components/widgets/order/PaymentStatusWidget"
 
 // Enable ISR with 5 minute revalidation
 export const revalidate = 300
@@ -57,21 +53,14 @@ export default async function DashboardPage() {
   const widgets: Widget[] = [
     // Finance module - Individual metric widgets
     {
-      id: "today-revenue",
-      title: (
-        <div className="flex gap-2">
-          <span className="text-xl">💰</span>
-          <h3 className="">
-            Doanh thu hôm nay
-          </h3>
-        </div>
-      ),
+      id: "doanh-thu-7-ngay",
+      title: "Doanh thu 7 ngày",
       component: (
-        <TodayRevenueWidget
-          key="today-revenue-widget"
-          todayRevenue={stats.todayRevenue}
-          yesterdayRevenue={stats.yesterdayRevenue}
-          revenueChangeVsYesterday={stats.revenueChangeVsYesterday}
+        <WeekRevenueWidget
+          key="doanh-thu-7-ngay"
+          last7DaysRevenue={stats.last7DaysRevenue}
+          prev7DaysRevenue={stats.prev7DaysRevenue}
+          revenueChangeVsPrev7Days={stats.revenueChangeVsPrev7Days}
         />
       ),
       visible: true,
@@ -80,14 +69,14 @@ export default async function DashboardPage() {
       h: 3,
     },
     {
-      id: "month-revenue",
-      title: "Doanh thu tháng",
+      id: "doanh-thu-30-ngay",
+      title: "Doanh thu 30 ngày",
       component: (
         <MonthRevenueWidget
-          key="month-revenue-widget"
-          thisMonthRevenue={stats.thisMonthRevenue}
-          lastMonthRevenue={stats.lastMonthRevenue}
-          revenueChangeVsLastMonth={stats.revenueChangeVsLastMonth}
+          key="doanh-thu-30-ngay"
+          last30DaysRevenue={stats.last30DaysRevenue}
+          prev30DaysRevenue={stats.prev30DaysRevenue}
+          revenueChangeVsPrev30Days={stats.revenueChangeVsPrev30Days}
         />
       ),
       visible: true,
@@ -96,11 +85,11 @@ export default async function DashboardPage() {
       h: 3,
     },
     {
-      id: "average-order-value",
+      id: "gia-tri-don-trung-binh",
       title: "Giá trị đơn TB",
       component: (
         <AverageOrderValueWidget
-          key="average-order-value-widget"
+          key="gia-tri-don-trung-binh"
           aov={stats.aov}
           totalOrders={stats.totalOrders}
         />
@@ -111,19 +100,19 @@ export default async function DashboardPage() {
       h: 3,
     },
     {
-      id: "today-profit",
-      title: "Lợi nhuận hôm nay",
-      component: <TodayProfitWidget key="today-profit-widget" />,
+      id: "loi-nhuan-7-ngay",
+      title: "Lợi nhuận 7 ngày",
+      component: <WeekProfitWidget key="loi-nhuan-7-ngay" />,
       visible: true,
       module: "finance",
       w: 2,
       h: 3,
     },
     {
-      id: "month-profit",
-      title: "Lợi nhuận tháng",
+      id: "loi-nhuan-30-ngay",
+      title: "Lợi nhuận 30 ngày",
       component: (
-        <MonthProfitWidget key="month-profit-widget" />
+        <MonthProfitWidget key="loi-nhuan-30-ngay" />
       ),
       visible: true,
       module: "finance",
@@ -131,9 +120,9 @@ export default async function DashboardPage() {
       h: 3,
     },
     {
-      id: "top-profit-products",
+      id: "san-pham-co-loi-nhuan-cao",
       title: "Top SP lợi nhuận",
-      component: <TopProfitProductsWidget key="top-profit-products-widget" />,
+      component: <TopProfitProductsWidget key="san-pham-co-loi-nhuan-cao" />,
       visible: true,
       module: "finance",
       w: 6,
@@ -142,11 +131,11 @@ export default async function DashboardPage() {
 
     // Customer module - Individual customer widgets
     {
-      id: "new-customers",
+      id: "khach-hang-moi",
       title: "Khách hàng mới",
       component: (
         <NewCustomersWidget
-          key="new-customers-widget"
+          key="khach-hang-moi"
           todayNewCustomers={stats.todayNewCustomers}
           totalCustomers={stats.totalCustomers}
           returningRate={stats.returningRate}
@@ -158,11 +147,11 @@ export default async function DashboardPage() {
       h: 3,
     },
     {
-      id: "returning-customers",
+      id: "khach-hang-quay-lai",
       title: "Khách hàng quay lại",
       component: (
         <ReturningCustomersWidget
-          key="returning-customers-widget"
+          key="khach-hang-quay-lai"
           returningCustomers={stats.returningCustomers}
           returningRate={stats.returningRate}
         />
@@ -173,11 +162,11 @@ export default async function DashboardPage() {
       h: 3,
     },
     {
-      id: "churn-risk",
+      id: "nguy-co-roi-bo",
       title: "Nguy cơ rời bỏ",
       component: (
         <ChurnRiskWidget
-          key="churn-risk-widget"
+          key="nguy-co-roi-bo"
           churnRiskCustomers={stats.churnRiskCustomers}
           churnRiskRate={stats.churnRiskRate}
         />
@@ -188,9 +177,9 @@ export default async function DashboardPage() {
       h: 3,
     },
     {
-      id: "customer-ltv",
+      id: "gia-tri-tron-doi-khach-hang",
       title: "LTV TB khách hàng",
-      component: <CustomerLTVWidget key="customer-ltv-widget" avgLTV={stats.avgLTV} />,
+      component: <CustomerLTVWidget key="gia-tri-tron-doi-khach-hang" avgLTV={stats.avgLTV} />,
       visible: true,
       module: "customer",
       w: 2,
@@ -199,12 +188,13 @@ export default async function DashboardPage() {
 
     // Order module - Individual order widgets
     {
-      id: "today-orders",
-      title: "Đơn hàng hôm nay",
+      id: "don-hang-7-ngay",
+      title: "Đơn hàng 7 ngày",
       component: (
-        <TodayOrdersWidget
-          key="today-orders-widget"
-          todayOrderCount={stats.todayOrderCount}
+        <WeekOrdersWidget
+          key="don-hang-7-ngay"
+          last7DaysOrderCount={stats.last7DaysOrderCount}
+          prev7DaysOrderCount={stats.prev7DaysOrderCount}
           pendingOrders={stats.pendingOrders}
           completionRate={stats.completionRate}
         />
@@ -215,11 +205,11 @@ export default async function DashboardPage() {
       h: 3,
     },
     {
-      id: "error-rate",
+      id: "ty-le-loi",
       title: "Tỷ lệ lỗi",
       component: (
         <ErrorRateWidget
-          key="error-rate-widget"
+          key="ty-le-loi"
           errorRate={stats.errorRate}
           cancelledOrders={stats.cancelledOrders}
         />
@@ -230,20 +220,20 @@ export default async function DashboardPage() {
       h: 3,
     },
     {
-      id: "late-orders",
+      id: "don-tre-han",
       title: "Đơn trễ hạn",
-      component: <LateOrdersWidget key="late-orders-widget" lateOrders={stats.lateOrders} />,
+      component: <LateOrdersWidget key="don-tre-han" lateOrders={stats.lateOrders} />,
       visible: true,
       module: "order",
       w: 2,
       h: 3,
     },
     {
-      id: "processing-time",
+      id: "thoi-gian-xu-ly-trung-binh",
       title: "Thời gian xử lý TB",
       component: (
         <ProcessingTimeWidget
-          key="processing-time-widget"
+          key="thoi-gian-xu-ly-trung-binh"
           avgProcessingTime={stats.avgProcessingTime}
         />
       ),
@@ -252,27 +242,12 @@ export default async function DashboardPage() {
       w: 2,
       h: 3,
     },
-    // {
-    //   id: "orders-chart",
-    //   title: "Biểu đồ đơn hàng",
-    //   component: (
-    //     <OrdersChart
-    //       key="orders-chart-widget"
-    //       ordersByStatus={stats.ordersByStatus}
-    //       ordersByPayment={stats.ordersByPayment}
-    //     />
-    //   ),
-    //   visible: true,
-    //   module: "order",
-    //   w: 12,
-    //   h: 3,
-    // },
     {
-      id: "order-status-widget",
+      id: "trang-thai-don-hang",
       title: "Trạng thái đơn hàng",
       component: (
         <OrderStatusWidget
-          key="order-status-widget"
+          key="trang-thai-don-hang"
           ordersByStatus={stats.ordersByStatus}
         />
       ),
@@ -282,11 +257,11 @@ export default async function DashboardPage() {
       h: 5,
     },
     {
-      id: "payment-status-widget",
+      id: "trang-thai-thanh-toan",
       title: "Trạng thái thanh toán",
       component: (
         <PaymentStatusWidget
-          key="payment-status-widget"
+          key="trang-thai-thanh-toan"
           ordersByPayment={stats.ordersByPayment}
         />
       ),
@@ -296,18 +271,18 @@ export default async function DashboardPage() {
       h: 3,
     },
     {
-      id: "recent-orders",
+      id: "don-hang-gan-day",
       title: "Đơn hàng gần đây",
-      component: <RecentOrders key="recent-orders-widget" orders={stats.recentOrders} />,
+      component: <RecentOrders key="don-hang-gan-day" orders={stats.recentOrders} />,
       visible: true,
       module: "order",
       w: 6,
       h: 3,
     },
     {
-      id: "top-staff",
+      id: "nhan-vien-xuat-sac",
       title: "Nhân viên xuất sắc",
-      component: <TopStaffWidget key="top-staff-widget" topPerformingStaff={stats.topPerformingStaff} />,
+      component: <TopStaffWidget key="nhan-vien-xuat-sac" topPerformingStaff={stats.topPerformingStaff} />,
       visible: true,
       module: "order",
       w: 6,
@@ -316,11 +291,11 @@ export default async function DashboardPage() {
 
     // Product module
     {
-      id: "total-products",
+      id: "tong-san-pham",
       title: "Tổng sản phẩm",
       component: (
         <TotalProductsWidget
-          key="total-products-widget"
+          key="tong-san-pham"
           totalProducts={stats.totalProducts}
           topSellingCount={stats.topSellingProducts.length}
         />
@@ -331,18 +306,18 @@ export default async function DashboardPage() {
       h: 3,
     },
     {
-      id: "top-products",
+      id: "san-pham-ban-chay",
       title: "Sản phẩm bán chạy",
-      component: <TopProducts key="top-products-widget" products={stats.topSellingProducts} />,
+      component: <TopProducts key="san-pham-ban-chay" products={stats.topSellingProducts} />,
       visible: true,
       module: "product",
       w: 6,
       h: 5,
     },
     {
-      id: "declining-products",
+      id: "san-pham-sut-giam",
       title: "Sản phẩm sụt giảm",
-      component: <DecliningProductsWidget key="declining-products-widget" decliningProducts={stats.decliningProducts} />,
+      component: <DecliningProductsWidget key="san-pham-sut-giam" decliningProducts={stats.decliningProducts} />,
       visible: true,
       module: "product",
       w: 2,
@@ -351,7 +326,7 @@ export default async function DashboardPage() {
     {
       id: "inventory-alerts",
       title: "Cảnh báo tồn kho",
-      component: <InventoryAlertsClient />,
+      component: <InventoryAlertsWidget />,
       visible: true,
       module: "inventory",
       w: 2,
@@ -360,45 +335,36 @@ export default async function DashboardPage() {
 
     // Risk module
     {
-      id: "risk-alerts",
+      id: "canh-bao-rui-ro",
       title: "Cảnh báo rủi ro",
-      component: <RiskAlerts key="risk-alerts-widget" stats={stats} />,
+      component: <RiskAlerts key="canh-bao-rui-ro" stats={stats} />,
       visible: true,
       module: "risk",
       w: 6,
       h: 3,
     },
-    // {
-    //   id: "ai-risk-assessment",
-    //   title: "Đánh giá rủi ro AI",
-    //   component: <AIRiskAssessmentClient key="ai-risk-assessment-widget" />,
-    //   visible: true,
-    //   module: "risk",
-    //   w: 6,
-    //   h: 2,
-    // },
     {
-      id: "ai-risk-overall",
+      id: "danh-gia-rui-ro-ai",
       title: "Đánh giá rủi ro AI",
-      component: <AIRiskOverallWidgetClient key="ai-risk-overall-widget" />,
+      component: <AIRiskOverallWidgetClient key="danh-gia-rui-ro-ai" />,
       visible: true,
       module: "risk",
       w: 6,
       h: 2,
     },
     {
-      id: "ai-risk-details",
+      id: "chi-tiet-danh-gia-rui-ro",
       title: "Chi tiết đánh giá rủi ro AI",
-      component: <AIRiskIdentifiedWidgetClient key="ai-risk-identified-widget" />,
+      component: <AIRiskIdentifiedWidgetClient key="chi-tiet-danh-gia-rui-ro" />,
       visible: true,
       module: "risk",
       w: 6,
       h: 2,
     },
     {
-      id: "ai-risk-recommendations",
+      id: "goi-y-khac-phuc",
       title: "Gợi ý khắc phục",
-      component: <AIRiskOpportunitiesWidgetClient key="ai-risk-opportunities-widget" />,
+      component: <AIRiskOpportunitiesWidgetClient key="goi-y-khac-phuc" />,
       visible: true,
       module: "risk",
       w: 6,
@@ -407,9 +373,9 @@ export default async function DashboardPage() {
 
     // Forecast module
     {
-      id: "revenue-forecast",
+      id: "du-bao-doanh-thu",
       title: "Dự báo doanh thu",
-      component: <RevenueForecastClient key="revenue-forecast-widget" />,
+      component: <RevenueForecast key="du-bao-doanh-thu" />,
       visible: true,
       module: "forecast",
       w: 12,

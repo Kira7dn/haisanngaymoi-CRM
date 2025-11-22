@@ -2,9 +2,20 @@
 
 import { useState, ReactNode, useEffect, useRef } from "react"
 import { GridStack } from "gridstack"
-import { ChevronUp, ChevronDown, Eye, EyeOff } from "lucide-react"
+import { ChevronUp, ChevronDown, Eye, EyeOff, ChevronRight } from "lucide-react"
 import { Button } from "@shared/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/@shared/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/card"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+} from "@shared/ui/sidebar"
 
 export type WidgetModule = "finance" | "customer" | "order" | "product" | "risk" | "forecast" | "inventory"
 
@@ -29,11 +40,10 @@ interface GridStackDashboardProps {
 }
 
 export function GridStackDashboard({
-  widgets: initialWidgets,
+  widgets,
   onLayoutChange,
   editMode = false,
 }: GridStackDashboardProps) {
-  const [widgets, setWidgets] = useState(initialWidgets)
   const [moduleOrder, setModuleOrder] = useState<WidgetModule[]>([
     "finance",
     "customer",
@@ -43,7 +53,22 @@ export function GridStackDashboard({
     "forecast",
     "inventory",
   ])
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<WidgetModule>>(
+    new Set(moduleOrder) // All groups collapsed by default
+  )
   const gridRefs = useRef<Map<WidgetModule, GridStack>>(new Map())
+
+  const toggleGroupCollapse = (module: WidgetModule) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(module)) {
+        newSet.delete(module)
+      } else {
+        newSet.add(module)
+      }
+      return newSet
+    })
+  }
 
   // Load module order from localStorage
   useEffect(() => {
@@ -119,25 +144,27 @@ export function GridStackDashboard({
 
           // Listen to change events
           grid.on('change', () => {
+            if (!onLayoutChange) return
+
             const updatedWidgets = grid.save(false) as Array<{ id?: string, x?: number, y?: number, w?: number, h?: number }>
 
-            // Update widget positions
-            setWidgets((prev) => {
-              return prev.map((widget) => {
-                if (widget.module !== module) return widget
-                const gridItem = updatedWidgets.find((item) => item.id === widget.id)
-                if (gridItem) {
-                  return {
-                    ...widget,
-                    x: gridItem.x,
-                    y: gridItem.y,
-                    w: gridItem.w,
-                    h: gridItem.h,
-                  }
+            // Update widget positions and call onLayoutChange directly
+            const newWidgets = widgets.map((widget) => {
+              if (widget.module !== module) return widget
+              const gridItem = updatedWidgets.find((item) => item.id === widget.id)
+              if (gridItem) {
+                return {
+                  ...widget,
+                  x: gridItem.x,
+                  y: gridItem.y,
+                  w: gridItem.w,
+                  h: gridItem.h,
                 }
-                return widget
-              })
+              }
+              return widget
             })
+
+            onLayoutChange(newWidgets)
           })
         }
       }
@@ -149,7 +176,7 @@ export function GridStackDashboard({
       })
       grids.clear()
     }
-  }, [moduleOrder, editMode])
+  }, [moduleOrder, editMode, widgets, onLayoutChange])
 
   // Update widget visibility
   useEffect(() => {
@@ -182,19 +209,13 @@ export function GridStackDashboard({
     })
   }, [widgets, moduleOrder])
 
-  // Propagate layout changes
-  useEffect(() => {
-    if (onLayoutChange) {
-      onLayoutChange(widgets)
-    }
-  }, [widgets, onLayoutChange])
-
   const toggleWidgetVisibility = (id: string) => {
-    setWidgets((items) =>
-      items.map((item) =>
-        item.id === id ? { ...item, visible: !item.visible } : item
-      )
+    if (!onLayoutChange) return
+
+    const newWidgets = widgets.map((item) =>
+      item.id === id ? { ...item, visible: !item.visible } : item
     )
+    onLayoutChange(newWidgets)
   }
 
   // Group widgets by module
@@ -220,47 +241,63 @@ export function GridStackDashboard({
     <div className={`flex ${editMode ? "gap-4" : ""}`}>
       {/* Vertical Sidebar - Widget List (Edit Mode Only) */}
       {editMode && (
-        <div className="w-72 shrink-0">
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 sticky top-4">
-            <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-              Danh sách Widget
-            </h3>
-            <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
-              Nhấn vào biểu tượng mắt để ẩn/hiện widget.
-            </p>
-            <div className="space-y-3 pr-1">
+        <SidebarProvider className="w-54 shrink-0 border-r border-gray-200 dark:border-gray-800">
+          <Sidebar side="left" collapsible="none">
+            <SidebarContent>
+              <div className="py-2 border-b border-gray-200 dark:border-gray-800">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  Nhấn để ẩn/hiện widget
+                </p>
+              </div>
+
               {moduleOrder.map((module) => {
                 const moduleWidgets = groupedWidgets[module] || []
                 if (moduleWidgets.length === 0) return null
+                const isCollapsed = collapsedGroups.has(module)
 
                 return (
-                  <div key={module} className="space-y-1">
-                    <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 px-2">
-                      {moduleNames[module]}
-                    </h4>
-                    <div className="space-y-1">
-                      {moduleWidgets.map((widget) => (
-                        <button
-                          key={widget.id}
-                          onClick={() => toggleWidgetVisibility(widget.id)}
-                          className={`w-full px-3 py-2 text-xs rounded-lg border transition-colors text-left ${widget.visible
-                            ? "bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200"
-                            : "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400"
+                  <SidebarGroup key={module} className="pl-0 py-1">
+                    <SidebarGroupLabel asChild>
+                      <button
+                        onClick={() => toggleGroupCollapse(module)}
+                        className="w-full flex items-center justify-between pl-0"
+                      >
+                        <span className="text-sm font-semibold">{moduleNames[module]}</span>
+                        <ChevronRight
+                          className={`w-4 h-4 transition-transform ${isCollapsed ? "" : "rotate-90"
                             }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">{widget.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}</span>
-                            <span className="flex-1 truncate">{widget.title}</span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                        />
+                      </button>
+                    </SidebarGroupLabel>
+                    {!isCollapsed && (
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {moduleWidgets.map((widget) => (
+                            <SidebarMenuItem key={widget.id}>
+                              <SidebarMenuButton
+                                onClick={() => toggleWidgetVisibility(widget.id)}
+                                className={`w-full transition-colors ${widget.visible}`}
+                              >
+                                <span className="flex-1 truncate text-xs">{widget.title}</span>
+                                <span className="shrink-0">
+                                  {widget.visible ? (
+                                    <Eye className="w-3 h-3" />
+                                  ) : (
+                                    <EyeOff className="w-3 h-3" />
+                                  )}
+                                </span>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          ))}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    )}
+                  </SidebarGroup>
                 )
               })}
-            </div>
-          </div>
-        </div>
+            </SidebarContent>
+          </Sidebar>
+        </SidebarProvider>
       )}
 
       {/* Main Dashboard Area */}

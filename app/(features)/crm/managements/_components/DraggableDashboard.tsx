@@ -16,7 +16,7 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from "@dnd-kit/sortable"
-import { DraggableWidget } from "./widgets/DraggableWidget"
+import { DraggableWidget } from "./DraggableWidget"
 import { ChevronUp, ChevronDown, Eye, EyeOff } from "lucide-react"
 import { Button } from "@shared/ui/button"
 

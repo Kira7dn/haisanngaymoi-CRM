@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@shared/ui/card"
 import { PackageX, PackageOpen, Loader2, AlertTriangle } from "lucide-react"
-import { getInventoryAlerts } from "../inventory-actions"
+import { getInventoryAlerts } from "../../../inventory-actions"
 
 interface InventoryAlert {
   lowStock: Array<{
@@ -24,7 +24,7 @@ interface InventoryAlert {
   }>
 }
 
-export function InventoryAlertsClient() {
+export function InventoryAlertsWidget() {
   const [alerts, setAlerts] = useState<InventoryAlert | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -160,8 +160,8 @@ export function InventoryAlertsClient() {
                 <div className="mt-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                   <div
                     className={`h-1.5 rounded-full ${item.availableStock <= item.reorderPoint / 2
-                        ? "bg-red-500"
-                        : "bg-orange-500"
+                      ? "bg-red-500"
+                      : "bg-orange-500"
                       }`}
                     style={{
                       width: `${Math.min(100, (item.availableStock / item.reorderPoint) * 100)}%`,

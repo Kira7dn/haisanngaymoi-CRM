@@ -71,70 +71,77 @@ export async function getProfitAnalysis() {
 
     const now = new Date()
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
-    // Get operational costs for today and this month
-    const [todayCosts, monthCosts] = await Promise.all([
-      costRepo.getByDateRange(todayStart, now),
-      costRepo.getByDateRange(thisMonthStart, now),
+    // Calculate 7-day and 30-day trailing periods
+    const last7DaysStart = new Date(todayStart)
+    last7DaysStart.setDate(last7DaysStart.getDate() - 7)
+    const last30DaysStart = new Date(todayStart)
+    last30DaysStart.setDate(last30DaysStart.getDate() - 30)
+
+    // Get operational costs for 7-day and 30-day periods
+    const [last7DaysCosts, last30DaysCosts] = await Promise.all([
+      costRepo.getByDateRange(last7DaysStart, now),
+      costRepo.getByDateRange(last30DaysStart, now),
     ])
 
     // Calculate revenue
     const successfulOrders = orders.filter(o => o.payment.status === "success")
-    const todayOrders = successfulOrders.filter(o => new Date(o.createdAt) >= todayStart)
-    const monthOrders = successfulOrders.filter(o => new Date(o.createdAt) >= thisMonthStart)
+    const last7DaysOrders = successfulOrders.filter(o => new Date(o.createdAt) >= last7DaysStart)
+    const last30DaysOrders = successfulOrders.filter(o => new Date(o.createdAt) >= last30DaysStart)
 
-    const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0)
-    const monthRevenue = monthOrders.reduce((sum, o) => sum + o.total, 0)
+    const last7DaysRevenue = last7DaysOrders.reduce((sum, o) => sum + o.total, 0)
+    const last30DaysRevenue = last30DaysOrders.reduce((sum, o) => sum + o.total, 0)
 
     // Calculate COGS (Cost of Goods Sold) from products with cost data
     const productCostMap = new Map(
       products.filter(p => p.cost).map(p => [p.id.toString(), p.cost!])
     )
 
-    let todayCOGS = 0
-    let monthCOGS = 0
+    let last7DaysCOGS = 0
+    let last30DaysCOGS = 0
 
-    todayOrders.forEach(order => {
+    last7DaysOrders.forEach(order => {
       order.items.forEach(item => {
         const cost = productCostMap.get(item.productId)
         if (cost) {
-          todayCOGS += cost * item.quantity
+          last7DaysCOGS += cost * item.quantity
         }
       })
     })
 
-    monthOrders.forEach(order => {
+    last30DaysOrders.forEach(order => {
       order.items.forEach(item => {
         const cost = productCostMap.get(item.productId)
         if (cost) {
-          monthCOGS += cost * item.quantity
+          last30DaysCOGS += cost * item.quantity
         }
       })
     })
 
     // Calculate operational costs
-    const todayOpCosts = calculatePeriodCosts(todayCosts, todayStart, now)
-    const monthOpCosts = calculatePeriodCosts(monthCosts, thisMonthStart, now)
+    const last7DaysOpCosts = calculatePeriodCosts(last7DaysCosts, last7DaysStart, now)
+    const last30DaysOpCosts = calculatePeriodCosts(last30DaysCosts, last30DaysStart, now)
 
-    // Calculate gross profit and margins
-    const todayGrossProfit = todayRevenue - todayCOGS
-    const todayGrossMargin = todayRevenue > 0 ? (todayGrossProfit / todayRevenue) * 100 : 0
+    // Calculate gross profit and margins for 7-day period
+    const last7DaysGrossProfit = last7DaysRevenue - last7DaysCOGS
+    const last7DaysGrossMargin = last7DaysRevenue > 0 ? (last7DaysGrossProfit / last7DaysRevenue) * 100 : 0
 
-    const monthGrossProfit = monthRevenue - monthCOGS
-    const monthGrossMargin = monthRevenue > 0 ? (monthGrossProfit / monthRevenue) * 100 : 0
+    // Calculate gross profit and margins for 30-day period
+    const last30DaysGrossProfit = last30DaysRevenue - last30DaysCOGS
+    const last30DaysGrossMargin = last30DaysRevenue > 0 ? (last30DaysGrossProfit / last30DaysRevenue) * 100 : 0
 
-    // Calculate net profit (after operational costs)
-    const todayNetProfit = todayGrossProfit - todayOpCosts.total
-    const todayNetMargin = todayRevenue > 0 ? (todayNetProfit / todayRevenue) * 100 : 0
+    // Calculate net profit (after operational costs) for 7-day period
+    const last7DaysNetProfit = last7DaysGrossProfit - last7DaysOpCosts.total
+    const last7DaysNetMargin = last7DaysRevenue > 0 ? (last7DaysNetProfit / last7DaysRevenue) * 100 : 0
 
-    const monthNetProfit = monthGrossProfit - monthOpCosts.total
-    const monthNetMargin = monthRevenue > 0 ? (monthNetProfit / monthRevenue) * 100 : 0
+    // Calculate net profit (after operational costs) for 30-day period
+    const last30DaysNetProfit = last30DaysGrossProfit - last30DaysOpCosts.total
+    const last30DaysNetMargin = last30DaysRevenue > 0 ? (last30DaysNetProfit / last30DaysRevenue) * 100 : 0
 
-    // Top profit contributing products
+    // Top profit contributing products (using 30-day data)
     const productProfits = new Map<number, { name: string, revenue: number, cost: number, profit: number, margin: number }>()
 
-    monthOrders.forEach(order => {
+    last30DaysOrders.forEach(order => {
       order.items.forEach(item => {
         const productId = parseInt(item.productId)
         const product = products.find(p => p.id === productId)
@@ -169,28 +176,28 @@ export async function getProfitAnalysis() {
       .slice(0, 5)
 
     return {
-      today: {
-        revenue: todayRevenue,
-        cogs: todayCOGS,
-        grossProfit: todayGrossProfit,
-        grossMargin: todayGrossMargin,
-        operationalCosts: todayOpCosts.total,
-        netProfit: todayNetProfit,
-        netMargin: todayNetMargin,
+      last7Days: {
+        revenue: last7DaysRevenue,
+        cogs: last7DaysCOGS,
+        grossProfit: last7DaysGrossProfit,
+        grossMargin: last7DaysGrossMargin,
+        operationalCosts: last7DaysOpCosts.total,
+        netProfit: last7DaysNetProfit,
+        netMargin: last7DaysNetMargin,
       },
-      month: {
-        revenue: monthRevenue,
-        cogs: monthCOGS,
-        grossProfit: monthGrossProfit,
-        grossMargin: monthGrossMargin,
-        operationalCosts: monthOpCosts.total,
-        netProfit: monthNetProfit,
-        netMargin: monthNetMargin,
+      last30Days: {
+        revenue: last30DaysRevenue,
+        cogs: last30DaysCOGS,
+        grossProfit: last30DaysGrossProfit,
+        grossMargin: last30DaysGrossMargin,
+        operationalCosts: last30DaysOpCosts.total,
+        netProfit: last30DaysNetProfit,
+        netMargin: last30DaysNetMargin,
       },
       topProfitProducts,
       costBreakdown: {
-        today: todayOpCosts.byCategory,
-        month: monthOpCosts.byCategory,
+        last7Days: last7DaysOpCosts.byCategory,
+        last30Days: last30DaysOpCosts.byCategory,
       },
     }
   } catch (error) {
