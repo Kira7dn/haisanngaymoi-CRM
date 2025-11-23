@@ -29,7 +29,7 @@ export function WeekOrdersWidget({
     <MetricCard
       value={last7DaysOrderCount}
       label={`đơn hàng (7 ngày) · ${pendingOrders} chờ xử lý`}
-      href="/crm/managements/orders"
+      // href="/crm/managements/orders"
       trend={{ value: orderChange, label: "7 ngày" }}
     />
   )

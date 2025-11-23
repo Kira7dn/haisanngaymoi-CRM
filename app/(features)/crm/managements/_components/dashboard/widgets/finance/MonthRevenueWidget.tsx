@@ -24,7 +24,7 @@ export function MonthRevenueWidget({
     <MetricCard
       value={formatCurrency(last30DaysRevenue)}
       label={`so với ${formatCurrency(prev30DaysRevenue)} 30 ngày trước`}
-      href="/crm/analytics/revenue"
+      // href="/crm/analytics/revenue"
       trend={{ value: revenueChangeVsPrev30Days, label: "30 ngày" }}
     />
   )

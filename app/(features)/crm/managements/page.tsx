@@ -99,7 +99,7 @@ export default async function DashboardPage() {
         />
       ),
       visible: true,
-      module: "finance",
+      module: "order",
       x: 4,
       y: 0,
       w: 2,
