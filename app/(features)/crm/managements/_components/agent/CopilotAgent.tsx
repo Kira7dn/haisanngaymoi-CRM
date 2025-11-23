@@ -5,7 +5,7 @@ import { useCopilotAction, useCopilotReadable } from '@copilotkit/react-core';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { useDashboardStore } from '@/app/(features)/crm/managements/_components/hooks/useDashboardStore';
+import { useDashboardStore, type WidgetModule } from '@/app/(features)/crm/managements/_components/hooks/useDashboardStore';
 
 interface CopilotAgentProps {
   userId: string;
@@ -22,7 +22,19 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
     customerId?: string;
     module?: string;
   }>({});
-  const { widgets, saveWidgets } = useDashboardStore()
+  const {
+    widgets,
+    saveWidgets,
+    toggleWidgetVisibility,
+    resetWidgets,
+    saveEditSnapshot,
+    restoreFromSnapshot,
+    updateWidgetLayout,
+    moduleOrder,
+    setModuleOrder,
+    moveModuleUp,
+    moveModuleDown
+  } = useDashboardStore()
 
   function createInstruction({ userRole }: { userRole: 'admin' | 'sales' | 'warehouse' }): string {
 
@@ -38,7 +50,14 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
 
     Dashboard widget management:
     - Users can ask you to show/hide specific widgets (e.g., "hiện widget doanh thu hôm nay", "ẩn biểu đồ đơn hàng")
-    - List all available widgets or filter by module (finance, customer, order, product, risk, forecast)
+    - Toggle widget visibility with toggleWidgetVisibility action
+    - Update individual widget properties (position, size, visibility) with updateWidget action
+    - Update multiple widget layouts within a module with updateWidgetLayout action
+    - Reset dashboard to default layout with resetWidgets action
+    - Save/restore dashboard snapshots for experimentation (saveEditSnapshot, restoreFromSnapshot)
+    - Reorder modules (finance, customer, order, product, risk, forecast, inventory) with moveModuleUp, moveModuleDown, or setModuleOrder
+    - Get current module order with getModuleOrder action
+    - List all available widgets with getDashboardWidgets action
     - Provide widget IDs when users want to know what widgets are available
     - Automatically refresh the dashboard when widgets are shown/hidden
 
@@ -71,6 +90,24 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
       path: pathname,
       module: pathname.split('/')[2] || 'dashboard',
       ...currentContext
+    }
+  });
+
+  // Make dashboard state readable
+  useCopilotReadable({
+    description: 'Current dashboard configuration including widgets and module order',
+    value: {
+      widgets: widgets.map(w => ({
+        id: w.id,
+        title: w.title,
+        module: w.module,
+        visible: w.visible,
+        position: { x: w.x, y: w.y },
+        size: { w: w.w, h: w.h }
+      })),
+      moduleOrder,
+      visibleWidgets: widgets.filter(w => w.visible).length,
+      totalWidgets: widgets.length
     }
   });
 
@@ -408,9 +445,12 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
     parameters: [],
     handler: async () => {
       try {
+        console.log('[CopilotAgent] getDashboardWidgets - Fetching widgets from localStorage')
+
         // Get widgets from localStorage
         const savedWidgets = localStorage.getItem('dashboard-layout');
         if (!savedWidgets) {
+          console.log('[CopilotAgent] getDashboardWidgets - No dashboard layout found')
           return {
             success: false,
             message: 'Chưa có cấu hình dashboard. Vui lòng tải lại trang dashboard.'
@@ -425,6 +465,15 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
           module: w.module
         }));
 
+        console.log('[CopilotAgent] getDashboardWidgets - Result:', {
+          totalCount: widgetList.length,
+          visibleCount: widgetList.filter((w: { visible: boolean }) => w.visible).length,
+          widgetsByModule: widgetList.reduce((acc: Record<string, number>, w: { module: string }) => {
+            acc[w.module] = (acc[w.module] || 0) + 1;
+            return acc;
+          }, {})
+        })
+
         return {
           success: true,
           widgets: widgetList,
@@ -433,6 +482,7 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
           message: `Dashboard có ${widgetList.length} widgets (${widgetList.filter((w: { visible: boolean }) => w.visible).length} đang hiển thị)`
         };
       } catch (error) {
+        console.error('[CopilotAgent] getDashboardWidgets - Error:', error)
         return {
           success: false,
           message: 'Không thể lấy danh sách widgets',
@@ -488,11 +538,11 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
       }
     ],
     handler: async ({ widgetId, updates }) => {
-      console.log(`update ${widgetId}`);
-      console.log(updates);
+      console.log('[CopilotAgent] updateWidget - Input:', { widgetId, updates })
 
       try {
         if (!widgets || widgets.length === 0) {
+          console.log('[CopilotAgent] updateWidget - No widgets available')
           return {
             success: false,
             message: 'Chưa có cấu hình dashboard. Vui lòng tải lại trang dashboard.'
@@ -502,16 +552,38 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
         const widgetIndex = widgets.findIndex((w) => w.id === widgetId)
 
         if (widgetIndex === -1) {
+          console.log('[CopilotAgent] updateWidget - Widget not found:', widgetId)
           return {
             success: false,
             message: `Không tìm thấy widget "${widgetId}". Vui lòng kiểm tra lại ID.`
           }
         }
 
+        const beforeWidget = widgets[widgetIndex]
+        console.log('[CopilotAgent] updateWidget - Before:', {
+          id: beforeWidget.id,
+          title: beforeWidget.title,
+          visible: beforeWidget.visible,
+          x: beforeWidget.x,
+          y: beforeWidget.y,
+          w: beforeWidget.w,
+          h: beforeWidget.h
+        })
+
         // Cập nhật widget với toàn bộ dữ liệu mới
         const updatedWidgets = [...widgets]
         updatedWidgets[widgetIndex] = { ...updatedWidgets[widgetIndex], ...updates }
         saveWidgets(updatedWidgets)
+
+        console.log('[CopilotAgent] updateWidget - After:', {
+          id: updatedWidgets[widgetIndex].id,
+          title: updatedWidgets[widgetIndex].title,
+          visible: updatedWidgets[widgetIndex].visible,
+          x: updatedWidgets[widgetIndex].x,
+          y: updatedWidgets[widgetIndex].y,
+          w: updatedWidgets[widgetIndex].w,
+          h: updatedWidgets[widgetIndex].h
+        })
 
         return {
           success: true,
@@ -519,9 +591,485 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
           widget: updatedWidgets[widgetIndex]
         }
       } catch (error) {
+        console.error('[CopilotAgent] updateWidget - Error:', error)
         return {
           success: false,
           message: 'Không thể cập nhật widget',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      }
+    }
+  })
+
+  useCopilotAction({
+    name: 'toggleWidgetVisibility',
+    description: 'Toggle visibility of a dashboard widget. Use this when user wants to show/hide a widget.',
+    parameters: [
+      {
+        name: 'widgetId',
+        type: 'string',
+        description: 'Widget ID to toggle visibility',
+        required: true
+      }
+    ],
+    handler: async ({ widgetId }) => {
+      try {
+        const widget = widgets.find(w => w.id === widgetId)
+        if (!widget) {
+          console.log('[CopilotAgent] toggleWidgetVisibility - Widget not found:', widgetId)
+          return {
+            success: false,
+            message: `Không tìm thấy widget "${widgetId}"`
+          }
+        }
+
+        console.log('[CopilotAgent] toggleWidgetVisibility - Before:', {
+          widgetId,
+          title: widget.title,
+          visible: widget.visible
+        })
+
+        toggleWidgetVisibility(widgetId)
+
+        console.log('[CopilotAgent] toggleWidgetVisibility - After:', {
+          widgetId,
+          title: widget.title,
+          visible: !widget.visible
+        })
+
+        return {
+          success: true,
+          message: `Đã ${widget.visible ? 'ẩn' : 'hiện'} widget "${widget.title || widgetId}"`,
+          widget: {
+            id: widget.id,
+            title: widget.title,
+            visible: !widget.visible
+          }
+        }
+      } catch (error) {
+        console.error('[CopilotAgent] toggleWidgetVisibility - Error:', error)
+        return {
+          success: false,
+          message: 'Không thể thay đổi trạng thái widget',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      }
+    }
+  })
+
+  useCopilotAction({
+    name: 'resetWidgets',
+    description: 'Reset all dashboard widgets to default configuration. Use this when user wants to reset their dashboard layout.',
+    parameters: [],
+    handler: async () => {
+      try {
+        console.log('[CopilotAgent] resetWidgets - Before:', {
+          widgetCount: widgets.length,
+          visibleCount: widgets.filter(w => w.visible).length
+        })
+
+        resetWidgets()
+
+        console.log('[CopilotAgent] resetWidgets - After: Dashboard reset to default configuration')
+
+        return {
+          success: true,
+          message: 'Đã khôi phục dashboard về cấu hình mặc định'
+        }
+      } catch (error) {
+        console.error('[CopilotAgent] resetWidgets - Error:', error)
+        return {
+          success: false,
+          message: 'Không thể khôi phục dashboard',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      }
+    }
+  })
+
+  useCopilotAction({
+    name: 'saveEditSnapshot',
+    description: 'Save current dashboard state as a snapshot before making changes. Use this when user wants to experiment with dashboard layout.',
+    parameters: [],
+    handler: async () => {
+      try {
+        console.log('[CopilotAgent] saveEditSnapshot - Saving:', {
+          widgetCount: widgets.length,
+          visibleWidgets: widgets.filter(w => w.visible).map(w => ({ id: w.id, title: w.title }))
+        })
+
+        saveEditSnapshot()
+
+        console.log('[CopilotAgent] saveEditSnapshot - Snapshot saved successfully')
+
+        return {
+          success: true,
+          message: 'Đã lưu snapshot của dashboard hiện tại. Bạn có thể khôi phục lại sau.'
+        }
+      } catch (error) {
+        console.error('[CopilotAgent] saveEditSnapshot - Error:', error)
+        return {
+          success: false,
+          message: 'Không thể lưu snapshot',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      }
+    }
+  })
+
+  useCopilotAction({
+    name: 'restoreFromSnapshot',
+    description: 'Restore dashboard to the last saved snapshot. Use this when user wants to undo their dashboard changes.',
+    parameters: [],
+    handler: async () => {
+      try {
+        console.log('[CopilotAgent] restoreFromSnapshot - Before:', {
+          widgetCount: widgets.length,
+          visibleCount: widgets.filter(w => w.visible).length
+        })
+
+        restoreFromSnapshot()
+
+        console.log('[CopilotAgent] restoreFromSnapshot - After: Dashboard restored from snapshot')
+
+        return {
+          success: true,
+          message: 'Đã khôi phục dashboard về snapshot trước đó'
+        }
+      } catch (error) {
+        console.error('[CopilotAgent] restoreFromSnapshot - Error:', error)
+        return {
+          success: false,
+          message: 'Không thể khôi phục snapshot',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      }
+    }
+  })
+
+  useCopilotAction({
+    name: 'getModuleOrder',
+    description: 'Get the current order of dashboard modules. Use this when user asks about module arrangement.',
+    parameters: [],
+    handler: async () => {
+      try {
+        console.log('[CopilotAgent] getModuleOrder:', moduleOrder)
+
+        return {
+          success: true,
+          moduleOrder,
+          message: `Thứ tự modules: ${moduleOrder.join(', ')}`
+        }
+      } catch (error) {
+        console.error('[CopilotAgent] getModuleOrder - Error:', error)
+        return {
+          success: false,
+          message: 'Không thể lấy thứ tự modules',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      }
+    }
+  })
+
+  useCopilotAction({
+    name: 'setModuleOrder',
+    description: 'Set custom order for dashboard modules. Use this when user wants to rearrange modules.',
+    parameters: [
+      {
+        name: 'order',
+        type: 'string[]',
+        description: 'Array of module names in desired order (finance, customer, order, product, risk, forecast, inventory)',
+        required: true
+      }
+    ],
+    handler: async ({ order }) => {
+      try {
+        const validModules: WidgetModule[] = ['finance', 'customer', 'order', 'product', 'risk', 'forecast', 'inventory']
+        const orderArray = Array.isArray(order) ? order : []
+
+        console.log('[CopilotAgent] setModuleOrder - Before:', moduleOrder)
+        console.log('[CopilotAgent] setModuleOrder - Requested order:', orderArray)
+
+        // Validate all modules are valid
+        const invalidModules = orderArray.filter(m => !validModules.includes(m as WidgetModule))
+        if (invalidModules.length > 0) {
+          console.log('[CopilotAgent] setModuleOrder - Invalid modules:', invalidModules)
+          return {
+            success: false,
+            message: `Các module không hợp lệ: ${invalidModules.join(', ')}`
+          }
+        }
+
+        setModuleOrder(orderArray as WidgetModule[])
+
+        console.log('[CopilotAgent] setModuleOrder - After:', orderArray)
+
+        return {
+          success: true,
+          message: `Đã cập nhật thứ tự modules: ${orderArray.join(', ')}`,
+          moduleOrder: orderArray
+        }
+      } catch (error) {
+        console.error('[CopilotAgent] setModuleOrder - Error:', error)
+        return {
+          success: false,
+          message: 'Không thể cập nhật thứ tự modules',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      }
+    }
+  })
+
+  useCopilotAction({
+    name: 'moveModuleUp',
+    description: 'Move a dashboard module up in the order. Use this when user wants to move a module higher.',
+    parameters: [
+      {
+        name: 'module',
+        type: 'string',
+        description: 'Module name to move up (finance, customer, order, product, risk, forecast, inventory)',
+        required: true
+      }
+    ],
+    handler: async ({ module }) => {
+      try {
+        const moduleIndex = moduleOrder.indexOf(module as WidgetModule)
+
+        console.log('[CopilotAgent] moveModuleUp - Before:', {
+          module,
+          currentIndex: moduleIndex,
+          currentOrder: moduleOrder
+        })
+
+        if (moduleIndex === -1) {
+          console.log('[CopilotAgent] moveModuleUp - Module not found:', module)
+          return {
+            success: false,
+            message: `Module "${module}" không tồn tại`
+          }
+        }
+
+        if (moduleIndex === 0) {
+          console.log('[CopilotAgent] moveModuleUp - Already at top:', module)
+          return {
+            success: false,
+            message: `Module "${module}" đã ở vị trí đầu tiên`
+          }
+        }
+
+        moveModuleUp(module as WidgetModule)
+
+        console.log('[CopilotAgent] moveModuleUp - After:', {
+          module,
+          newIndex: moduleIndex - 1,
+          newOrder: moduleOrder
+        })
+
+        return {
+          success: true,
+          message: `Đã di chuyển module "${module}" lên`,
+          newOrder: moduleOrder
+        }
+      } catch (error) {
+        console.error('[CopilotAgent] moveModuleUp - Error:', error)
+        return {
+          success: false,
+          message: 'Không thể di chuyển module',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      }
+    }
+  })
+
+  useCopilotAction({
+    name: 'moveModuleDown',
+    description: 'Move a dashboard module down in the order. Use this when user wants to move a module lower.',
+    parameters: [
+      {
+        name: 'module',
+        type: 'string',
+        description: 'Module name to move down (finance, customer, order, product, risk, forecast, inventory)',
+        required: true
+      }
+    ],
+    handler: async ({ module }) => {
+      try {
+        const moduleIndex = moduleOrder.indexOf(module as WidgetModule)
+
+        console.log('[CopilotAgent] moveModuleDown - Before:', {
+          module,
+          currentIndex: moduleIndex,
+          currentOrder: moduleOrder
+        })
+
+        if (moduleIndex === -1) {
+          console.log('[CopilotAgent] moveModuleDown - Module not found:', module)
+          return {
+            success: false,
+            message: `Module "${module}" không tồn tại`
+          }
+        }
+
+        if (moduleIndex === moduleOrder.length - 1) {
+          console.log('[CopilotAgent] moveModuleDown - Already at bottom:', module)
+          return {
+            success: false,
+            message: `Module "${module}" đã ở vị trí cuối cùng`
+          }
+        }
+
+        moveModuleDown(module as WidgetModule)
+
+        console.log('[CopilotAgent] moveModuleDown - After:', {
+          module,
+          newIndex: moduleIndex + 1,
+          newOrder: moduleOrder
+        })
+
+        return {
+          success: true,
+          message: `Đã di chuyển module "${module}" xuống`,
+          newOrder: moduleOrder
+        }
+      } catch (error) {
+        console.error('[CopilotAgent] moveModuleDown - Error:', error)
+        return {
+          success: false,
+          message: 'Không thể di chuyển module',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      }
+    }
+  })
+
+  useCopilotAction({
+    name: 'updateWidgetLayout',
+    description: 'Update the layout (position and size) of widgets within a specific module. Use this when user wants to rearrange or resize widgets in a module.',
+    parameters: [
+      {
+        name: 'module',
+        type: 'string',
+        description: 'Module name containing the widgets (finance, customer, order, product, risk, forecast, inventory)',
+        required: true
+      },
+      {
+        name: 'updatedItems',
+        type: 'object[]',
+        description: 'Array of widget updates with id, x, y, w, h properties',
+        attributes: [
+          {
+            name: 'id',
+            type: 'string',
+            description: 'Widget ID to update'
+          },
+          {
+            name: 'x',
+            type: 'number',
+            description: 'X position in grid units'
+          },
+          {
+            name: 'y',
+            type: 'number',
+            description: 'Y position in grid units'
+          },
+          {
+            name: 'w',
+            type: 'number',
+            description: 'Width in grid units'
+          },
+          {
+            name: 'h',
+            type: 'number',
+            description: 'Height in grid units'
+          }
+        ],
+        required: true
+      }
+    ],
+    handler: async ({ module, updatedItems }) => {
+      try {
+        const validModules: WidgetModule[] = ['finance', 'customer', 'order', 'product', 'risk', 'forecast', 'inventory']
+
+        console.log('[CopilotAgent] updateWidgetLayout - Input:', {
+          module,
+          updatedItemsCount: Array.isArray(updatedItems) ? updatedItems.length : 0,
+          updatedItems
+        })
+
+        if (!validModules.includes(module as WidgetModule)) {
+          console.log('[CopilotAgent] updateWidgetLayout - Invalid module:', module)
+          return {
+            success: false,
+            message: `Module "${module}" không hợp lệ. Các module có sẵn: ${validModules.join(', ')}`
+          }
+        }
+
+        if (!Array.isArray(updatedItems) || updatedItems.length === 0) {
+          console.log('[CopilotAgent] updateWidgetLayout - No items to update')
+          return {
+            success: false,
+            message: 'Cần cung cấp ít nhất một widget để cập nhật'
+          }
+        }
+
+        // Validate that all widgets belong to the specified module
+        const moduleWidgets = widgets.filter(w => w.module === module)
+        const invalidWidgets = updatedItems.filter(item =>
+          !moduleWidgets.some(w => w.id === item.id)
+        )
+
+        if (invalidWidgets.length > 0) {
+          console.log('[CopilotAgent] updateWidgetLayout - Invalid widgets:', invalidWidgets)
+          return {
+            success: false,
+            message: `Các widget không thuộc module "${module}": ${invalidWidgets.map(w => w.id).join(', ')}`
+          }
+        }
+
+        // Log before state
+        const beforeState = updatedItems.map(item => {
+          const existingWidget = widgets.find(w => w.id === item.id)
+          return {
+            id: item.id,
+            before: existingWidget ? { x: existingWidget.x, y: existingWidget.y, w: existingWidget.w, h: existingWidget.h } : null
+          }
+        })
+        console.log('[CopilotAgent] updateWidgetLayout - Before state:', beforeState)
+
+        // Convert updatedItems to proper Widget type
+        const updatedWidgets = updatedItems.map(item => {
+          const existingWidget = widgets.find(w => w.id === item.id)!
+          return {
+            ...existingWidget,
+            x: item.x ?? existingWidget.x,
+            y: item.y ?? existingWidget.y,
+            w: item.w ?? existingWidget.w,
+            h: item.h ?? existingWidget.h
+          }
+        })
+
+        updateWidgetLayout(module as WidgetModule, updatedWidgets)
+
+        const afterState = updatedItems.map(item => ({
+          id: item.id,
+          after: { x: item.x, y: item.y, w: item.w, h: item.h }
+        }))
+        console.log('[CopilotAgent] updateWidgetLayout - After state:', afterState)
+
+        return {
+          success: true,
+          message: `Đã cập nhật layout cho ${updatedItems.length} widget(s) trong module "${module}"`,
+          updatedWidgets: updatedItems.map(item => ({
+            id: item.id,
+            position: { x: item.x, y: item.y },
+            size: { w: item.w, h: item.h }
+          }))
+        }
+      } catch (error) {
+        console.error('[CopilotAgent] updateWidgetLayout - Error:', error)
+        return {
+          success: false,
+          message: 'Không thể cập nhật layout widgets',
           error: error instanceof Error ? error.message : 'Unknown error'
         }
       }

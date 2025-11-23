@@ -24,13 +24,12 @@ export interface Widget {
 }
 
 interface ModuleGridProps {
-  module: WidgetModule
   items: Widget[]
   editMode: boolean
   onLayoutChange: (items: Widget[]) => void
 }
 
-export function ModuleGrid({ module, items, editMode, onLayoutChange }: ModuleGridProps) {
+export function ModuleGrid({ items, editMode, onLayoutChange }: ModuleGridProps) {
   // Convert widgets to react-grid-layout format
   const layout: Layout[] = items
     .filter(w => w.visible)
@@ -71,7 +70,7 @@ export function ModuleGrid({ module, items, editMode, onLayoutChange }: ModuleGr
       layouts={{ lg: layout }}
       breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
       cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-      rowHeight={80}
+      rowHeight={40}
       isDraggable={editMode}
       isResizable={editMode}
       onLayoutChange={handleLayoutChange}

@@ -35,6 +35,8 @@ export function CustomizableDashboard({ widgets: initialWidgets }: CustomizableD
   const setDefaultWidgets = useDashboardStore((s) => s.setDefaultWidgets)
   const saveWidgets = useDashboardStore((s) => s.saveWidgets)
   const resetWidgets = useDashboardStore((s) => s.resetWidgets)
+  const saveEditSnapshot = useDashboardStore((s) => s.saveEditSnapshot)
+  const restoreFromSnapshot = useDashboardStore((s) => s.restoreFromSnapshot)
   const toggleWidgetVisibility = useDashboardStore((s) => s.toggleWidgetVisibility)
   const updateWidgetLayout = useDashboardStore((s) => s.updateWidgetLayout)
   const moveModuleUp = useDashboardStore((s) => s.moveModuleUp)
@@ -48,15 +50,21 @@ export function CustomizableDashboard({ widgets: initialWidgets }: CustomizableD
     }
   }, [initialWidgets, setDefaultWidgets, mounted])
 
+  // Enter edit mode
+  const handleEnterEditMode = () => {
+    saveEditSnapshot() // Save current state before editing
+    setEditMode(true)
+  }
+
   // Save layout
   const handleSaveLayout = () => {
     saveWidgets(widgets)
     setEditMode(false)
   }
 
-  // Cancel edit mode
+  // Cancel edit mode - restore to state before edit
   const handleCancelEdit = () => {
-    resetWidgets()
+    restoreFromSnapshot() // Restore to state before edit
     setEditMode(false)
   }
 
@@ -116,7 +124,7 @@ export function CustomizableDashboard({ widgets: initialWidgets }: CustomizableD
               </Button>
             </>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => setEditMode(true)}>
+            <Button variant="outline" size="sm" onClick={handleEnterEditMode}>
               <Settings className="w-4 h-4 mr-2" /> Tùy chỉnh
             </Button>
           )}
@@ -192,7 +200,6 @@ export function CustomizableDashboard({ widgets: initialWidgets }: CustomizableD
                       </div>
 
                       <ModuleGrid
-                        module={module}
                         items={moduleWidgets}
                         editMode={editMode}
                         onLayoutChange={(items) => updateWidgetLayout(module, items)}

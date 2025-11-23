@@ -26,15 +26,31 @@ const DEFAULT_MODULE_ORDER: WidgetModule[] = [
     "inventory",
 ]
 
+// Serializable widget snapshot (excludes React components)
+interface WidgetSnapshot {
+    id: string
+    visible: boolean
+    module: WidgetModule
+    x?: number
+    y?: number
+    w?: number
+    h?: number
+    minW?: number
+    minH?: number
+}
+
 interface DashboardState {
     widgets: Widget[]
     defaultWidgets: Widget[]
+    editSnapshot: WidgetSnapshot[] | null
     moduleOrder: WidgetModule[]
 
     // Widget actions
     setDefaultWidgets: (widgets: Widget[]) => void
     saveWidgets: (widgets: Widget[]) => void
     resetWidgets: () => void
+    saveEditSnapshot: () => void
+    restoreFromSnapshot: () => void
     toggleWidgetVisibility: (id: string) => void
     updateWidgetLayout: (module: WidgetModule, updatedItems: Widget[]) => void
 
@@ -49,6 +65,7 @@ export const useDashboardStore = create<DashboardState>()(
         (set, get) => ({
             widgets: [],
             defaultWidgets: [],
+            editSnapshot: null,
             moduleOrder: DEFAULT_MODULE_ORDER,
 
             setDefaultWidgets: (defaultWidgets) => {
@@ -62,9 +79,50 @@ export const useDashboardStore = create<DashboardState>()(
                 set({ widgets: merged })
             },
 
-            saveWidgets: (widgets) => set({ widgets }),
+            saveWidgets: (widgets) => set({ widgets, editSnapshot: null }),
 
             resetWidgets: () => set({ widgets: get().defaultWidgets }),
+
+            saveEditSnapshot: () => {
+                // Save only serializable properties (exclude component and title ReactNodes)
+                const snapshot = get().widgets.map(w => ({
+                    id: w.id,
+                    visible: w.visible,
+                    module: w.module,
+                    x: w.x,
+                    y: w.y,
+                    w: w.w,
+                    h: w.h,
+                    minW: w.minW,
+                    minH: w.minH,
+                }))
+                set({ editSnapshot: snapshot })
+            },
+
+            restoreFromSnapshot: () => {
+                const snapshot = get().editSnapshot
+                if (snapshot) {
+                    // Merge snapshot properties back into current widgets (preserving components)
+                    const currentWidgets = get().widgets
+                    const restored = currentWidgets.map(widget => {
+                        const snapshotWidget = snapshot.find(s => s.id === widget.id)
+                        if (snapshotWidget) {
+                            return {
+                                ...widget,
+                                visible: snapshotWidget.visible,
+                                x: snapshotWidget.x,
+                                y: snapshotWidget.y,
+                                w: snapshotWidget.w,
+                                h: snapshotWidget.h,
+                                minW: snapshotWidget.minW,
+                                minH: snapshotWidget.minH,
+                            }
+                        }
+                        return widget
+                    })
+                    set({ widgets: restored, editSnapshot: null })
+                }
+            },
 
             toggleWidgetVisibility: (id) => {
                 set({
