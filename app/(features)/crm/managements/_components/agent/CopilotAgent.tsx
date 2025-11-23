@@ -48,18 +48,58 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
     - Customize dashboard (add/remove widgets, list available widgets by module)
     - Navigate the CRM system
 
-    Dashboard widget management:
+    Dashboard widget management (using react-grid-layout system):
+    - Grid system: 12 columns (lg), rowHeight: 40px, vertical compacting enabled
     - Users can ask you to show/hide specific widgets (e.g., "hiện widget doanh thu hôm nay", "ẩn biểu đồ đơn hàng")
     - Toggle widget visibility with toggleWidgetVisibility action
-    - Update individual widget properties (position, size, visibility) with updateWidget action
-    - Update multiple widget layouts within a module with updateWidgetLayout action
-    - Reset dashboard to default layout with resetWidgets action
-    - Save/restore dashboard snapshots for experimentation (saveEditSnapshot, restoreFromSnapshot)
-    - Reorder modules (finance, customer, order, product, risk, forecast, inventory) with moveModuleUp, moveModuleDown, or setModuleOrder
-    - Get current module order with getModuleOrder action
-    - List all available widgets with getDashboardWidgets action
-    - Provide widget IDs when users want to know what widgets are available
-    - Automatically refresh the dashboard when widgets are shown/hidden
+
+    Layout properties (grid units):
+    - x: horizontal position (0-11 for 12-column grid)
+    - y: vertical position (auto-adjusted by compactType="vertical")
+    - w: width in grid columns (default: 3, min: 2, max: 12)
+    - h: height in rows (default: 3, min: 2, typical range: 2-10)
+    - minW: minimum width (default: 2)
+    - minH: minimum height (default: 2)
+
+    Layout actions:
+    - Update individual widget: updateWidget(widgetId, {x, y, w, h, visible})
+    - Update multiple widgets in a module: updateWidgetLayout(module, [{id, x, y, w, h}])
+    - When user asks to "make bigger/smaller", adjust w (width) and h (height)
+    - When user asks to "move left/right", adjust x position
+    - When user asks to "move up/down", adjust y position (though vertical compacting will auto-adjust)
+
+    Module management:
+    - Modules: finance, customer, order, product, risk, forecast, inventory
+    - Reorder modules with moveModuleUp, moveModuleDown, or setModuleOrder
+    - Get current module order with getModuleOrder
+
+    State management:
+    - Reset dashboard to default: resetWidgets
+    - Save/restore snapshots: saveEditSnapshot, restoreFromSnapshot (useful before making risky changes)
+    - List all widgets: getDashboardWidgets
+
+    Tips for effective layout changes:
+    - Small widgets: w=2-3, h=2-3 (compact cards, ~80-120px height)
+    - Medium widgets: w=4-6, h=3-5 (standard charts, ~120-200px height)
+    - Large widgets: w=6-12, h=5-8 (detailed tables/dashboards, ~200-320px height)
+    - Full width: w=12 (spans entire row)
+    - Widgets auto-compact vertically, so y values may shift automatically
+
+    Common user requests and how to handle:
+    - "Make widget bigger" → Increase w and/or h (e.g., w=6, h=5)
+    - "Make widget smaller" → Decrease w and/or h (e.g., w=3, h=3)
+    - "Put widget on the left" → Set x=0
+    - "Put widget on the right" → Set x=6-9 (depending on width)
+    - "Make widget full width" → Set w=12, x=0
+    - "Put two widgets side by side" → Set first widget x=0, w=6; second widget x=6, w=6
+    - "Stack widgets vertically" → Set both to w=12, different y values (though auto-compacting handles this)
+    - "Widget too tall/short" → Adjust h (remember: each h=40px)
+
+    Example layout patterns:
+    - 3-column layout: Each widget w=4 (4+4+4=12)
+    - 2-column layout: Each widget w=6 (6+6=12)
+    - Sidebar + main: Sidebar w=3, Main w=9 (3+9=12)
+    - Header + 2 columns: Header w=12 (full), then two widgets w=6 each
 
     Always be helpful, concise, and action-oriented. After completing an action, suggest relevant next steps.
     Respond in Vietnamese when appropriate.
@@ -95,19 +135,43 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
 
   // Make dashboard state readable
   useCopilotReadable({
-    description: 'Current dashboard configuration including widgets and module order',
+    description: 'Current dashboard configuration with react-grid-layout details (12-column grid, rowHeight=40px, vertical compacting)',
     value: {
+      gridSystem: {
+        columns: 12,
+        rowHeight: 40,
+        compactType: 'vertical',
+        breakpoints: { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 },
+        currentBreakpoint: 'lg'
+      },
       widgets: widgets.map(w => ({
         id: w.id,
         title: w.title,
         module: w.module,
         visible: w.visible,
-        position: { x: w.x, y: w.y },
-        size: { w: w.w, h: w.h }
+        layout: {
+          x: w.x ?? 0,
+          y: w.y ?? 0,
+          w: w.w ?? 3,
+          h: w.h ?? 3,
+          minW: w.minW ?? 2,
+          minH: w.minH ?? 2
+        },
+        // Helper info for AI
+        sizeCategory: w.w && w.w <= 3 ? 'small' : w.w && w.w <= 6 ? 'medium' : 'large',
+        pixelHeight: (w.h ?? 3) * 40,
+        isFullWidth: w.w === 12
       })),
       moduleOrder,
-      visibleWidgets: widgets.filter(w => w.visible).length,
-      totalWidgets: widgets.length
+      statistics: {
+        visibleWidgets: widgets.filter(w => w.visible).length,
+        hiddenWidgets: widgets.filter(w => !w.visible).length,
+        totalWidgets: widgets.length,
+        widgetsByModule: widgets.reduce((acc, w) => {
+          acc[w.module] = (acc[w.module] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      }
     }
   });
 
@@ -494,43 +558,43 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
 
   useCopilotAction({
     name: 'updateWidget',
-    description: 'Cập nhật thông tin hoặc trạng thái của một widget trên dashboard.',
+    description: 'Update a single widget\'s layout properties or visibility. Use this for individual widget adjustments. Grid is 12 columns wide, rowHeight=40px.',
     parameters: [
       {
         name: 'widgetId',
         type: 'string',
-        description: 'Widget ID cần cập nhật',
+        description: 'Widget ID to update (e.g., "today-revenue", "order-status-widget")',
         required: true
       },
       {
         name: 'updates',
         type: 'object',
-        description: 'Các thuộc tính widget muốn cập nhật (ví dụ: visible, x, y, w, h)',
+        description: 'Widget properties to update in react-grid-layout format',
         attributes: [
           {
             name: "visible",
             type: "boolean",
-            description: "Ẩn, hiện.",
+            description: "Show/hide widget (true=visible, false=hidden)",
           },
           {
             name: "x",
             type: "number",
-            description: "Tọa độ x",
+            description: "Horizontal position in grid columns (0-11 for 12-column grid). 0=leftmost, 11=rightmost",
           },
           {
             name: "y",
             type: "number",
-            description: "Tọa độ y.",
+            description: "Vertical position in rows (0=top). Note: vertical compacting may auto-adjust this",
           },
           {
             name: "w",
             type: "number",
-            description: "Chiều dài.",
+            description: "Width in grid columns (2-12). Common: 3=small, 4-6=medium, 12=full-width. Must be >= minW (usually 2)",
           },
           {
             name: "h",
             type: "number",
-            description: "Chiều cao.",
+            description: "Height in rows (2-10). Common: 2-3=compact, 4-5=standard, 6-8=tall. Must be >= minH (usually 2). Each row = 40px",
           },
         ],
 
@@ -944,43 +1008,43 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
 
   useCopilotAction({
     name: 'updateWidgetLayout',
-    description: 'Update the layout (position and size) of widgets within a specific module. Use this when user wants to rearrange or resize widgets in a module.',
+    description: 'Update layout for multiple widgets within a module simultaneously. Best for reorganizing entire module sections. Grid: 12 columns, rowHeight=40px, vertical compacting.',
     parameters: [
       {
         name: 'module',
         type: 'string',
-        description: 'Module name containing the widgets (finance, customer, order, product, risk, forecast, inventory)',
+        description: 'Module name: finance (💰 Tài chính), customer (👥 Khách hàng), order (📦 Đơn hàng), product (🏷️ Sản phẩm), risk (⚠️ Rủi ro), forecast (📈 Dự báo), inventory (📦 Tồn kho)',
         required: true
       },
       {
         name: 'updatedItems',
         type: 'object[]',
-        description: 'Array of widget updates with id, x, y, w, h properties',
+        description: 'Array of widgets to update with their new positions/sizes in react-grid-layout format',
         attributes: [
           {
             name: 'id',
             type: 'string',
-            description: 'Widget ID to update'
+            description: 'Widget ID (e.g., "today-revenue", "top-products")'
           },
           {
             name: 'x',
             type: 'number',
-            description: 'X position in grid units'
+            description: 'Horizontal position: 0-11 (0=left edge, 11=right edge in 12-col grid)'
           },
           {
             name: 'y',
             type: 'number',
-            description: 'Y position in grid units'
+            description: 'Vertical position: 0+ (0=top). Auto-adjusts with vertical compacting'
           },
           {
             name: 'w',
             type: 'number',
-            description: 'Width in grid units'
+            description: 'Width: 2-12 columns. Examples: 2-3=tiny, 4-6=normal, 8-10=wide, 12=full-width'
           },
           {
             name: 'h',
             type: 'number',
-            description: 'Height in grid units'
+            description: 'Height: 2-10 rows. Examples: 2-3=short, 4-5=medium, 6-8=tall, 9-10=very tall. rowHeight=40px per row'
           }
         ],
         required: true
@@ -1075,124 +1139,6 @@ export function CopilotAgent({ userId, userRole, children }: CopilotAgentProps) 
       }
     }
   })
-
-  // useCopilotAction({
-  //   name: 'hideWidget',
-  //   description: 'Hide a visible dashboard widget. Use this when the user wants to remove or hide a widget from their dashboard.',
-  //   parameters: [
-  //     {
-  //       name: 'widgetId',
-  //       type: 'string',
-  //       description: 'Widget ID to hide (e.g., "today-revenue", "order-status-widget", "ai-risk-overall")',
-  //       required: true
-  //     }
-  //   ],
-  //   handler: async ({ widgetId }) => {
-  //     try {
-  //       const savedWidgets = localStorage.getItem('dashboard-layout');
-  //       if (!savedWidgets) {
-  //         return {
-  //           success: false,
-  //           message: 'Chưa có cấu hình dashboard. Vui lòng tải lại trang dashboard.'
-  //         };
-  //       }
-
-  //       const widgets = JSON.parse(savedWidgets);
-  //       const widgetIndex = widgets.findIndex((w: {id: string}) => w.id === widgetId);
-
-  //       if (widgetIndex === -1) {
-  //         return {
-  //           success: false,
-  //           message: `Không tìm thấy widget "${widgetId}". Vui lòng kiểm tra lại ID.`
-  //         };
-  //       }
-
-  //       if (!widgets[widgetIndex].visible) {
-  //         return {
-  //           success: true,
-  //           message: `Widget "${widgets[widgetIndex].title || widgetId}" đã bị ẩn rồi.`
-  //         };
-  //       }
-
-  //       updateDashboardWidgets((widgets) => {
-  //         const updated = [...widgets];
-  //         updated[widgetIndex].visible = false;
-  //         return updated;
-  //       });
-
-  //       return {
-  //         success: true,
-  //         message: `Đã ẩn widget "${widgets[widgetIndex].title || widgetId}". Dashboard sẽ cập nhật ngay.`,
-  //         widget: {
-  //           id: widgets[widgetIndex].id,
-  //           title: widgets[widgetIndex].title
-  //         }
-  //       };
-  //     } catch (error) {
-  //       return {
-  //         success: false,
-  //         message: 'Không thể ẩn widget',
-  //         error: error instanceof Error ? error.message : 'Unknown error'
-  //       };
-  //     }
-  //   }
-  // });
-
-  // useCopilotAction({
-  //   name: 'listWidgetsByModule',
-  //   description: 'List all dashboard widgets grouped by module (finance, customer, order, product, risk, forecast). Use this when user asks about widgets in a specific category.',
-  //   parameters: [
-  //     {
-  //       name: 'module',
-  //       type: 'string',
-  //       description: 'Module name: finance, customer, order, product, risk, or forecast. Leave empty for all modules.',
-  //       required: false
-  //     }
-  //   ],
-  //   handler: async ({ module }) => {
-  //     try {
-  //       const savedWidgets = localStorage.getItem('dashboard-layout');
-  //       if (!savedWidgets) {
-  //         return {
-  //           success: false,
-  //           message: 'Chưa có cấu hình dashboard.'
-  //         };
-  //       }
-
-  //       const widgets = JSON.parse(savedWidgets);
-  //       let filteredWidgets = widgets;
-
-  //       if (module) {
-  //         filteredWidgets = widgets.filter((w: {module: string}) => w.module === module);
-  //       }
-
-  //       const groupedByModule = filteredWidgets.reduce((acc: Record<string, unknown[]>, w: {module: string, id: string, title: string, visible: boolean}) => {
-  //         if (!acc[w.module]) acc[w.module] = [];
-  //         acc[w.module].push({
-  //           id: w.id,
-  //           title: typeof w.title === 'string' ? w.title : 'Widget',
-  //           visible: w.visible
-  //         });
-  //         return acc;
-  //       }, {} as Record<string, unknown[]>);
-
-  //       return {
-  //         success: true,
-  //         modules: groupedByModule,
-  //         count: filteredWidgets.length,
-  //         message: module
-  //           ? `Tìm thấy ${filteredWidgets.length} widgets trong module "${module}"`
-  //           : `Tìm thấy ${filteredWidgets.length} widgets trong ${Object.keys(groupedByModule).length} modules`
-  //       };
-  //     } catch (error) {
-  //       return {
-  //         success: false,
-  //         message: 'Không thể lấy danh sách widgets',
-  //         error: error instanceof Error ? error.message : 'Unknown error'
-  //       };
-  //     }
-  //   }
-  // });
 
   // ===== NAVIGATION ACTIONS =====
 

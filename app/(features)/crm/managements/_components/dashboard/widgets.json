@@ -1,0 +1,256 @@
+{
+    "widgets": [
+        {
+            "id": "doanh-thu-7-ngay",
+            "module": "finance",
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "w": 2,
+            "h": 4
+        },
+        {
+            "id": "doanh-thu-30-ngay",
+            "module": "finance",
+            "visible": true,
+            "x": 0,
+            "y": 4,
+            "w": 2,
+            "h": 4
+        },
+        {
+            "id": "gia-tri-don-trung-binh",
+            "module": "order",
+            "visible": true,
+            "x": 6,
+            "y": 0,
+            "w": 2,
+            "h": 4
+        },
+        {
+            "id": "loi-nhuan-7-ngay",
+            "module": "finance",
+            "visible": true,
+            "x": 2,
+            "y": 4,
+            "w": 4,
+            "h": 4
+        },
+        {
+            "id": "loi-nhuan-30-ngay",
+            "module": "finance",
+            "visible": true,
+            "x": 2,
+            "y": 0,
+            "w": 4,
+            "h": 4
+        },
+        {
+            "id": "top-san-pham-loi-nhuan",
+            "module": "finance",
+            "visible": true,
+            "x": 6,
+            "y": 0,
+            "w": 6,
+            "h": 8
+        },
+        {
+            "id": "khach-hang-moi",
+            "module": "customer",
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "w": 2,
+            "h": 3
+        },
+        {
+            "id": "khach-hang-quay-lai",
+            "module": "customer",
+            "visible": true,
+            "x": 2,
+            "y": 0,
+            "w": 2,
+            "h": 3
+        },
+        {
+            "id": "nguy-co-roi-bo",
+            "module": "customer",
+            "visible": true,
+            "x": 4,
+            "y": 0,
+            "w": 2,
+            "h": 3
+        },
+        {
+            "id": "gia-tri-tron-doi-khach-hang",
+            "module": "customer",
+            "visible": true,
+            "x": 6,
+            "y": 0,
+            "w": 2,
+            "h": 3
+        },
+        {
+            "id": "don-hang-7-ngay",
+            "module": "order",
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "w": 2,
+            "h": 4
+        },
+        {
+            "id": "ty-le-loi",
+            "module": "order",
+            "visible": true,
+            "x": 2,
+            "y": 0,
+            "w": 2,
+            "h": 4
+        },
+        {
+            "id": "don-tre-han",
+            "module": "order",
+            "visible": true,
+            "x": 8,
+            "y": 0,
+            "w": 2,
+            "h": 4
+        },
+        {
+            "id": "thoi-gian-xu-ly-trung-binh",
+            "module": "order",
+            "visible": true,
+            "x": 4,
+            "y": 0,
+            "w": 2,
+            "h": 4
+        },
+        {
+            "id": "trang-thai-don-hang",
+            "module": "order",
+            "visible": true,
+            "x": 0,
+            "y": 4,
+            "w": 6,
+            "h": 6
+        },
+        {
+            "id": "trang-thai-thanh-toan",
+            "module": "order",
+            "visible": true,
+            "x": 0,
+            "y": 10,
+            "w": 6,
+            "h": 6
+        },
+        {
+            "id": "don-hang-gan-day",
+            "module": "order",
+            "visible": true,
+            "x": 6,
+            "y": 4,
+            "w": 6,
+            "h": 12
+        },
+        {
+            "id": "nhan-vien-xuat-sac",
+            "module": "order",
+            "visible": false,
+            "x": 4,
+            "y": 16,
+            "w": 6,
+            "h": 4
+        },
+        {
+            "id": "tong-san-pham",
+            "module": "product",
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "w": 3,
+            "h": 4
+        },
+        {
+            "id": "san-pham-ban-chay",
+            "module": "product",
+            "visible": true,
+            "x": 3,
+            "y": 0,
+            "w": 9,
+            "h": 9
+        },
+        {
+            "id": "san-pham-sut-giam",
+            "module": "product",
+            "visible": true,
+            "x": 0,
+            "y": 4,
+            "w": 3,
+            "h": 5
+        },
+        {
+            "id": "inventory-alerts",
+            "module": "inventory",
+            "visible": false,
+            "x": 0,
+            "y": 0,
+            "w": 2,
+            "h": 1
+        },
+        {
+            "id": "canh-bao-rui-ro",
+            "module": "risk",
+            "visible": false,
+            "x": 0,
+            "y": 0,
+            "w": 5,
+            "h": 5
+        },
+        {
+            "id": "danh-gia-rui-ro-ai",
+            "module": "risk",
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "w": 5,
+            "h": 7
+        },
+        {
+            "id": "chi-tiet-danh-gia-rui-ro",
+            "module": "risk",
+            "visible": true,
+            "x": 5,
+            "y": 0,
+            "w": 7,
+            "h": 17
+        },
+        {
+            "id": "goi-y-khac-phuc",
+            "module": "risk",
+            "visible": true,
+            "x": 0,
+            "y": 7,
+            "w": 5,
+            "h": 10
+        },
+        {
+            "id": "du-bao-doanh-thu",
+            "module": "forecast",
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 11
+        }
+    ],
+    "moduleOrder": [
+        "finance",
+        "customer",
+        "order",
+        "product",
+        "risk",
+        "forecast",
+        "inventory"
+    ]
+}
