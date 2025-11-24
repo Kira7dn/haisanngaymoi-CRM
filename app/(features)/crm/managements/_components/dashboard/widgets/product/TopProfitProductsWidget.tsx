@@ -1,9 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Loader2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
-import { getProfitAnalysis } from "../../../../_actions/inventory-actions"
 
 interface ProfitProduct {
   productId: number
@@ -14,42 +11,9 @@ interface ProfitProduct {
   margin: number
 }
 
-export function TopProfitProductsWidget() {
-  const [products, setProducts] = useState<ProfitProduct[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let mounted = true
-
-    async function loadData() {
-      try {
-        const result = await getProfitAnalysis()
-        if (mounted && result) {
-          setProducts((result as { topProfitProducts?: ProfitProduct[] }).topProfitProducts || [])
-        }
-      } catch (error) {
-        console.error("Failed to load profit products:", error)
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    loadData()
-
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-4">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-      </div>
-    )
-  }
+export function TopProfitProductsWidget({
+  products
+}: { products: ProfitProduct[] }) {
 
   if (products.length === 0) {
     return (

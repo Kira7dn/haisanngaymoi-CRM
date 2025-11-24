@@ -4,6 +4,14 @@ import { getOrdersUseCase } from "@/app/api/orders/depends"
 import { getAllCustomersUseCase } from "@/app/api/customers/depends"
 import { RevenueForecastService, type RevenueDataPoint } from "@/infrastructure/ai/revenue-forecast-service"
 import { RiskAssessmentService, type BusinessMetrics } from "@/infrastructure/ai/risk-assessment-service"
+import {
+  getDateBoundaries,
+  filterOrdersByDate,
+  calculateRevenue,
+  calculatePercentageChange,
+  calculateErrorRate,
+  calculateCompletionRate,
+} from "./utils"
 
 /**
  * Generate AI revenue forecast
@@ -15,19 +23,7 @@ export async function generateRevenueForecast() {
     const ordersResult = await ordersUseCase.execute({})
     const orders = ordersResult.orders
 
-    const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-
-    // Helper to filter orders by date range
-    const filterOrdersByDate = (orders: typeof ordersResult.orders, startDate: Date, endDate: Date = now) => {
-      return orders.filter(o => {
-        const orderDate = new Date(o.createdAt)
-        return orderDate >= startDate && orderDate <= endDate
-      })
-    }
-
-    const calculateRevenue = (orders: typeof ordersResult.orders) =>
-      orders.filter(o => o.payment.status === "success").reduce((sum, o) => sum + o.total, 0)
+    const { now, todayStart } = getDateBoundaries()
 
     // Prepare 30 days of historical data
     const historicalRevenueData: RevenueDataPoint[] = []
@@ -43,7 +39,7 @@ export async function generateRevenueForecast() {
       const dayAOV = dayOrderCount > 0 ? dayRevenue / dayOrderCount : 0
 
       historicalRevenueData.push({
-        date: dayStart.toISOString().split('T')[0],
+        date: dayStart.toISOString().split("T")[0],
         revenue: dayRevenue,
         orderCount: dayOrderCount,
         avgOrderValue: dayAOV,
@@ -81,45 +77,29 @@ export async function generateRiskAssessment() {
     const orders = ordersResult.orders
     const customers = customersResult.customers
 
-    const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const yesterdayStart = new Date(todayStart)
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1)
-    const last7DaysStart = new Date(todayStart)
-    last7DaysStart.setDate(last7DaysStart.getDate() - 7)
-    const last30DaysStart = new Date(todayStart)
-    last30DaysStart.setDate(last30DaysStart.getDate() - 30)
+    const {
+      now,
+      todayStart,
+      yesterdayStart,
+      last7DaysStart,
+      last30DaysStart,
+    } = getDateBoundaries()
 
-    const filterOrdersByDate = (orders: typeof ordersResult.orders, startDate: Date, endDate: Date = now) => {
-      return orders.filter(o => {
-        const orderDate = new Date(o.createdAt)
-        return orderDate >= startDate && orderDate <= endDate
-      })
-    }
-
-    const calculateRevenue = (orders: typeof ordersResult.orders) =>
-      orders.filter(o => o.payment.status === "success").reduce((sum, o) => sum + o.total, 0)
-
-    const todayOrders = filterOrdersByDate(orders, todayStart)
+    const todayOrders = filterOrdersByDate(orders, todayStart, now)
     const yesterdayOrders = filterOrdersByDate(orders, yesterdayStart, todayStart)
-    const last7DaysOrders = filterOrdersByDate(orders, last7DaysStart)
-    const last30DaysOrders = filterOrdersByDate(orders, last30DaysStart)
+    const last7DaysOrders = filterOrdersByDate(orders, last7DaysStart, now)
+    const last30DaysOrders = filterOrdersByDate(orders, last30DaysStart, now)
 
     const todayRevenue = calculateRevenue(todayOrders)
     const yesterdayRevenue = calculateRevenue(yesterdayOrders)
     const last7DaysRevenue = calculateRevenue(last7DaysOrders)
     const last30DaysRevenue = calculateRevenue(last30DaysOrders)
 
-    const revenueChangePercent = yesterdayRevenue > 0
-      ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
-      : 0
-
+    const revenueChangePercent = calculatePercentageChange(todayRevenue, yesterdayRevenue)
     const completedOrders = orders.filter(o => o.status === "completed").length
     const cancelledOrders = orders.filter(o => o.status === "cancelled").length
-    const completionRate = orders.length > 0 ? (completedOrders / orders.length) * 100 : 0
-
-    const failedOrders = orders.filter(o => o.payment.status === "failed" || o.status === "cancelled").length
-    const errorRate = orders.length > 0 ? (failedOrders / orders.length) * 100 : 0
+    const completionRate = calculateCompletionRate(orders)
+    const errorRate = calculateErrorRate(orders)
 
     const todayCustomers = customers.filter(c => {
       if (!c.createdAt) return false

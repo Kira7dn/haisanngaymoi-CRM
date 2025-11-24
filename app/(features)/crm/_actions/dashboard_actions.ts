@@ -3,6 +3,19 @@
 import { getOrdersUseCase } from "@/app/api/orders/depends"
 import { filterProductsUseCase } from "@/app/api/products/depends"
 import { getAllCustomersUseCase } from "@/app/api/customers/depends"
+import { OperationalCostRepository } from "@/infrastructure/repositories/operational-cost-repo"
+import { InventoryRepository } from "@/infrastructure/repositories/inventory-repo"
+import { calculatePeriodCosts } from "@/core/domain/managements/operational-cost"
+import {
+  getDateBoundaries,
+  filterOrdersByDate,
+  getPreviousPeriodStart,
+  calculateRevenue,
+  calculatePercentageChange,
+  calculateAOV,
+  calculateCompletionRate,
+  calculateErrorRate,
+} from "./utils"
 
 export async function getDashboardStats() {
   try {
@@ -21,81 +34,53 @@ export async function getDashboardStats() {
     const customersResult = await customersUseCase.execute({})
     const customers = customersResult.customers
 
-    // Get current time boundaries
-    const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const yesterdayStart = new Date(todayStart)
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1)
-    const last7DaysStart = new Date(todayStart)
-    last7DaysStart.setDate(last7DaysStart.getDate() - 7)
-    const last30DaysStart = new Date(todayStart)
-    last30DaysStart.setDate(last30DaysStart.getDate() - 30)
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
-
-    // Helper to filter orders by date range
-    const filterOrdersByDate = (orders: typeof ordersResult.orders, startDate: Date, endDate: Date = now) => {
-      return orders.filter(o => {
-        const orderDate = new Date(o.createdAt)
-        return orderDate >= startDate && orderDate <= endDate
-      })
-    }
+    // Get date boundaries
+    const {
+      now,
+      todayStart,
+      yesterdayStart,
+      last7DaysStart,
+      last30DaysStart,
+      thisMonthStart,
+      lastMonthStart,
+      lastMonthEnd,
+    } = getDateBoundaries()
 
     // Calculate revenue metrics
-    const todayOrders = filterOrdersByDate(orders, todayStart)
+    const todayOrders = filterOrdersByDate(orders, todayStart, now)
     const yesterdayOrders = filterOrdersByDate(orders, yesterdayStart, todayStart)
-    const thisMonthOrders = filterOrdersByDate(orders, thisMonthStart)
+    const thisMonthOrders = filterOrdersByDate(orders, thisMonthStart, now)
     const lastMonthOrders = filterOrdersByDate(orders, lastMonthStart, lastMonthEnd)
-    const last7DaysOrders = filterOrdersByDate(orders, last7DaysStart)
-
-    const calculateRevenue = (orders: typeof ordersResult.orders) =>
-      orders.filter(o => o.payment.status === "success").reduce((sum, o) => sum + o.total, 0)
+    const last7DaysOrders = filterOrdersByDate(orders, last7DaysStart, now)
+    const last30DaysOrders = filterOrdersByDate(orders, last30DaysStart, now)
 
     const todayRevenue = calculateRevenue(todayOrders)
     const yesterdayRevenue = calculateRevenue(yesterdayOrders)
     const thisMonthRevenue = calculateRevenue(thisMonthOrders)
     const lastMonthRevenue = calculateRevenue(lastMonthOrders)
     const last7DaysRevenue = calculateRevenue(last7DaysOrders)
-
-    // Calculate 30-day trailing data
-    const last30DaysOrders = filterOrdersByDate(orders, last30DaysStart)
     const last30DaysRevenue = calculateRevenue(last30DaysOrders)
 
     // Calculate previous 7-day and 30-day for comparison
-    const prev7DaysStart = new Date(last7DaysStart)
-    prev7DaysStart.setDate(prev7DaysStart.getDate() - 7)
+    const prev7DaysStart = getPreviousPeriodStart(last7DaysStart, now)
     const prev7DaysOrders = filterOrdersByDate(orders, prev7DaysStart, last7DaysStart)
     const prev7DaysRevenue = calculateRevenue(prev7DaysOrders)
 
-    const prev30DaysStart = new Date(last30DaysStart)
-    prev30DaysStart.setDate(prev30DaysStart.getDate() - 30)
+    const prev30DaysStart = getPreviousPeriodStart(last30DaysStart, now)
     const prev30DaysOrders = filterOrdersByDate(orders, prev30DaysStart, last30DaysStart)
     const prev30DaysRevenue = calculateRevenue(prev30DaysOrders)
 
     // Calculate percentage changes
-    const revenueChangeVsYesterday = yesterdayRevenue > 0
-      ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
-      : 0
-    const revenueChangeVsLastMonth = lastMonthRevenue > 0
-      ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
-      : 0
+    const revenueChangeVsYesterday = calculatePercentageChange(todayRevenue, yesterdayRevenue)
+    const revenueChangeVsLastMonth = calculatePercentageChange(thisMonthRevenue, lastMonthRevenue)
 
     // Order metrics
     const todayOrderCount = todayOrders.length
     const completedOrders = orders.filter(o => o.status === "completed").length
     const cancelledOrders = orders.filter(o => o.status === "cancelled").length
-    const completionRate = orders.length > 0 ? (completedOrders / orders.length) * 100 : 0
-
-    // Calculate AOV (Average Order Value)
-    const successfulOrders = orders.filter(o => o.payment.status === "success")
-    const aov = successfulOrders.length > 0
-      ? successfulOrders.reduce((sum, o) => sum + o.total, 0) / successfulOrders.length
-      : 0
-
-    // Error rate
-    const failedOrders = orders.filter(o => o.payment.status === "failed" || o.status === "cancelled").length
-    const errorRate = orders.length > 0 ? (failedOrders / orders.length) * 100 : 0
+    const completionRate = calculateCompletionRate(orders)
+    const aov = calculateAOV(orders)
+    const errorRate = calculateErrorRate(orders)
 
     // Customer metrics
     const todayCustomers = customers.filter(c => {
@@ -122,6 +107,7 @@ export async function getDashboardStats() {
     const churnRiskRate = customers.length > 0 ? (churnRiskCustomers.length / customers.length) * 100 : 0
 
     // Product performance
+    const successfulOrders = orders.filter(o => o.payment.status === "success")
     const productSales = new Map<string, { productId: string, productName: string, quantity: number, revenue: number }>()
 
     successfulOrders.forEach(order => {
@@ -281,18 +267,106 @@ export async function getDashboardStats() {
     // to prevent blocking the initial page load
 
     // Calculate change percentages for trailing data
-    const revenueChangeVsPrev7Days = prev7DaysRevenue > 0
-      ? ((last7DaysRevenue - prev7DaysRevenue) / prev7DaysRevenue) * 100
-      : 0
-    const revenueChangeVsPrev30Days = prev30DaysRevenue > 0
-      ? ((last30DaysRevenue - prev30DaysRevenue) / prev30DaysRevenue) * 100
-      : 0
+    const revenueChangeVsPrev7Days = calculatePercentageChange(last7DaysRevenue, prev7DaysRevenue)
+    const revenueChangeVsPrev30Days = calculatePercentageChange(last30DaysRevenue, prev30DaysRevenue)
 
     // Calculate 7-day trailing metrics (orders, profit will be calculated in widgets)
     const last7DaysOrderCount = last7DaysOrders.length
     const prev7DaysOrderCount = prev7DaysOrders.length
     const last30DaysOrderCount = last30DaysOrders.length
     const prev30DaysOrderCount = prev30DaysOrders.length
+
+    // ===== PROFIT ANALYSIS =====
+
+    // Get operational costs for 7-day and 30-day periods
+    const costRepo = new OperationalCostRepository()
+    const [last7DaysCosts, last30DaysCosts] = await Promise.all([
+      costRepo.getByDateRange(last7DaysStart, now),
+      costRepo.getByDateRange(last30DaysStart, now),
+    ])
+
+    // Calculate COGS (Cost of Goods Sold) from products with cost data
+    const productCostMap = new Map(
+      products.filter(p => p.cost).map(p => [p.id.toString(), p.cost!])
+    )
+
+    let last7DaysCOGS = 0
+    let last30DaysCOGS = 0
+
+    last7DaysOrders.forEach(order => {
+      order.items.forEach(item => {
+        const cost = productCostMap.get(item.productId)
+        if (cost) {
+          last7DaysCOGS += cost * item.quantity
+        }
+      })
+    })
+
+    last30DaysOrders.forEach(order => {
+      order.items.forEach(item => {
+        const cost = productCostMap.get(item.productId)
+        if (cost) {
+          last30DaysCOGS += cost * item.quantity
+        }
+      })
+    })
+
+    // Calculate operational costs
+    const last7DaysOpCosts = calculatePeriodCosts(last7DaysCosts, last7DaysStart, now)
+    const last30DaysOpCosts = calculatePeriodCosts(last30DaysCosts, last30DaysStart, now)
+
+    // Calculate gross profit and margins for 7-day period
+    const last7DaysGrossProfit = last7DaysRevenue - last7DaysCOGS
+    const last7DaysGrossMargin = last7DaysRevenue > 0 ? (last7DaysGrossProfit / last7DaysRevenue) * 100 : 0
+
+    // Calculate gross profit and margins for 30-day period
+    const last30DaysGrossProfit = last30DaysRevenue - last30DaysCOGS
+    const last30DaysGrossMargin = last30DaysRevenue > 0 ? (last30DaysGrossProfit / last30DaysRevenue) * 100 : 0
+
+    // Calculate net profit (after operational costs) for 7-day period
+    const last7DaysNetProfit = last7DaysGrossProfit - last7DaysOpCosts.total
+    const last7DaysNetMargin = last7DaysRevenue > 0 ? (last7DaysNetProfit / last7DaysRevenue) * 100 : 0
+
+    // Calculate net profit (after operational costs) for 30-day period
+    const last30DaysNetProfit = last30DaysGrossProfit - last30DaysOpCosts.total
+    const last30DaysNetMargin = last30DaysRevenue > 0 ? (last30DaysNetProfit / last30DaysRevenue) * 100 : 0
+
+    // Top profit contributing products (using 30-day data)
+    const productProfits = new Map<number, { name: string, revenue: number, cost: number, profit: number, margin: number }>()
+
+    last30DaysOrders.forEach(order => {
+      order.items.forEach(item => {
+        const productId = parseInt(item.productId)
+        const product = products.find(p => p.id === productId)
+        if (!product || !product.cost) return
+
+        const revenue = item.totalPrice
+        const cost = product.cost * item.quantity
+        const profit = revenue - cost
+        const margin = revenue > 0 ? (profit / revenue) * 100 : 0
+
+        const existing = productProfits.get(productId)
+        if (existing) {
+          existing.revenue += revenue
+          existing.cost += cost
+          existing.profit += profit
+          existing.margin = existing.revenue > 0 ? (existing.profit / existing.revenue) * 100 : 0
+        } else {
+          productProfits.set(productId, {
+            name: product.name,
+            revenue,
+            cost,
+            profit,
+            margin,
+          })
+        }
+      })
+    })
+
+    const topProfitProducts = Array.from(productProfits.entries())
+      .map(([productId, data]) => ({ productId, ...data }))
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 5)
 
     return {
       // Revenue metrics
@@ -351,6 +425,33 @@ export async function getDashboardStats() {
       lateOrders,
       avgProcessingTime: avgProcessingTime || 0,
 
+      // Profit metrics (7-day and 30-day trailing)
+      profitMetrics: {
+        last7Days: {
+          revenue: last7DaysRevenue,
+          cogs: last7DaysCOGS,
+          grossProfit: last7DaysGrossProfit,
+          grossMargin: last7DaysGrossMargin,
+          operationalCosts: last7DaysOpCosts.total,
+          netProfit: last7DaysNetProfit,
+          netMargin: last7DaysNetMargin,
+        },
+        last30Days: {
+          revenue: last30DaysRevenue,
+          cogs: last30DaysCOGS,
+          grossProfit: last30DaysGrossProfit,
+          grossMargin: last30DaysGrossMargin,
+          operationalCosts: last30DaysOpCosts.total,
+          netProfit: last30DaysNetProfit,
+          netMargin: last30DaysNetMargin,
+        },
+        topProfitProducts,
+        costBreakdown: {
+          last7Days: last7DaysOpCosts.byCategory,
+          last30Days: last30DaysOpCosts.byCategory,
+        },
+      },
+
       // Legacy fields
       recentOrders: JSON.parse(JSON.stringify(recentOrders)),
       ordersByStatus,
@@ -359,5 +460,52 @@ export async function getDashboardStats() {
   } catch (error) {
     console.error("Error fetching dashboard stats:", error)
     return null
+  }
+}
+
+/**
+ * Get inventory alerts (low stock, out of stock)
+ * Merged from inventory-actions.ts
+ */
+export async function getInventoryAlerts() {
+  try {
+    const inventoryRepo = new InventoryRepository()
+
+    const [lowStock, outOfStock] = await Promise.all([
+      inventoryRepo.getLowStockItems(),
+      inventoryRepo.getOutOfStockItems(),
+    ])
+
+    // Get product names for alerts
+    const productsUseCase = await filterProductsUseCase()
+    const productsResult = await productsUseCase.execute({})
+    const products = productsResult.products
+
+    const productMap = new Map(products.map(p => [p.id, p.name]))
+
+    return {
+      lowStock: lowStock.map(inv => ({
+        inventoryId: inv.id,
+        productId: inv.productId,
+        productName: productMap.get(inv.productId) || "Unknown Product",
+        currentStock: inv.currentStock,
+        availableStock: inv.availableStock,
+        reorderPoint: inv.reorderPoint,
+        daysRemaining: inv.getDaysOfStockRemaining(),
+      })),
+      outOfStock: outOfStock.map(inv => ({
+        inventoryId: inv.id,
+        productId: inv.productId,
+        productName: productMap.get(inv.productId) || "Unknown Product",
+        currentStock: inv.currentStock,
+        reservedStock: inv.reservedStock,
+      })),
+    }
+  } catch (error) {
+    console.error("Error fetching inventory alerts:", error)
+    return {
+      lowStock: [],
+      outOfStock: [],
+    }
   }
 }

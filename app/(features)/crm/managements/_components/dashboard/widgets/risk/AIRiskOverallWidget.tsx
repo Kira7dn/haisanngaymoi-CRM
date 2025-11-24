@@ -1,14 +1,11 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { generateRiskAssessment } from "@/app/(features)/crm/_actions/ai-actions"
+import type { RiskAssessment } from "@/infrastructure/ai/risk-assessment-service"
 import { Card, CardHeader, CardTitle, CardContent } from "@shared/ui/card"
 import { Skeleton } from "@shared/ui/skeleton"
 import { Shield } from "lucide-react"
-import type { RiskAssessment } from "@/infrastructure/ai/risk-assessment-service"
-
-interface AIRiskOverallWidgetProps {
-  assessment: RiskAssessment | null
-  isLoading?: boolean
-}
 
 const getRiskLevelColor = (level: string) => {
   const colors = {
@@ -20,8 +17,38 @@ const getRiskLevelColor = (level: string) => {
   return colors[level as keyof typeof colors] || colors.medium
 }
 
-export function AIRiskOverallWidget({ assessment, isLoading = false }: AIRiskOverallWidgetProps) {
-  if (isLoading) {
+export function AIRiskOverallWidget() {
+  const [assessment, setAssessment] = useState<RiskAssessment | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+
+    async function loadAssessment() {
+      try {
+        const result = await generateRiskAssessment()
+        if (mounted) {
+          if (result.success && result.assessment) {
+            setAssessment(result.assessment)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load risk assessment:", error)
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadAssessment()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  if (loading) {
     return (
       <Card>
         <CardHeader>
@@ -63,12 +90,11 @@ export function AIRiskOverallWidget({ assessment, isLoading = false }: AIRiskOve
   }
 
   return (
-    <Card className={`border-2 ${
-      assessment.overallRiskLevel === "critical" ? "border-red-300 dark:border-red-700" :
-      assessment.overallRiskLevel === "high" ? "border-orange-300 dark:border-orange-700" :
-      assessment.overallRiskLevel === "medium" ? "border-yellow-300 dark:border-yellow-700" :
-      "border-green-300 dark:border-green-700"
-    }`}>
+    <Card className={`border-2 ${assessment.overallRiskLevel === "critical" ? "border-red-300 dark:border-red-700" :
+        assessment.overallRiskLevel === "high" ? "border-orange-300 dark:border-orange-700" :
+          assessment.overallRiskLevel === "medium" ? "border-yellow-300 dark:border-yellow-700" :
+            "border-green-300 dark:border-green-700"
+      }`}>
       <CardHeader>
         <CardTitle className="text-lg flex items-center justify-between">
           <div className="flex items-center gap-2">

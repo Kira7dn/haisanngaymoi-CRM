@@ -1,44 +1,45 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { generateRiskAssessment } from "@/app/(features)/crm/_actions/ai-actions"
+import type { RiskAssessment } from "@/infrastructure/ai/risk-assessment-service"
 import { Card, CardHeader, CardTitle, CardContent } from "@shared/ui/card"
 import { Skeleton } from "@shared/ui/skeleton"
 import { AlertTriangle } from "lucide-react"
-import type { RiskAssessment } from "@/infrastructure/ai/risk-assessment-service"
 
-interface AIRiskIdentifiedWidgetProps {
-  assessment: RiskAssessment | null
-  isLoading?: boolean
-}
 
-const getRiskLevelColor = (level: string) => {
-  const colors = {
-    low: "text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400",
-    medium: "text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400",
-    high: "text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400",
-    critical: "text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400",
-  }
-  return colors[level as keyof typeof colors] || colors.medium
-}
+export function AIRiskIdentifiedWidget() {
+  const [assessment, setAssessment] = useState<RiskAssessment | null>(null)
+  const [loading, setLoading] = useState(true)
 
-const getCategoryIcon = (category: string) => {
-  switch (category) {
-    case "revenue":
-      return "💰"
-    case "operations":
-      return "⚙️"
-    case "customer":
-      return "👥"
-    case "inventory":
-      return "📦"
-    case "financial":
-      return "💳"
-    default:
-      return "⚠️"
-  }
-}
+  useEffect(() => {
+    let mounted = true
 
-export function AIRiskIdentifiedWidget({ assessment, isLoading = false }: AIRiskIdentifiedWidgetProps) {
-  if (isLoading) {
+    async function loadAssessment() {
+      try {
+        const result = await generateRiskAssessment()
+        if (mounted) {
+          if (result.success && result.assessment) {
+            setAssessment(result.assessment)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load risk assessment:", error)
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadAssessment()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  if (loading) {
     return (
       <Card>
         <CardHeader>
@@ -71,7 +72,6 @@ export function AIRiskIdentifiedWidget({ assessment, isLoading = false }: AIRisk
       </Card>
     )
   }
-
   if (!assessment || assessment.risks.length === 0) {
     return (
       <Card>
@@ -102,12 +102,11 @@ export function AIRiskIdentifiedWidget({ assessment, isLoading = false }: AIRisk
         {assessment.risks.map((risk, idx) => (
           <div
             key={idx}
-            className={`p-3 rounded-lg border-l-4 ${
-              risk.severity === "critical" ? "border-red-500 bg-red-50 dark:bg-red-950/20" :
+            className={`p-3 rounded-lg border-l-4 ${risk.severity === "critical" ? "border-red-500 bg-red-50 dark:bg-red-950/20" :
               risk.severity === "high" ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20" :
-              risk.severity === "medium" ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20" :
-              "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-            }`}
+                risk.severity === "medium" ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20" :
+                  "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+              }`}
           >
             <div className="flex items-start gap-3">
               <span className="text-2xl">{getCategoryIcon(risk.category)}</span>
@@ -153,4 +152,36 @@ export function AIRiskIdentifiedWidget({ assessment, isLoading = false }: AIRisk
       </CardContent>
     </Card>
   )
+}
+
+interface AIRiskIdentifiedWidgetProps {
+  assessment: RiskAssessment | null
+  isLoading?: boolean
+}
+
+const getRiskLevelColor = (level: string) => {
+  const colors = {
+    low: "text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400",
+    medium: "text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400",
+    high: "text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400",
+    critical: "text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400",
+  }
+  return colors[level as keyof typeof colors] || colors.medium
+}
+
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case "revenue":
+      return "💰"
+    case "operations":
+      return "⚙️"
+    case "customer":
+      return "👥"
+    case "inventory":
+      return "📦"
+    case "financial":
+      return "💳"
+    default:
+      return "⚠️"
+  }
 }

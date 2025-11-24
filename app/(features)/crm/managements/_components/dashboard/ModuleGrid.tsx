@@ -65,37 +65,51 @@ export function ModuleGrid({ items, editMode, onLayoutChange }: ModuleGridProps)
   }
 
   return (
-    <ResponsiveGridLayout
-      className="layout"
-      layouts={{ lg: layout }}
-      breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-      cols={{ lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }}
-      rowHeight={40}
-      isDraggable={editMode}
-      isResizable={editMode}
-      onLayoutChange={handleLayoutChange}
-      compactType="vertical"
-      preventCollision={false}
-      margin={[16, 16]}
-      containerPadding={[0, 0]}
-      useCSSTransforms={true}
+    <div
+      onClickCapture={
+        editMode
+          ? (e) => {
+            const target = e.target as HTMLElement
+            if (target.closest("a")) {
+              e.preventDefault()
+              e.stopPropagation()
+            }
+          }
+          : undefined
+      }
     >
-      {items
-        .filter(w => w.visible)
-        .map(widget => (
-          <div key={widget.id}>
-            <Card className="h-full w-full p-2 py-4 gap-2 hover:shadow-lg transition-all hover:-translate-y-0.5">
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                  {widget.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 overflow-y-auto scrollbar-hidden">
-                {widget.component}
-              </CardContent>
-            </Card>
-          </div>
-        ))}
-    </ResponsiveGridLayout>
+      <ResponsiveGridLayout
+        className={`layout`}
+        layouts={{ lg: layout }}
+        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+        cols={{ lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }}
+        rowHeight={40}
+        isDraggable={editMode}
+        isResizable={editMode}
+        onLayoutChange={handleLayoutChange}
+        compactType="vertical"
+        preventCollision={false}
+        margin={[16, 16]}
+        containerPadding={[0, 0]}
+        useCSSTransforms={true}
+      >
+        {items
+          .filter(w => w.visible)
+          .map(widget => (
+            <div key={widget.id}>
+              <Card className="h-full w-full p-2 py-4 gap-2 hover:shadow-lg transition-all hover:-translate-y-0.5">
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                    {widget.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 overflow-y-auto scrollbar-hidden">
+                  {widget.component}
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+      </ResponsiveGridLayout>
+    </div>
   )
 }

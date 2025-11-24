@@ -1,5 +1,5 @@
 import { getCurrentUserAction } from "../../_shared/actions/auth-actions"
-import { getDashboardStats } from "../actions"
+import { getDashboardStats } from "@/app/(features)/crm/_actions/dashboard_actions"
 import { CustomizableDashboard } from "./_components/dashboard/CustomizableDashboard"
 import { mapWidgetsFromConfig } from "./_components/dashboard/widgetMapper"
 import widgetsConfig from "./_components/dashboard/widgets.json"

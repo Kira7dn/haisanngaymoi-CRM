@@ -24,7 +24,7 @@ export function WeekRevenueWidget({
     <MetricCard
       value={formatCurrency(last7DaysRevenue)}
       label={`so với ${formatCurrency(prev7DaysRevenue)} 7 ngày trước`}
-      // href="/crm/analytics/revenue"
+      href="/crm/analytics/revenue"
       trend={{ value: revenueChangeVsPrev7Days, label: "7 ngày" }}
     />
   )

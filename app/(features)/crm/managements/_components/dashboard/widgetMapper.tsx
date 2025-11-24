@@ -21,12 +21,12 @@ import { DecliningProductsWidget } from "./widgets/product/DecliningProductsWidg
 import { TopStaffWidget } from "./widgets/order/TopStaffWidget"
 import { MonthProfitWidget } from "./widgets/finance/MonthProfitWidget"
 import { WeekProfitWidget } from "./widgets/finance/WeekProfitWidget"
-import { AIRiskOverallWidgetClient } from "./widgets/risk/AIRiskOverallWidgetClient"
-import { AIRiskIdentifiedWidgetClient } from "./widgets/risk/AIRiskIdentifiedWidgetClient"
-import { AIRiskOpportunitiesWidgetClient } from "./widgets/risk/AIRiskOpportunitiesWidgetClient"
+import { AIRiskOverallWidget } from "./widgets/risk/AIRiskOverallWidget"
+import { AIRiskIdentifiedWidget } from "./widgets/risk/AIRiskIdentifiedWidget"
+import { AIRiskOpportunitiesWidget } from "./widgets/risk/AIRiskOpportunitiesWidget"
 import { OrderStatusWidget } from "./widgets/order/OrderStatusWidget"
 import { PaymentStatusWidget } from "./widgets/order/PaymentStatusWidget"
-import { getDashboardStats } from "../../../actions"
+import { getDashboardStats } from "@/app/(features)/crm/_actions/dashboard_actions"
 
 // Extract the return type from getDashboardStats function
 type DashboardStats = NonNullable<Awaited<ReturnType<typeof getDashboardStats>>>
@@ -105,9 +105,34 @@ export function createWidgetComponent(widgetId: string, stats: DashboardStats) {
         totalOrders={stats.totalOrders}
       />
     ),
-    "loi-nhuan-7-ngay": <WeekProfitWidget key={widgetId} />,
-    "loi-nhuan-30-ngay": <MonthProfitWidget key={widgetId} />,
-    "top-san-pham-loi-nhuan": <TopProfitProductsWidget key={widgetId} />,
+    "loi-nhuan-7-ngay": (
+      <WeekProfitWidget
+        key={widgetId}
+        revenue={stats.last7DaysRevenue}
+        cogs={stats.last7DaysRevenue}
+        grossProfit={stats.last7DaysRevenue}
+        grossMargin={stats.last7DaysRevenue}
+        operationalCosts={stats.last7DaysRevenue}
+        netProfit={stats.last7DaysRevenue}
+        netMargin={stats.last7DaysRevenue}
+      />),
+    "loi-nhuan-30-ngay": (
+      <MonthProfitWidget
+        key={widgetId}
+        revenue={stats.last30DaysRevenue}
+        cogs={stats.last30DaysRevenue}
+        grossProfit={stats.last30DaysRevenue}
+        grossMargin={stats.last30DaysRevenue}
+        operationalCosts={stats.last30DaysRevenue}
+        netProfit={stats.last30DaysRevenue}
+        netMargin={stats.last30DaysRevenue}
+      />),
+    "top-san-pham-loi-nhuan": (
+      <TopProfitProductsWidget
+        key={widgetId}
+        products={stats.profitMetrics.topProfitProducts}
+      />
+    ),
     "khach-hang-moi": (
       <NewCustomersWidget
         key={widgetId}
@@ -195,9 +220,9 @@ export function createWidgetComponent(widgetId: string, stats: DashboardStats) {
     ),
     "inventory-alerts": <InventoryAlertsWidget key={widgetId} />,
     "canh-bao-rui-ro": <RiskAlerts key={widgetId} stats={stats} />,
-    "danh-gia-rui-ro-ai": <AIRiskOverallWidgetClient key={widgetId} />,
-    "chi-tiet-danh-gia-rui-ro": <AIRiskIdentifiedWidgetClient key={widgetId} />,
-    "goi-y-khac-phuc": <AIRiskOpportunitiesWidgetClient key={widgetId} />,
+    "danh-gia-rui-ro-ai": <AIRiskOverallWidget key={widgetId} />,
+    "chi-tiet-danh-gia-rui-ro": <AIRiskIdentifiedWidget key={widgetId} />,
+    "goi-y-khac-phuc": <AIRiskOpportunitiesWidget key={widgetId} />,
     "du-bao-doanh-thu": <RevenueForecast key={widgetId} />
   }
 
