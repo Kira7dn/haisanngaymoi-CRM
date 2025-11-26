@@ -2,7 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  reactStrictMode: true,
+  reactStrictMode: false,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb', // Tăng giới hạn lên 10MB, bạn có thể điều chỉnh tùy ý
+    },
+  },
 
   // Exclude instrumentation from Edge Runtime analysis
   serverExternalPackages: ['instrumentation'],
@@ -21,13 +26,16 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'www.figma.com',
       },
-      { protocol: "http",
+      {
+        protocol: "http",
         hostname: "*"
       },
-      { protocol: "https",
+      {
+        protocol: "https",
         hostname: "*"
       },
-      { protocol: "https",
+      {
+        protocol: "https",
         hostname: "zalo-miniapp.github.io"
       }
     ],

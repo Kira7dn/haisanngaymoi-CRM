@@ -5,7 +5,7 @@ import { GetUserConversationsUseCase } from "@/core/application/usecases/copilot
 import { GetConversationUseCase } from "@/core/application/usecases/copilot-conversation/get-conversation";
 
 // Create repository instance
-const createConversationRepository = async (): Promise<CopilotConversationService> => {
+export const createConversationRepository = async (): Promise<CopilotConversationService> => {
   return new CopilotConversationRepository();
 };
 

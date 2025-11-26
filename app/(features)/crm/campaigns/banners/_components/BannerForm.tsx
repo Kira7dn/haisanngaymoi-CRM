@@ -3,7 +3,7 @@
 import { useState } from "react"
 import type { Banner } from "@/core/domain/campaigns/banner"
 import { createBannerAction, updateBannerAction } from "../actions"
-import { ImageUpload } from "@/app/(features)/crm/_components/ImageUpload"
+import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload"
 
 interface BannerFormProps {
   banner?: Banner | null
@@ -46,7 +46,7 @@ export function BannerForm({ banner, onClose }: BannerFormProps) {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Image Upload */}
-            <ImageUpload
+            <MediaUpload
               value={imageUrl}
               onChange={(url) => setImageUrl(url)}
               folder="banners"

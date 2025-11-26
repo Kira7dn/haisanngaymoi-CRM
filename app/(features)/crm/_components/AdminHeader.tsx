@@ -33,7 +33,8 @@ import {
   X,
   LogOut,
   DollarSign,
-  Warehouse
+  Warehouse,
+  MessageCircleMore
 } from "lucide-react"
 import { cn } from "@shared/utils"
 
@@ -85,6 +86,7 @@ const NAV_GROUPS: Array<NavGroup & { key: string }> = [
     label: "Khách hàng",
     items: [
       { href: "/crm/customers", label: "Tổng quan", icon: BarChart3, roles: ["admin", "sale"] },
+      { href: "/crm/customers/messages", label: "Tin nhắn", icon: MessageCircleMore, roles: ["admin", "sale"] },
       { href: "/crm/customers/tickets", label: "Tickets", icon: Users, roles: ["admin", "sale"] },
     ],
   },

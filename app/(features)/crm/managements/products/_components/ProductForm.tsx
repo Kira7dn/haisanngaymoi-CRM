@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { Product, SizeOption } from "@/core/domain/managements/product"
 import type { Category } from "@/core/domain/managements/category"
 import { createProductAction, updateProductAction } from "../actions"
-import { ImageUpload } from "@/app/(features)/crm/_components/ImageUpload"
+import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload"
 
 interface ProductFormProps {
   product?: Product | null
@@ -152,7 +152,7 @@ export function ProductForm({ product, categories, onClose }: ProductFormProps) 
             </div>
 
             {/* Image Upload */}
-            <ImageUpload
+            <MediaUpload
               value={imageUrl}
               onChange={(url) => setImageUrl(url)}
               folder="products"

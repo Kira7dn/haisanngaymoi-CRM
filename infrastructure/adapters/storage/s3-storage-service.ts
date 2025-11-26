@@ -61,20 +61,107 @@ export class S3StorageService {
   }
 
   /**
+   * Get allowed content types for file type
+   */
+  private getAllowedContentTypes(fileType: AllowedFileType): string[] {
+    const allowedTypes: Record<AllowedFileType, string[]> = {
+      image: [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'image/svg+xml'
+      ],
+      video: [
+        'video/mp4',
+        'video/mpeg',
+        'video/quicktime',
+        'video/x-msvideo',
+        'video/webm',
+        'video/x-ms-wmv'
+      ],
+      document: [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain',
+        'text/csv',
+        'application/octet-stream' // Fallback for unknown types
+      ]
+    };
+    return allowedTypes[fileType] || [];
+  }
+
+  /**
+   * Validate content type against allowed types
+   */
+  private isValidContentType(contentType: string, fileType: AllowedFileType): boolean {
+    if (!contentType) return false;
+
+    const normalizedContentType = contentType.toLowerCase();
+    const allowedTypes = this.getAllowedContentTypes(fileType);
+
+    // Check for exact match or type/* match (e.g., image/*)
+    return allowedTypes.some(type => {
+      const [typeCategory] = type.split('/');
+      return (
+        normalizedContentType === type ||
+        normalizedContentType.startsWith(`${typeCategory}/`)
+      );
+    });
+  }
+
+  /**
+   * Sanitize filename by removing special characters and normalizing
+   */
+  private sanitizeFilename(filename: string): string {
+    // Remove accents/diacritics
+    const normalized = filename
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+    // Replace special characters with hyphen, keep alphanumeric, hyphen, dot and underscore
+    return normalized
+      .replace(/[^a-z0-9\-_.]/g, '-')  // Replace special chars with hyphen
+      .replace(/-+/g, '-')             // Replace multiple hyphens with single
+      .replace(/^-+|-+$/g, '')         // Remove leading/trailing hyphens
+      .trim();
+  }
+
+  /**
+   * Generate S3 key with sanitized filename
+   */
+  private generateKey(fileName: string, folder?: string, fileType?: AllowedFileType): string {
+    const safeFolder = folder ? this.sanitizeFilename(folder) + '/' : '';
+    const timestamp = Date.now();
+    const sanitized = this.sanitizeFilename(fileName);
+    return `${safeFolder}${timestamp}-${sanitized}`;
+  }
+
+  /**
    * Upload file to S3
    */
   async upload(request: FileUploadRequest): Promise<FileUploadResponse> {
+    console.log('upload S3 with request', request);
+
     try {
+      // Normalize content type
+      const contentType = request.contentType.toLowerCase();
+
       // Validate file type
-      const allowedTypes = this.getAllowedContentTypes(request.fileType);
-      if (!allowedTypes.includes(request.contentType)) {
+      if (!this.isValidContentType(contentType, request.fileType)) {
+        const allowedTypes = this.getAllowedContentTypes(request.fileType);
         return {
           success: false,
           error: `Invalid content type. Allowed types for ${request.fileType}: ${allowedTypes.join(", ")}`,
         };
       }
 
-      // Generate S3 key
+      // Generate S3 key with sanitized filename
       const key = this.generateKey(request.fileName, request.folder, request.fileType);
 
       // Convert to Buffer if necessary
@@ -88,13 +175,18 @@ export class S3StorageService {
         buffer = Buffer.from(request.file);
       }
 
-      // Upload to S3
+      // Upload to S3 with proper content type and metadata
       const command = new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
         Body: buffer,
-        ContentType: request.contentType,
-        // ACL: "public-read", // Make file publicly readable (optional, depends on your bucket policy)
+        ContentType: contentType,
+        ContentDisposition: 'inline',
+        CacheControl: 'public, max-age=31536000',
+        Metadata: {
+          'original-filename': key.split('/').pop() || 'file',
+          'uploaded-at': new Date().toISOString()
+        }
       });
 
       await this.s3Client.send(command);
@@ -145,36 +237,6 @@ export class S3StorageService {
   }
 
   /**
-   * Generate S3 key (path) for file
-   */
-  private generateKey(fileName: string, folder?: string, fileType?: AllowedFileType): string {
-    const timestamp = Date.now();
-    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const prefix = folder || fileType || "uploads";
-
-    return `${prefix}/${timestamp}-${sanitizedFileName}`;
-  }
-
-  /**
-   * Get allowed content types for file type
-   */
-  private getAllowedContentTypes(fileType: AllowedFileType): string[] {
-    const allowedTypes: Record<AllowedFileType, string[]> = {
-      image: ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/svg+xml"],
-      video: ["video/mp4", "video/mpeg", "video/quicktime", "video/x-msvideo", "video/webm"],
-      document: [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/vnd.ms-excel",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      ],
-    };
-
-    return allowedTypes[fileType] || [];
-  }
-
-  /**
    * Validate file size
    */
   validateFileSize(fileSize: number, fileType: AllowedFileType): boolean {
@@ -193,6 +255,21 @@ export class S3StorageService {
  * Uses environment variables for configuration
  */
 export function createS3StorageService(): S3StorageService {
+  // In development, use mock service if AWS credentials are not set
+  if (process.env.NODE_ENV === 'development' &&
+    (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY)) {
+    console.warn('⚠️ AWS credentials not found. Using mock S3 service in development mode.');
+    return {
+      upload: async () => ({
+        success: true,
+        url: 'https://example.com/mock-upload.jpg',
+        key: 'mock-upload.jpg'
+      }),
+      delete: async () => true,
+      getSignedUrl: async () => 'https://example.com/mock-signed-url.jpg',
+      validateFileSize: () => true
+    } as unknown as S3StorageService;
+  }
   const config: S3StorageConfig = {
     region: process.env.AWS_REGION || "us-east-1",
     bucket: process.env.AWS_S3_BUCKET || "",

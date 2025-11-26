@@ -112,6 +112,12 @@ export interface YouTubeIntegrationService extends PlatformIntegrationService {
   platform: "youtube";
 
   /**
+   * Initialize the YouTube integration by obtaining an access token
+   * @throws {Error} If initialization fails
+   */
+  initialize(): Promise<void>;
+
+  /**
    * Upload video to YouTube
    */
   uploadVideo(media: PostMedia, title: string, description?: string): Promise<string>;

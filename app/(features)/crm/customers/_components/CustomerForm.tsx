@@ -3,7 +3,7 @@
 import { useState } from "react"
 import type { Customer } from "@/core/domain/customers/customer"
 import { createCustomerAction, updateCustomerAction } from "../actions"
-import { ImageUpload } from "@/app/(features)/crm/_components/ImageUpload"
+import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload"
 
 interface CustomerFormProps {
   customer?: Customer | null
@@ -142,7 +142,7 @@ export function CustomerForm({ customer, onClose }: CustomerFormProps) {
             </div>
 
             {/* Avatar Upload */}
-            <ImageUpload
+            <MediaUpload
               value={avatarUrl}
               onChange={(url) => setAvatarUrl(url)}
               folder="avatars"

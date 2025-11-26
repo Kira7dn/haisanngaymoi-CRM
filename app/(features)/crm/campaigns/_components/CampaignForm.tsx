@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Campaign } from "@/core/domain/campaigns/campaign"
 import { createCampaignAction, updateCampaignAction } from "../actions"
-import { ImageUpload } from "@/app/(features)/crm/_components/ImageUpload"
+import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload"
 
 interface CampaignFormProps {
   campaign?: Campaign | null
@@ -92,7 +92,7 @@ export function CampaignForm({ campaign, onClose }: CampaignFormProps) {
             />
           </div>
 
-          <ImageUpload
+          <MediaUpload
             value={imageUrl}
             onChange={(url) => setImageUrl(url)}
             folder="campaigns"

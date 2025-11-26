@@ -84,18 +84,62 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
   private baseUrl = "https://www.googleapis.com/youtube/v3";
   private uploadUrl = "https://www.googleapis.com/upload/youtube/v3";
 
-  private _accessToken: string = ""; // Lưu trữ accessToken hiện tại
-  constructor(private config: YouTubeConfig) { }
+  private _accessToken: string | null = null;
+  private _tokenExpireTime: number | null = null; // timestamp in ms
+  private config: YouTubeConfig;
+  private static instance: YouTubeIntegration | null = null;
+
+  constructor(config: YouTubeConfig) {
+    this.config = config;
+  }
+
+  /**
+   * Initialize the YouTube integration by obtaining an access token
+   * @throws {Error} If initialization fails
+   */
+  async initialize(): Promise<void> {
+    try {
+      // Kiểm tra nếu access token hiện tại vẫn còn hiệu lực
+      if (this._accessToken && this._tokenExpireTime && Date.now() < this._tokenExpireTime) {
+        console.log('Using existing access token');
+        return;
+      }
+
+      console.log('Refreshing YouTube access token...');
+      const { accessToken, expiresIn } = await this.refreshAccessToken();
+
+      // Lưu access token và thời gian hết hạn (trừ đi 5 phút để đảm bảo an toàn)
+      this._accessToken = accessToken;
+      this._tokenExpireTime = Date.now() + (expiresIn * 1000) - (5 * 60 * 1000);
+
+      console.log('Successfully refreshed YouTube access token');
+    } catch (error) {
+      console.error('Failed to initialize YouTube integration:', error);
+      throw new Error(`Failed to initialize YouTube integration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get singleton instance of YouTubeIntegration
+   */
+  public static getInstance(config: YouTubeConfig): YouTubeIntegration {
+    if (!YouTubeIntegration.instance) {
+      YouTubeIntegration.instance = new YouTubeIntegration(config);
+    }
+    return YouTubeIntegration.instance;
+  }
 
   // Phương thức để lấy accessToken hiện tại, đảm bảo nó đã được làm mới
   private async getValidAccessToken(): Promise<string> {
     // Nếu chưa có accessToken hoặc nó có vẻ đã hết hạn (chúng ta không có expire_in chính xác ở đây,
     // nhưng một ứng dụng thực tế sẽ lưu trữ nó)
     // Để đơn giản, chúng ta sẽ làm mới mỗi lần nếu _accessToken rỗng, hoặc dựa vào lỗi API.
-    if (!this._accessToken) {
-      this._accessToken = await this.refreshAccessToken();
+    if (!this._accessToken || this._tokenExpireTime && Date.now() > this._tokenExpireTime) {
+      const tokenResponse = await this.refreshAccessToken();
+      this._accessToken = tokenResponse.accessToken;
+      this._tokenExpireTime = Date.now() + tokenResponse.expiresIn * 1000;
     }
-    return this._accessToken;
+    return this._accessToken as string;
   }
 
   /**
@@ -457,32 +501,49 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
   /**
    * Refresh access token
    */
-  async refreshAccessToken(): Promise<string> {
-    try {
-      const url = "https://oauth2.googleapis.com/token";
+  private async refreshAccessToken(): Promise<{ accessToken: string; expiresIn: number }> {
+    const url = "https://oauth2.googleapis.com/token";
+    const params = new URLSearchParams({
+      client_id: this.config.clientId,
+      client_secret: this.config.clientSecret,
+      refresh_token: this.config.refreshToken,
+      grant_type: "refresh_token",
+    });
 
+    try {
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: new URLSearchParams({
-          client_id: this.config.clientId,
-          client_secret: this.config.clientSecret,
-          refresh_token: this.config.refreshToken,
-          grant_type: "refresh_token",
-        }),
+        body: params,
       });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error_description || errorData.error || errorMessage;
+        } catch (e) {
+          // Ignore JSON parse error
+        }
+        throw new Error(`YouTube API error: ${errorMessage}`);
+      }
 
       const data = await response.json();
 
-      if (data.error) {
-        throw new Error(data.error_description || data.error);
+      if (!data.access_token || !data.expires_in) {
+        throw new Error("Invalid token response: missing access_token or expires_in");
       }
 
-      return data.access_token;
+      return {
+        accessToken: data.access_token,
+        expiresIn: data.expires_in, // seconds
+      };
     } catch (error) {
-      throw new Error(`Failed to refresh token: ${error instanceof Error ? error.message : "Unknown error"}`);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("Failed to refresh YouTube token:", errorMessage);
+      throw new Error(`Failed to refresh YouTube token: ${errorMessage}`);
     }
   }
 
@@ -504,21 +565,45 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
  * Factory function to create YouTubeIntegration
  */
 
+/**
+ * Factory function to create and initialize YouTubeIntegration
+ * @throws {Error} If configuration is missing or initialization fails
+ */
 export async function createYouTubeIntegration(): Promise<YouTubeIntegration> {
   const config: YouTubeConfig = {
     apiKey: process.env.YOUTUBE_API_KEY || "",
     clientId: process.env.YOUTUBE_CLIENT_ID || "",
     clientSecret: process.env.YOUTUBE_CLIENT_SECRET || "",
-    refreshToken: process.env.YOUTUBE_APP_REFRESH_TOKEN || "",
-    channelId: process.env.YOUTUBE_APP_CHANNEL_ID || "",
+    refreshToken: process.env.YOUTUBE_REFRESH_TOKEN || "",
+    channelId: process.env.YOUTUBE_CHANNEL_ID || "",
   };
 
-  if (!config.apiKey || !config.clientId || !config.clientSecret || !config.refreshToken || !config.channelId) {
-    throw new Error("Missing YouTube configuration. Please set YOUTUBE_API_KEY, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_APP_REFRESH_TOKEN, and YOUTUBE_APP_CHANNEL_ID environment variables.");
+  // Validate required configuration
+  const missingConfigs = [
+    { key: 'YOUTUBE_API_KEY', value: config.apiKey },
+    { key: 'YOUTUBE_CLIENT_ID', value: config.clientId },
+    { key: 'YOUTUBE_CLIENT_SECRET', value: config.clientSecret },
+    { key: 'YOUTUBE_REFRESH_TOKEN', value: config.refreshToken },
+    { key: 'YOUTUBE_CHANNEL_ID', value: config.channelId },
+  ].filter(item => !item.value).map(item => item.key);
+
+  if (missingConfigs.length > 0) {
+    throw new Error(
+      `Missing required YouTube configuration. Please set the following environment variables: ${missingConfigs.join(', ')}`
+    );
   }
 
-  const integration = new YouTubeIntegration(config);
-  // Ngay lập tức làm mới token để có accessToken hợp lệ sẵn sàng sử dụng
-  await integration.refreshAccessToken();
-  return integration;
+  try {
+    const integration = new YouTubeIntegration(config);
+    await integration.initialize(); // Get access token during initialization
+
+    // Log successful initialization (remove in production if not needed)
+    console.log('YouTube integration initialized successfully');
+
+    return integration;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Failed to initialize YouTube integration:', errorMessage);
+    throw new Error(`Failed to initialize YouTube integration: ${errorMessage}`);
+  }
 }

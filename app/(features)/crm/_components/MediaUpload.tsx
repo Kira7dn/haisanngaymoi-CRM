@@ -4,39 +4,45 @@ import { useRef, useState } from "react";
 import { useFileUpload } from "@/lib/hooks/use-file-upload";
 
 import Image from "next/image";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, Video as VideoIcon } from "lucide-react";
 import { Button } from "@shared/ui/button";
 import { Label } from "@shared/ui/label";
 import { Input } from "@shared/ui/input";
 
-export interface ImageUploadProps {
-  value?: string; // Current image URL
+export interface MediaUploadProps {
+  value?: string; // Current media URL
   onChange: (url: string, key?: string) => void;
   folder?: string;
   label?: string;
+  type?: "image" | "video"; // media type
   accept?: string;
   maxSize?: number; // in MB
   disabled?: boolean;
 }
 
 /**
- * Reusable Image Upload Component
- * Handles image upload to S3 with preview
+ * Reusable Media Upload Component
+ * Supports image and video uploads with preview
  */
-export function ImageUpload({
+export function MediaUpload({
   value,
   onChange,
-  folder = "images",
-  label = "Image",
-  accept = "image/*",
-  maxSize = 10,
+  folder = "media",
+  label = "Media",
+  type = "image",
+  accept,
+  maxSize,
   disabled = false,
-}: ImageUploadProps) {
+}: MediaUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(value || null);
 
+  // Set default accept and maxSize based on type
+  const fileAccept = accept || (type === "video" ? "video/*" : "image/*");
+  const fileMaxSize = maxSize || (type === "video" ? 500 : 10);
+
   const { isUploading, error, upload, deleteFile } = useFileUpload({
-    fileType: "image",
+    fileType: type,
     folder,
     onSuccess: (url, key) => {
       setPreview(url);
@@ -48,24 +54,25 @@ export function ImageUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size
-    if (maxSize && file.size > maxSize * 1024 * 1024) {
-      alert(`File size must be less than ${maxSize}MB`);
+    if (fileMaxSize && file.size > fileMaxSize * 1024 * 1024) {
+      alert(`File size must be less than ${fileMaxSize}MB`);
       return;
     }
 
-    // Create local preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    // Create local preview for images
+    if (type === "image") {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(URL.createObjectURL(file));
+    }
 
     // Upload to S3
     try {
       await upload(file);
-    } catch (error) {
-      console.error("Upload failed:", error);
+    } catch (err) {
+      console.error("Upload failed:", err);
       setPreview(value || null);
     }
   };
@@ -73,28 +80,29 @@ export function ImageUpload({
   const handleRemove = () => {
     setPreview(null);
     onChange("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleClick = () => fileInputRef.current?.click();
 
   return (
     <div className="space-y-2">
       {label && <Label>{label}</Label>}
 
       {preview ? (
-        <div className="relative w-full h-48 border rounded-lg overflow-hidden group">
-          <Image
-            src={preview}
-            alt="Preview"
-            fill
-            className="object-cover"
-            unoptimized={preview.startsWith("data:")}
-          />
+        <div className="relative w-full h-48 border rounded-lg overflow-hidden group flex items-center justify-center">
+          {type === "image" ? (
+            <Image
+              src={preview}
+              alt="Preview"
+              fill
+              className="object-cover"
+              unoptimized={preview.startsWith("data:")}
+            />
+          ) : (
+            <video src={preview} className="w-full h-full object-cover" controls />
+          )}
+
           {!disabled && (
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
               <Button
@@ -116,13 +124,7 @@ export function ImageUpload({
                   </>
                 )}
               </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                onClick={handleRemove}
-                disabled={isUploading}
-              >
+              <Button type="button" variant="destructive" size="sm" onClick={handleRemove} disabled={isUploading}>
                 <X className="mr-2 h-4 w-4" />
                 Remove
               </Button>
@@ -142,11 +144,9 @@ export function ImageUpload({
             </>
           ) : (
             <>
-              <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">Click to upload image</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Max size: {maxSize}MB
-              </p>
+              {type === "image" ? <Upload className="h-10 w-10 text-muted-foreground mb-2" /> : <VideoIcon className="h-10 w-10 text-muted-foreground mb-2" />}
+              <p className="text-sm text-muted-foreground">Click to upload {type}</p>
+              <p className="text-xs text-muted-foreground mt-1">Max size: {fileMaxSize}MB</p>
             </>
           )}
         </div>
@@ -155,7 +155,7 @@ export function ImageUpload({
       <Input
         ref={fileInputRef}
         type="file"
-        accept={accept}
+        accept={fileAccept}
         onChange={handleFileChange}
         disabled={disabled || isUploading}
         className="hidden"
