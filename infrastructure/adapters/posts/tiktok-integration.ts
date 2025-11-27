@@ -384,18 +384,103 @@ export class TikTokIntegration implements TikTokIntegrationService {
 }
 
 /**
- * Factory function to create TikTokIntegration
+ * Factory function to create TikTokIntegration with user's access token
+ * This retrieves the token from SocialAuth repository for the given user
  */
-export function createTikTokIntegration(): TikTokIntegration {
+export async function createTikTokIntegrationForUser(userId: string): Promise<TikTokIntegration> {
+  const { SocialAuthRepository } = await import("@/infrastructure/repositories/social-auth-repo");
+  const { ObjectId } = await import("mongodb");
+
+  const repo = new SocialAuthRepository();
+  const auth = await repo.getByUserAndPlatform(new ObjectId(userId), "tiktok");
+
+  if (!auth) {
+    throw new Error("TikTok account not connected for this user");
+  }
+
+  // Check if token is expired
+  if (new Date() >= auth.expiresAt) {
+    throw new Error("TikTok token has expired. Please reconnect your account.");
+  }
+
   const config: TikTokConfig = {
     clientKey: process.env.TIKTOK_CLIENT_KEY || "",
     clientSecret: process.env.TIKTOK_CLIENT_SECRET || "",
-    accessToken: process.env.TIKTOK_ACCESS_TOKEN || "",
+    accessToken: auth.accessToken,
   };
 
-  if (!config.clientKey || !config.clientSecret || !config.accessToken) {
-    throw new Error("Missing TikTok configuration. Please set TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, and TIKTOK_ACCESS_TOKEN environment variables.");
+  if (!config.clientKey || !config.clientSecret) {
+    throw new Error("Missing TikTok client configuration. Please set TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET environment variables.");
   }
 
   return new TikTokIntegration(config);
+}
+
+/**
+ * Factory function to create TikTokIntegration with provided access token
+ * Used by workers and internal services
+ */
+export function createTikTokIntegration(accessToken: string): TikTokIntegration {
+  const config: TikTokConfig = {
+    clientKey: process.env.TIKTOK_CLIENT_KEY || "",
+    clientSecret: process.env.TIKTOK_CLIENT_SECRET || "",
+    accessToken,
+  };
+
+  if (!config.clientKey || !config.clientSecret || !config.accessToken) {
+    throw new Error("Missing TikTok configuration");
+  }
+
+  return new TikTokIntegration(config);
+}
+
+/**
+ * Refresh TikTok access token using refresh token
+ */
+export async function refreshTikTokToken(refreshToken: string): Promise<{
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  open_id: string;
+  scope: string;
+} | null> {
+  try {
+    const clientKey = process.env.TIKTOK_CLIENT_KEY;
+    const clientSecret = process.env.TIKTOK_CLIENT_SECRET;
+
+    if (!clientKey || !clientSecret) {
+      throw new Error("Missing TikTok client configuration");
+    }
+
+    const response = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_key: clientKey,
+        client_secret: clientSecret,
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+      console.error("Failed to refresh TikTok token:", data.error);
+      return null;
+    }
+
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_in: data.expires_in,
+      open_id: data.open_id,
+      scope: data.scope,
+    };
+  } catch (error) {
+    console.error("Error refreshing TikTok token:", error);
+    return null;
+  }
 }

@@ -1,11 +1,19 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { cookies } from "next/headers"
 import { getPostsUseCase, createPostUseCase, updatePostUseCase, deletePostUseCase } from "@/app/api/posts/depends"
 import type { Platform, ContentType, PostMedia, PlatformMetadata } from "@/core/domain/campaigns/post"
 
 export async function createPostAction(formData: FormData) {
   const useCase = await createPostUseCase()
+
+  // Get current user ID from cookies
+  const cookieStore = await cookies()
+  const userIdCookie = cookieStore.get("admin_user_id")
+  if (!userIdCookie) {
+    throw new Error("Unauthorized - Please login first")
+  }
 
   const title = formData.get("title")?.toString() || ""
   const body = formData.get("body")?.toString() || ""
@@ -38,6 +46,7 @@ export async function createPostAction(formData: FormData) {
   const now = new Date()
 
   await useCase.execute({
+    userId: userIdCookie.value,
     title,
     body,
     contentType,
@@ -60,12 +69,30 @@ export async function getPostsAction() {
 
 export async function deletePostAction(id: string) {
   const useCase = await deletePostUseCase()
-  await useCase.execute({ id })
+
+  // Get current user ID from cookies
+  const cookieStore = await cookies()
+  const userIdCookie = cookieStore.get("admin_user_id")
+  if (!userIdCookie) {
+    throw new Error("Unauthorized - Please login first")
+  }
+
+  await useCase.execute({
+    id,
+    userId: userIdCookie.value
+  })
   revalidatePath("/crm/posts")
 }
 
 export async function updatePostAction(id: string, formData: FormData) {
   const useCase = await updatePostUseCase()
+
+  // Get current user ID from cookies
+  const cookieStore = await cookies()
+  const userIdCookie = cookieStore.get("admin_user_id")
+  if (!userIdCookie) {
+    throw new Error("Unauthorized - Please login first")
+  }
 
   const title = formData.get("title")?.toString() || ""
   const body = formData.get("body")?.toString()
@@ -77,6 +104,7 @@ export async function updatePostAction(id: string, formData: FormData) {
 
   const updateData: any = {
     id,
+    userId: userIdCookie.value,
     updatedAt: new Date(),
   }
 

@@ -4,6 +4,7 @@ import type { PlatformIntegrationFactory } from "@/core/application/interfaces/p
 
 export interface DeletePostRequest {
   id: string
+  userId: string // Required for platform authentication
 }
 
 export interface DeletePostResponse {
@@ -34,7 +35,10 @@ export class DeletePostUseCase {
       for (const platformData of post.platforms) {
         if (platformData.platform && platformData.postId) {
           try {
-            const platformService = await this.platformFactory.create(platformData.platform as Platform);
+            const platformService = await this.platformFactory.create(
+              platformData.platform as Platform,
+              request.userId
+            );
             const success = await platformService.delete(platformData.postId);
             platformResults[platformData.platform] = success;
             if (!success) {

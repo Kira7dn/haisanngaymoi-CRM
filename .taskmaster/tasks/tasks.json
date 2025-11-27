@@ -2267,13 +2267,413 @@
         "testStrategy": "Verify that the domain models correctly represent the data and support all use cases, including priority-based routing, advanced message tracking, conversation tagging, and message threading.",
         "subtasks": [],
         "updatedAt": "2025-11-26T03:55:04.656Z"
+      },
+      {
+        "id": "60",
+        "title": "Implement TikTok OAuth Start Endpoint",
+        "description": "Create an endpoint to initiate TikTok OAuth flow.",
+        "details": "Implement the `/api/auth/tiktok/start` endpoint to redirect users to TikTok's authorization URL using the client key and redirect URI.",
+        "testStrategy": "Test by ensuring the redirection URL is correctly formed and users are redirected to TikTok's authorization page.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Xây dựng URL ủy quyền TikTok với client key và redirect URI",
+            "description": "Tạo hàm xây dựng URL ủy quyền TikTok, sử dụng client key, redirect URI và các tham số cần thiết theo chuẩn OAuth 2.0.",
+            "dependencies": [],
+            "details": "Tham khảo tài liệu TikTok để xác định các tham số bắt buộc như client_key, redirect_uri, scope, response_type, state, code_challenge, code_challenge_method. Đảm bảo redirect URI đã được đăng ký hợp lệ và các tham số được encode đúng chuẩn. Có thể sử dụng hàm tạo state ngẫu nhiên để chống CSRF.",
+            "status": "pending",
+            "testStrategy": "Kiểm tra URL sinh ra có đầy đủ tham số, đúng định dạng, và redirect URI hợp lệ. So sánh với ví dụ trong tài liệu TikTok[2][3][6].",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Triển khai endpoint `/api/auth/tiktok/start` để chuyển hướng người dùng đến URL ủy quyền",
+            "description": "Tạo endpoint backend `/api/auth/tiktok/start` nhận request từ frontend và chuyển hướng người dùng đến URL ủy quyền TikTok vừa xây dựng.",
+            "dependencies": [
+              1
+            ],
+            "details": "Sử dụng framework backend (ví dụ: Express, NestJS) để tạo endpoint GET `/api/auth/tiktok/start`. Khi nhận request, gọi hàm xây dựng URL ủy quyền (từ bước 1), sau đó trả về response redirect (HTTP 302) đến URL này. Đảm bảo lưu lại state vào cookie/session để xác thực sau khi TikTok redirect về.",
+            "status": "pending",
+            "testStrategy": "Gửi request đến endpoint và xác nhận trình duyệt được chuyển hướng đúng đến trang ủy quyền TikTok với đầy đủ tham số. Kiểm tra state được lưu đúng cách để chống CSRF[2][3][5].",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 3,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Chia nhỏ thành các bước: (1) Xây dựng URL ủy quyền TikTok với client key và redirect URI, (2) Triển khai endpoint `/api/auth/tiktok/start` để chuyển hướng người dùng đến URL ủy quyền.",
+        "updatedAt": "2025-11-26T14:36:24.003Z"
+      },
+      {
+        "id": "61",
+        "title": "Handle TikTok OAuth Callback",
+        "description": "Create an endpoint to handle TikTok OAuth callback and exchange code for tokens.",
+        "details": "Implement the `/api/auth/tiktok/callback` endpoint to receive the authorization code, exchange it for access and refresh tokens, and store them in MongoDB using the `SocialAuthRepository`.",
+        "testStrategy": "Test by simulating a callback with a valid code and verifying tokens are stored correctly in the database.",
+        "priority": "medium",
+        "dependencies": [
+          "60"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Nhận mã ủy quyền từ callback",
+            "description": "Xử lý request callback từ TikTok, trích xuất mã ủy quyền từ query parameters.",
+            "dependencies": [],
+            "details": "Viết logic để nhận và kiểm tra mã ủy quyền từ URL callback, đảm bảo mã hợp lệ và xử lý các trường hợp lỗi.",
+            "status": "pending",
+            "testStrategy": "Kiểm tra với các mã hợp lệ và không hợp lệ, kiểm tra khi không có mã trong query.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Gọi API TikTok để đổi mã lấy token",
+            "description": "Gửi mã ủy quyền đến API TikTok để nhận access token và refresh token.",
+            "dependencies": [
+              1
+            ],
+            "details": "Thực hiện POST request đến endpoint TikTok OAuth token với các tham số cần thiết, xử lý phản hồi và trích xuất token.",
+            "status": "pending",
+            "testStrategy": "Mock API response từ TikTok, kiểm tra xử lý thành công và lỗi.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Lưu token vào MongoDB qua SocialAuthRepository",
+            "description": "Lưu access token, refresh token và thông tin liên quan vào MongoDB sử dụng SocialAuthRepository.",
+            "dependencies": [
+              2
+            ],
+            "details": "Gọi phương thức lưu trữ trong SocialAuthRepository, đảm bảo dữ liệu được lưu đúng định dạng và liên kết với user.",
+            "status": "pending",
+            "testStrategy": "Kiểm tra dữ liệu được lưu chính xác trong MongoDB, kiểm tra xử lý lỗi khi lưu.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Chia nhỏ thành các bước: (1) Nhận mã ủy quyền từ callback, (2) Gọi API TikTok để đổi mã lấy access token và refresh token, (3) Lưu token vào MongoDB thông qua SocialAuthRepository.",
+        "updatedAt": "2025-11-26T14:36:28.648Z"
+      },
+      {
+        "id": "62",
+        "title": "Develop Token Storage Mechanism",
+        "description": "Store TikTok tokens securely in MongoDB.",
+        "details": "Use the `SocialAuthRepository` to save `access_token`, `refresh_token`, `open_id`, and `expires_at` associated with the CRM user ID.",
+        "testStrategy": "Verify that tokens are stored securely and can be retrieved accurately for a given user.",
+        "priority": "medium",
+        "dependencies": [
+          "61"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Thiết kế schema lưu trữ token trong MongoDB",
+            "description": "Xác định cấu trúc schema phù hợp để lưu trữ các thông tin token như access_token, refresh_token, open_id, expires_at và liên kết với CRM user ID.",
+            "dependencies": [],
+            "details": "Tạo collection mới trong MongoDB với các trường cần thiết: access_token, refresh_token, open_id, expires_at, crm_user_id. Đảm bảo các trường được mã hóa hoặc bảo vệ phù hợp để tăng tính bảo mật.",
+            "status": "done",
+            "testStrategy": "Kiểm tra tính hợp lệ của schema bằng cách tạo và lưu một document mẫu, xác minh các trường được lưu đúng định dạng.",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-26T14:32:16.154Z"
+          },
+          {
+            "id": 2,
+            "title": "Triển khai phương thức lưu và truy xuất token trong SocialAuthRepository",
+            "description": "Viết các phương thức trong SocialAuthRepository để lưu và truy xuất token từ MongoDB theo schema đã thiết kế.",
+            "dependencies": [
+              1
+            ],
+            "details": "Cài đặt các phương thức như saveToken, getToken, updateToken, deleteToken trong SocialAuthRepository, đảm bảo xử lý đúng các trường hợp lỗi và bảo mật dữ liệu.",
+            "status": "done",
+            "testStrategy": "Viết unit test cho từng phương thức, kiểm tra khả năng lưu, truy xuất, cập nhật và xóa token chính xác.",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-26T14:33:31.104Z"
+          }
+        ],
+        "complexity": 4,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Chia nhỏ thành các bước: (1) Thiết kế schema lưu trữ token trong MongoDB, (2) Triển khai phương thức lưu và truy xuất token trong SocialAuthRepository.",
+        "updatedAt": "2025-11-26T14:33:31.104Z"
+      },
+      {
+        "id": "63",
+        "title": "Implement Video Publishing Feature",
+        "description": "Enable video publishing to TikTok from CRM.",
+        "details": "Develop the backend logic to allow users to select a video, hashtags, and title, then use `TikTokIntegration.publish()` to upload and publish the video.",
+        "testStrategy": "Test by uploading a video and ensuring it is published successfully to TikTok, returning the correct permalink and video ID.",
+        "priority": "medium",
+        "dependencies": [
+          "62"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Xử lý upload video từ người dùng",
+            "description": "Xây dựng logic backend để nhận file video từ người dùng, kiểm tra định dạng và kích thước, lưu tạm file trước khi gửi lên TikTok.",
+            "dependencies": [],
+            "details": "Sử dụng middleware hoặc controller để xử lý upload file, kiểm tra định dạng MP4/H.264, giới hạn kích thước, lưu file tạm trên server.",
+            "status": "pending",
+            "testStrategy": "Kiểm thử với các file video hợp lệ và không hợp lệ, kiểm tra xử lý lỗi khi upload.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Gọi API TikTok để đăng video với thông tin tiêu đề, hashtag",
+            "description": "Gọi API TikTok Content Posting để đăng video, truyền thông tin tiêu đề, hashtag và đường dẫn file đã upload.",
+            "dependencies": [
+              1
+            ],
+            "details": "Sử dụng TikTokIntegration.publish() để gọi API TikTok, truyền thông tin video, tiêu đề, hashtag, đảm bảo có access token và open ID hợp lệ.",
+            "status": "pending",
+            "testStrategy": "Kiểm thử với các thông tin hợp lệ và không hợp lệ, kiểm tra phản hồi từ API.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Xử lý phản hồi và lưu permalink, video ID vào CRM",
+            "description": "Xử lý phản hồi từ API TikTok, trích xuất permalink và video ID, lưu vào CRM.",
+            "dependencies": [
+              2
+            ],
+            "details": "Phân tích phản hồi API, trích xuất permalink và video ID, cập nhật thông tin vào cơ sở dữ liệu CRM.",
+            "status": "pending",
+            "testStrategy": "Kiểm thử với phản hồi API thành công và thất bại, kiểm tra việc lưu thông tin vào CRM.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Chia nhỏ thành các bước: (1) Xử lý upload video từ người dùng, (2) Gọi API TikTok để đăng video với thông tin tiêu đề, hashtag, (3) Xử lý phản hồi và lưu permalink, video ID vào CRM."
+      },
+      {
+        "id": "64",
+        "title": "Fetch TikTok Video Analytics",
+        "description": "Retrieve engagement metrics for published TikTok videos.",
+        "details": "Implement API calls to `/video/query/` to fetch likes, views, shares, and comments for videos and update the CRM dashboard.",
+        "testStrategy": "Test by verifying that the correct metrics are fetched and displayed for each video.",
+        "priority": "medium",
+        "dependencies": [
+          "63"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Gọi API TikTok để lấy dữ liệu phân tích video",
+            "description": "Thực hiện gọi API TikTok Display API endpoint /video/query/ để lấy các chỉ số tương tác như lượt thích, lượt xem, lượt chia sẻ và bình luận cho các video đã đăng.",
+            "dependencies": [],
+            "details": "Sử dụng access token hợp lệ, gọi POST /v2/video/query/ với danh sách video_ids và các trường cần lấy (id, like_count, comment_count, share_count, view_count). Xử lý phản hồi JSON và trích xuất dữ liệu cần thiết.",
+            "status": "pending",
+            "testStrategy": "Kiểm tra API trả về dữ liệu đúng định dạng và đầy đủ các chỉ số cho từng video.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Cập nhật dữ liệu vào dashboard CRM",
+            "description": "Cập nhật các chỉ số tương tác video TikTok đã lấy được vào dashboard CRM để hiển thị cho người dùng.",
+            "dependencies": [
+              1
+            ],
+            "details": "Chuyển đổi dữ liệu từ phản hồi API thành định dạng phù hợp với dashboard CRM, cập nhật vào cơ sở dữ liệu hoặc giao diện người dùng.",
+            "status": "pending",
+            "testStrategy": "Kiểm tra dữ liệu hiển thị trên dashboard chính xác với dữ liệu từ API.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Chia nhỏ thành các bước: (1) Gọi API TikTok để lấy dữ liệu phân tích video, (2) Cập nhật dữ liệu vào dashboard CRM."
+      },
+      {
+        "id": "65",
+        "title": "Implement Token Refresh Mechanism",
+        "description": "Automatically refresh TikTok access tokens when expired.",
+        "details": "Develop a mechanism using BullMQ worker or API trigger to refresh tokens when they expire, updating the stored tokens in MongoDB.",
+        "testStrategy": "Test by simulating token expiration and ensuring tokens are refreshed and updated correctly.",
+        "priority": "medium",
+        "dependencies": [
+          "62"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Thiết lập cơ chế kiểm tra thời hạn token",
+            "description": "Xây dựng logic kiểm tra thời hạn hiệu lực của token TikTok, xác định khi nào cần làm mới token.",
+            "dependencies": [],
+            "details": "Viết hàm hoặc job kiểm tra thời gian hết hạn của token trong MongoDB, so sánh với thời gian hiện tại để xác định cần refresh.",
+            "status": "pending",
+            "testStrategy": "Kiểm tra bằng cách tạo token có thời hạn ngắn và xác minh cơ chế phát hiện hết hạn.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Gọi API TikTok để làm mới token khi hết hạn",
+            "description": "Thực hiện gọi API TikTok để làm mới token sử dụng refresh_token khi phát hiện token đã hết hạn.",
+            "dependencies": [
+              1
+            ],
+            "details": "Sử dụng refresh_token để gọi endpoint refresh token của TikTok, xử lý phản hồi và lỗi từ API.",
+            "status": "pending",
+            "testStrategy": "Kiểm thử bằng cách mô phỏng API TikTok trả về token mới và xử lý các trường hợp lỗi.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Cập nhật token mới vào MongoDB",
+            "description": "Lưu trữ token mới và thông tin liên quan vào MongoDB sau khi làm mới thành công.",
+            "dependencies": [
+              2
+            ],
+            "details": "Cập nhật bản ghi token trong MongoDB với access_token, refresh_token, thời gian hết hạn mới.",
+            "status": "pending",
+            "testStrategy": "Kiểm tra việc cập nhật token mới và xác minh dữ liệu trong MongoDB.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Chia nhỏ thành các bước: (1) Thiết lập cơ chế kiểm tra thời hạn token, (2) Gọi API TikTok để làm mới token khi hết hạn, (3) Cập nhật token mới vào MongoDB.",
+        "updatedAt": "2025-11-26T14:50:50.625Z"
+      },
+      {
+        "id": "66",
+        "title": "Create Disconnect TikTok Feature",
+        "description": "Allow users to disconnect their TikTok account from CRM.",
+        "details": "Implement functionality to delete TikTok tokens from MongoDB and update the UI to reflect the disconnected state.",
+        "testStrategy": "Test by disconnecting a TikTok account and verifying tokens are removed and UI updates correctly.",
+        "priority": "medium",
+        "dependencies": [
+          "62"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "complexity": 4,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Chia nhỏ thành các bước: (1) Xóa token TikTok khỏi MongoDB, (2) Cập nhật giao diện người dùng để phản ánh trạng thái ngắt kết nối.",
+        "updatedAt": "2025-11-26T14:36:32.982Z"
+      },
+      {
+        "id": "67",
+        "title": "UI Integration for TikTok Connection",
+        "description": "Develop the UI for connecting and managing TikTok integration.",
+        "details": "Create a page in the CRM for users to connect, view connection status, and manage their TikTok account integration.",
+        "testStrategy": "Test by navigating through the UI, ensuring all states (Idle, Redirect, Connected, Error) are handled correctly.",
+        "priority": "medium",
+        "dependencies": [
+          "60",
+          "61",
+          "66"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Thiết kế giao diện kết nối TikTok",
+            "description": "Tạo giao diện người dùng cho phép người dùng bắt đầu quá trình kết nối tài khoản TikTok với CRM.",
+            "dependencies": [],
+            "details": "Thiết kế một trang hoặc modal trong CRM, bao gồm nút 'Kết nối TikTok', hướng dẫn người dùng và các trường cần thiết để bắt đầu OAuth.",
+            "status": "pending",
+            "testStrategy": "Kiểm tra giao diện hiển thị đúng, nút kết nối hoạt động và chuyển hướng đúng đến endpoint OAuth.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Hiển thị trạng thái kết nối TikTok",
+            "description": "Hiển thị trạng thái hiện tại của kết nối TikTok (Idle, Redirect, Connected, Error) trên giao diện người dùng.",
+            "dependencies": [
+              1
+            ],
+            "details": "Cập nhật giao diện để phản ánh trạng thái kết nối: chờ, đang chuyển hướng, đã kết nối hoặc lỗi, sử dụng biểu tượng và thông báo phù hợp.",
+            "status": "pending",
+            "testStrategy": "Kiểm tra từng trạng thái được hiển thị chính xác khi thay đổi trạng thái kết nối.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Xử lý các trạng thái kết nối",
+            "description": "Xử lý logic và cập nhật giao diện cho các trạng thái Idle, Redirect, Connected, Error.",
+            "dependencies": [
+              2
+            ],
+            "details": "Viết logic xử lý trạng thái kết nối, cập nhật UI và thông báo người dùng khi trạng thái thay đổi, đảm bảo trải nghiệm người dùng mượt mà.",
+            "status": "pending",
+            "testStrategy": "Kiểm thử toàn bộ luồng trạng thái, đảm bảo UI phản hồi chính xác với từng trạng thái.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 3,
+        "expansionPrompt": "Chia nhỏ thành các bước: (1) Thiết kế giao diện kết nối TikTok, (2) Hiển thị trạng thái kết nối, (3) Xử lý các trạng thái (Idle, Redirect, Connected, Error).",
+        "updatedAt": "2025-11-26T14:38:25.126Z"
+      },
+      {
+        "id": "68",
+        "title": "Role-Based Access Control for TikTok Features",
+        "description": "Implement role-based permissions for TikTok features.",
+        "details": "Ensure only users with the appropriate roles (Admin, Social Marketing) can access TikTok connection, video upload, and analytics features.",
+        "testStrategy": "Test by attempting to access features with different user roles and verifying access is correctly restricted.",
+        "priority": "medium",
+        "dependencies": [
+          "67"
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Thiết lập phân quyền vai trò cho các tính năng TikTok",
+            "description": "Xác định và cấu hình các quyền truy cập cho từng vai trò (Admin, Social Marketing) đối với các tính năng kết nối TikTok, tải video và xem phân tích.",
+            "dependencies": [],
+            "details": "Phân tích các tính năng TikTok cần kiểm soát truy cập. Thiết lập bảng phân quyền trong hệ thống, đảm bảo chỉ những vai trò phù hợp (Admin, Social Marketing) mới có quyền sử dụng các tính năng: kết nối TikTok, tải video, xem analytics. Áp dụng kiểm tra quyền ở tầng backend và frontend.",
+            "status": "pending",
+            "testStrategy": "Kiểm tra bằng cách đăng nhập với từng vai trò và xác nhận chỉ những vai trò được phép mới truy cập được các tính năng TikTok.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Kiểm tra quyền truy cập khi người dùng thao tác với các tính năng TikTok",
+            "description": "Thực hiện kiểm tra quyền truy cập mỗi khi người dùng cố gắng sử dụng các tính năng liên quan đến TikTok.",
+            "dependencies": [
+              1
+            ],
+            "details": "Tích hợp kiểm tra quyền vào các API và giao diện người dùng. Khi người dùng thực hiện thao tác (kết nối, tải video, xem analytics), hệ thống phải xác thực vai trò và từ chối truy cập nếu không đủ quyền. Ghi log các lần truy cập bị từ chối để phục vụ kiểm tra bảo mật.",
+            "status": "pending",
+            "testStrategy": "Thử truy cập các tính năng TikTok với tài khoản không đủ quyền để xác nhận hệ thống từ chối đúng và ghi nhận sự kiện.",
+            "parentId": "undefined"
+          }
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 2,
+        "expansionPrompt": "Chia nhỏ thành các bước: (1) Thiết lập phân quyền cho các tính năng TikTok, (2) Kiểm tra quyền truy cập khi người dùng thực hiện thao tác.",
+        "updatedAt": "2025-11-26T14:39:06.262Z"
+      },
+      {
+        "id": "69",
+        "title": "Environment Configuration for TikTok Integration",
+        "description": "Set up environment variables for TikTok API integration.",
+        "details": "Configure `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, and `TIKTOK_REDIRECT_URI` in the environment to enable TikTok API interactions.",
+        "testStrategy": "Test by ensuring all API interactions use the correct environment variables and function as expected.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [],
+        "complexity": 2,
+        "recommendedSubtasks": 1,
+        "expansionPrompt": "Chia nhỏ thành các bước: (1) Thiết lập biến môi trường cho tích hợp TikTok.",
+        "updatedAt": "2025-11-26T14:31:24.260Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-26T03:55:04.658Z",
-      "taskCount": 59,
-      "completedCount": 58,
+      "lastModified": "2025-11-26T14:50:50.631Z",
+      "taskCount": 69,
+      "completedCount": 66,
       "tags": [
         "master"
       ]

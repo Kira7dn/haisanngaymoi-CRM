@@ -3,25 +3,41 @@ import type {
   PlatformIntegrationService,
   PlatformIntegrationFactory,
 } from "@/core/application/interfaces/platform-integration-service";
-import { createFacebookIntegration } from "./facebook-integration";
-import { createTikTokIntegration } from "./tiktok-integration";
+import { createFacebookIntegrationForUser } from "./facebook-integration";
+import { createTikTokIntegrationForUser } from "./tiktok-integration";
 import { createZaloIntegration } from "./zalo-integration";
-import { createYouTubeIntegration } from "./youtube-integration";
+import { createYouTubeIntegrationForUser } from "./youtube-integration";
 
 /**
  * Platform Integration Factory
- * Creates platform-specific integration services
+ * Creates platform-specific integration services with user authentication
  */
 export class PlatformFactory implements PlatformIntegrationFactory {
-  private instances: Map<Platform, PlatformIntegrationService> = new Map();
+  // Cache key: `${platform}-${userId}`
+  private instances: Map<string, PlatformIntegrationService> = new Map();
 
   /**
    * Create or get cached platform integration service
+   * @param platform - Platform to create service for
+   * @param userId - User ID for user-specific integrations (required for all platforms)
+   * @param options - Optional platform-specific parameters (pageId, channelId, etc.)
    */
-  async create(platform: Platform): Promise<PlatformIntegrationService> {
+  async create(
+    platform: Platform,
+    userId: string,
+    options?: { pageId?: string; channelId?: string }
+  ): Promise<PlatformIntegrationService> {
+    // Validate userId
+    if (!userId) {
+      throw new Error(`User ID is required for ${platform} integration`);
+    }
+
+    // Create cache key with userId to ensure per-user instances
+    const cacheKey = `${platform}-${userId}`;
+
     // Return cached instance if exists
-    if (this.instances.has(platform)) {
-      return this.instances.get(platform)!;
+    if (this.instances.has(cacheKey)) {
+      return this.instances.get(cacheKey)!;
     }
 
     // Create new instance based on platform
@@ -29,23 +45,23 @@ export class PlatformFactory implements PlatformIntegrationFactory {
 
     switch (platform) {
       case "facebook":
-        service = createFacebookIntegration();
+        service = await createFacebookIntegrationForUser(userId, options?.pageId);
         break;
       case "tiktok":
-        service = createTikTokIntegration();
+        service = await createTikTokIntegrationForUser(userId);
         break;
       case "zalo":
         service = await createZaloIntegration();
         break;
       case "youtube":
-        service = await createYouTubeIntegration();
+        service = await createYouTubeIntegrationForUser(userId, options?.channelId);
         break;
       default:
         throw new Error(`Unsupported platform: ${platform}`);
     }
 
-    // Cache instance
-    this.instances.set(platform, service);
+    // Cache instance per user
+    this.instances.set(cacheKey, service);
     return service;
   }
 
@@ -54,6 +70,16 @@ export class PlatformFactory implements PlatformIntegrationFactory {
    */
   clearCache(): void {
     this.instances.clear();
+  }
+
+  /**
+   * Clear cached instance for specific user and platform
+   * @param platform - Platform to clear
+   * @param userId - User ID
+   */
+  clearUserCache(platform: Platform, userId: string): void {
+    const cacheKey = `${platform}-${userId}`;
+    this.instances.delete(cacheKey);
   }
 
   /**

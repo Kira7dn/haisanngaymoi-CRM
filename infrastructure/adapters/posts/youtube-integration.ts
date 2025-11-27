@@ -562,48 +562,112 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
 }
 
 /**
- * Factory function to create YouTubeIntegration
+ * Factory function to create YouTubeIntegration with user's refresh token
+ * This retrieves the token from SocialAuth repository for the given user
  */
+export async function createYouTubeIntegrationForUser(userId: string, channelId?: string): Promise<YouTubeIntegration> {
+  const { SocialAuthRepository } = await import("@/infrastructure/repositories/social-auth-repo");
+  const { ObjectId } = await import("mongodb");
 
-/**
- * Factory function to create and initialize YouTubeIntegration
- * @throws {Error} If configuration is missing or initialization fails
- */
-export async function createYouTubeIntegration(): Promise<YouTubeIntegration> {
+  const repo = new SocialAuthRepository();
+  const auth = await repo.getByUserAndPlatform(new ObjectId(userId), "youtube");
+
+  if (!auth) {
+    throw new Error("YouTube account not connected for this user");
+  }
+
+  // Check if token is expired
+  if (new Date() >= auth.expiresAt) {
+    throw new Error("YouTube token has expired. Please reconnect your account.");
+  }
+
   const config: YouTubeConfig = {
     apiKey: process.env.YOUTUBE_API_KEY || "",
     clientId: process.env.YOUTUBE_CLIENT_ID || "",
     clientSecret: process.env.YOUTUBE_CLIENT_SECRET || "",
-    refreshToken: process.env.YOUTUBE_REFRESH_TOKEN || "",
-    channelId: process.env.YOUTUBE_CHANNEL_ID || "",
+    refreshToken: auth.refreshToken,
+    channelId: channelId || process.env.YOUTUBE_CHANNEL_ID || "",
   };
 
-  // Validate required configuration
-  const missingConfigs = [
-    { key: 'YOUTUBE_API_KEY', value: config.apiKey },
-    { key: 'YOUTUBE_CLIENT_ID', value: config.clientId },
-    { key: 'YOUTUBE_CLIENT_SECRET', value: config.clientSecret },
-    { key: 'YOUTUBE_REFRESH_TOKEN', value: config.refreshToken },
-    { key: 'YOUTUBE_CHANNEL_ID', value: config.channelId },
-  ].filter(item => !item.value).map(item => item.key);
-
-  if (missingConfigs.length > 0) {
-    throw new Error(
-      `Missing required YouTube configuration. Please set the following environment variables: ${missingConfigs.join(', ')}`
-    );
+  if (!config.clientId || !config.clientSecret) {
+    throw new Error("Missing YouTube client configuration. Please set YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET environment variables.");
   }
 
+  const integration = new YouTubeIntegration(config);
+  await integration.initialize();
+
+  return integration;
+}
+
+/**
+ * Factory function to create YouTubeIntegration with provided refresh token
+ * Used by workers and internal services
+ */
+export async function createYouTubeIntegration(refreshToken: string, channelId?: string): Promise<YouTubeIntegration> {
+  const config: YouTubeConfig = {
+    apiKey: process.env.YOUTUBE_API_KEY || "",
+    clientId: process.env.YOUTUBE_CLIENT_ID || "",
+    clientSecret: process.env.YOUTUBE_CLIENT_SECRET || "",
+    refreshToken,
+    channelId: channelId || process.env.YOUTUBE_CHANNEL_ID || "",
+  };
+
+  if (!config.clientId || !config.clientSecret || !config.refreshToken) {
+    throw new Error("Missing YouTube configuration");
+  }
+
+  const integration = new YouTubeIntegration(config);
+  await integration.initialize();
+
+  return integration;
+}
+
+/**
+ * Refresh YouTube OAuth token
+ * Returns a new access token (refresh tokens don't expire in YouTube)
+ */
+export async function refreshYouTubeToken(refreshToken: string): Promise<{
+  access_token: string;
+  expires_in: number;
+  scope: string;
+} | null> {
   try {
-    const integration = new YouTubeIntegration(config);
-    await integration.initialize(); // Get access token during initialization
+    const clientId = process.env.YOUTUBE_CLIENT_ID;
+    const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
 
-    // Log successful initialization (remove in production if not needed)
-    console.log('YouTube integration initialized successfully');
+    if (!clientId || !clientSecret) {
+      throw new Error("Missing YouTube client configuration");
+    }
 
-    return integration;
+    const params = new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    });
+
+    const response = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+      console.error("Failed to refresh YouTube token:", data.error);
+      return null;
+    }
+
+    return {
+      access_token: data.access_token,
+      expires_in: data.expires_in || 3600, // 1 hour default
+      scope: data.scope || "",
+    };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Failed to initialize YouTube integration:', errorMessage);
-    throw new Error(`Failed to initialize YouTube integration: ${errorMessage}`);
+    console.error("Error refreshing YouTube token:", error);
+    return null;
   }
 }

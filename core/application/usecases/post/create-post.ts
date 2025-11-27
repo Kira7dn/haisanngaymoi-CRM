@@ -2,6 +2,10 @@ import type { Post, PostMedia, Platform } from "@/core/domain/campaigns/post"
 import type { PostService, PostPayload } from "@/core/application/interfaces/post-service"
 import type { PlatformIntegrationFactory } from "@/core/application/interfaces/platform-integration-service"
 
+export interface CreatePostRequest extends PostPayload {
+  userId: string; // Required for platform authentication
+}
+
 export interface CreatePostResponse {
   post: Post
 }
@@ -12,7 +16,7 @@ export class CreatePostUseCase {
     private readonly platformFactory: PlatformIntegrationFactory
   ) { }
 
-  async execute(request: PostPayload): Promise<CreatePostResponse> {
+  async execute(request: CreatePostRequest): Promise<CreatePostResponse> {
     // 1️⃣ Lưu post vào DB
     const post = await this.postService.create({
       ...request,
@@ -29,8 +33,10 @@ export class CreatePostUseCase {
 
       for (const platform of request.platforms) {
         try {
-          const platformService = await this.platformFactory.create(platform.platform);
-          console.log("platformService", platformService);
+          const platformService = await this.platformFactory.create(
+            platform.platform,
+            request.userId
+          );
 
           const result = await platformService.publish({
             title: request.title ?? post.title,
@@ -40,8 +46,6 @@ export class CreatePostUseCase {
             mentions: request.mentions ?? [],
             scheduledAt: request.scheduledAt,
           });
-
-          console.log("result", result);
 
           // Tìm metadata tương ứng trong post.platforms
           const metaIndex = platformsMetadata.findIndex((m) => m.platform === platform.platform);

@@ -137,5 +137,15 @@ export interface YouTubeIntegrationService extends PlatformIntegrationService {
  * Factory for creating platform integration services
  */
 export interface PlatformIntegrationFactory {
-  create(platform: Platform): Promise<PlatformIntegrationService>;
+  /**
+   * Create platform integration service for a specific user
+   * @param platform - Platform to create service for
+   * @param userId - User ID for user-specific integrations (required for all platforms)
+   * @param options - Optional platform-specific parameters (pageId, channelId, etc.)
+   */
+  create(
+    platform: Platform,
+    userId: string,
+    options?: { pageId?: string; channelId?: string }
+  ): Promise<PlatformIntegrationService>;
 }

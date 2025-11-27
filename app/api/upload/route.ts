@@ -40,11 +40,21 @@ const getContentTypeFromExtension = (filename: string): string => {
  */
 export async function POST(request: Request) {
   try {
+    console.log('Upload route: Starting file upload...');
+
     // Parse form data
     const formData = await request.formData();
+    console.log('Upload route: FormData parsed successfully');
+
     const file = formData.get("file") as File | null;
     let fileType = formData.get("fileType") as AllowedFileType | null;
     const folder = formData.get("folder") as string | null;
+
+    console.log('Upload route: File info:', {
+      fileName: file?.name,
+      fileSize: file?.size,
+      fileType: file?.type
+    });
 
     // Validate file exists
     if (!file) {

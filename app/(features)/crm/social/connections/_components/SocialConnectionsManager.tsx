@@ -1,0 +1,312 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/ui/card"
+import { Button } from "@shared/ui/button"
+import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw } from "lucide-react"
+import type { SocialPlatform } from "@/core/domain/social-auth"
+
+interface Connection {
+  id: string
+  platform: SocialPlatform
+  openId: string
+  expiresAt: string
+  createdAt: string
+  scope?: string
+}
+
+interface SocialConnectionsManagerProps {
+  connections: Connection[]
+}
+
+const PLATFORMS = [
+  {
+    id: "tiktok" as SocialPlatform,
+    name: "TikTok",
+    description: "Publish videos and track analytics",
+    color: "bg-black dark:bg-white",
+    icon: (
+      <svg className="h-8 w-8 fill-white dark:fill-black" viewBox="0 0 24 24">
+        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+      </svg>
+    ),
+  },
+  {
+    id: "facebook" as SocialPlatform,
+    name: "Facebook",
+    description: "Share posts and engage with your audience",
+    color: "bg-[#1877F2]",
+    icon: (
+      <svg className="h-8 w-8 fill-white" viewBox="0 0 24 24">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+      </svg>
+    ),
+  },
+  {
+    id: "youtube" as SocialPlatform,
+    name: "YouTube",
+    description: "Upload videos and manage your channel",
+    color: "bg-[#FF0000]",
+    icon: (
+      <svg className="h-8 w-8 fill-white" viewBox="0 0 24 24">
+        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+      </svg>
+    ),
+  },
+]
+
+export default function SocialConnectionsManager({ connections: initialConnections }: SocialConnectionsManagerProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [connections, setConnections] = useState<Connection[]>(initialConnections)
+  const [loadingPlatform, setLoadingPlatform] = useState<SocialPlatform | null>(null)
+  const [message, setMessage] = useState<{
+    type: "success" | "error"
+    text: string
+  } | null>(null)
+
+  // Handle OAuth callback status
+  useEffect(() => {
+    const success = searchParams.get("success")
+    const error = searchParams.get("error")
+    const platform = searchParams.get("platform") as SocialPlatform | null
+
+    if (success === "true" && platform) {
+      setMessage({
+        type: "success",
+        text: `${platform.charAt(0).toUpperCase() + platform.slice(1)} account connected successfully!`,
+      })
+      // Refresh connections
+      router.refresh()
+      // Clear URL params
+      router.replace("/crm/social/connections")
+    } else if (error) {
+      setMessage({
+        type: "error",
+        text: `Failed to connect: ${decodeURIComponent(error)}`,
+      })
+    }
+  }, [searchParams, router])
+
+  const handleConnect = (platform: SocialPlatform) => {
+    setLoadingPlatform(platform)
+    // Redirect to OAuth start endpoint
+    window.location.href = `/api/auth/${platform}/start`
+  }
+
+  const handleDisconnect = async (platform: SocialPlatform) => {
+    if (!confirm(`Are you sure you want to disconnect your ${platform} account?`)) {
+      return
+    }
+
+    setLoadingPlatform(platform)
+    try {
+      const response = await fetch(`/api/auth/${platform}/disconnect`, {
+        method: "POST",
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to disconnect")
+      }
+
+      setMessage({
+        type: "success",
+        text: data.message || `${platform} account disconnected successfully`,
+      })
+
+      // Remove connection from state
+      setConnections(connections.filter(c => c.platform !== platform))
+      router.refresh()
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to disconnect",
+      })
+    } finally {
+      setLoadingPlatform(null)
+    }
+  }
+
+  const handleRefresh = async (platform: SocialPlatform) => {
+    setLoadingPlatform(platform)
+    try {
+      const response = await fetch(`/api/auth/${platform}/refresh`, {
+        method: "POST",
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to refresh token")
+      }
+
+      setMessage({
+        type: "success",
+        text: `${platform} token refreshed successfully`,
+      })
+      router.refresh()
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to refresh token",
+      })
+    } finally {
+      setLoadingPlatform(null)
+    }
+  }
+
+  const getConnectionForPlatform = (platform: SocialPlatform) => {
+    return connections.find(c => c.platform === platform)
+  }
+
+  const isExpiringSoon = (expiresAt: string) => {
+    const daysUntilExpiry = Math.floor((new Date(expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    return daysUntilExpiry <= 7 && daysUntilExpiry >= 0
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Status Message */}
+      {message && (
+        <div
+          className={`p-4 rounded-lg border ${
+            message.type === "success"
+              ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200"
+              : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {message.type === "success" ? (
+              <CheckCircle2 className="h-5 w-5" />
+            ) : (
+              <XCircle className="h-5 w-5" />
+            )}
+            <p>{message.text}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Platform Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {PLATFORMS.map((platform) => {
+          const connection = getConnectionForPlatform(platform.id)
+          const isConnected = !!connection
+          const isLoading = loadingPlatform === platform.id
+          const expiringSoon = connection && isExpiringSoon(connection.expiresAt)
+
+          return (
+            <Card key={platform.id} className={expiringSoon ? "border-yellow-500" : ""}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-12 w-12 rounded-lg ${platform.color} flex items-center justify-center`}>
+                      {platform.icon}
+                    </div>
+                    <div>
+                      <CardTitle>{platform.name}</CardTitle>
+                      <CardDescription className="text-xs">
+                        {platform.description}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium w-fit ${
+                    isConnected
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                  }`}
+                >
+                  {isConnected ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      Connected
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="h-4 w-4" />
+                      Not Connected
+                    </>
+                  )}
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                {isConnected && connection ? (
+                  <div className="space-y-3">
+                    {/* Connection Details */}
+                    <div className="grid gap-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">Connected:</span>
+                        <span>
+                          {connection.createdAt
+                            ? new Date(connection.createdAt).toLocaleDateString()
+                            : "Unknown"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">Expires:</span>
+                        <span className={expiringSoon ? "text-yellow-600 dark:text-yellow-400 font-medium" : ""}>
+                          {new Date(connection.expiresAt).toLocaleDateString()}
+                          {expiringSoon && " (Soon!)"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRefresh(platform.id)}
+                        disabled={isLoading}
+                        className="flex-1"
+                      >
+                        {isLoading ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Refresh
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDisconnect(platform.id)}
+                        disabled={isLoading}
+                        className="flex-1"
+                      >
+                        Disconnect
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => handleConnect(platform.id)}
+                    disabled={isLoading}
+                    className="w-full"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Connect {platform.name}
+                      </>
+                    )}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}

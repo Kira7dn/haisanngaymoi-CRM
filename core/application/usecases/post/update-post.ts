@@ -4,6 +4,7 @@ import type { PlatformIntegrationFactory } from "@/core/application/interfaces/p
 
 export interface UpdatePostRequest extends Omit<PostPayload, 'media'> {
   id: string;
+  userId: string; // Required for platform authentication
   platform?: Platform;
   media?: any[];
   syncToPlatform?: boolean;
@@ -39,7 +40,10 @@ export class UpdatePostUseCase {
 
     try {
       // 3️⃣ Lấy service tương ứng với platform
-      const platformService = await this.platformFactory.create(request.platform);
+      const platformService = await this.platformFactory.create(
+        request.platform,
+        request.userId
+      );
 
       // 4️⃣ Gửi request update lên platform
       const platformMeta = post.platforms.find((p) => p.platform === request.platform);

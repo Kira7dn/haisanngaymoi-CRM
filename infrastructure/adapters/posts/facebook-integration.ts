@@ -481,19 +481,98 @@ export class FacebookIntegration implements FacebookIntegrationService {
 }
 
 /**
- * Factory function to create FacebookIntegration
+ * Factory function to create FacebookIntegration with user's access token
+ * This retrieves the token from SocialAuth repository for the given user
  */
-export function createFacebookIntegration(): FacebookIntegration {
+export async function createFacebookIntegrationForUser(userId: string, pageId?: string): Promise<FacebookIntegration> {
+  const { SocialAuthRepository } = await import("@/infrastructure/repositories/social-auth-repo");
+  const { ObjectId } = await import("mongodb");
+
+  const repo = new SocialAuthRepository();
+  const auth = await repo.getByUserAndPlatform(new ObjectId(userId), "facebook");
+
+  if (!auth) {
+    throw new Error("Facebook account not connected for this user");
+  }
+
+  // Check if token is expired
+  if (new Date() >= auth.expiresAt) {
+    throw new Error("Facebook token has expired. Please reconnect your account.");
+  }
+
   const config: FacebookConfig = {
     appId: process.env.FACEBOOK_APP_ID || "",
     appSecret: process.env.FACEBOOK_APP_SECRET || "",
-    pageId: process.env.FACEBOOK_PAGE_ID || "",
-    pageAccessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || "",
+    pageId: pageId || process.env.FACEBOOK_PAGE_ID || "",
+    pageAccessToken: auth.accessToken,
   };
 
-  if (!config.appId || !config.appSecret || !config.pageId || !config.pageAccessToken) {
-    throw new Error("Missing Facebook configuration. Please set FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, FACEBOOK_PAGE_ID, and FACEBOOK_PAGE_ACCESS_TOKEN environment variables.");
+  if (!config.appId || !config.appSecret) {
+    throw new Error("Missing Facebook client configuration. Please set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET environment variables.");
   }
 
   return new FacebookIntegration(config);
+}
+
+/**
+ * Factory function to create FacebookIntegration with provided access token
+ * Used by workers and internal services
+ */
+export function createFacebookIntegration(accessToken: string, pageId?: string): FacebookIntegration {
+  const config: FacebookConfig = {
+    appId: process.env.FACEBOOK_APP_ID || "",
+    appSecret: process.env.FACEBOOK_APP_SECRET || "",
+    pageId: pageId || process.env.FACEBOOK_PAGE_ID || "",
+    pageAccessToken: accessToken,
+  };
+
+  if (!config.appId || !config.appSecret || !config.pageAccessToken) {
+    throw new Error("Missing Facebook configuration");
+  }
+
+  return new FacebookIntegration(config);
+}
+
+/**
+ * Refresh Facebook long-lived token
+ * Exchanges current token for a new long-lived token (60 days)
+ */
+export async function refreshFacebookToken(currentToken: string): Promise<{
+  access_token: string;
+  expires_in: number;
+} | null> {
+  try {
+    const appId = process.env.FACEBOOK_APP_ID;
+    const appSecret = process.env.FACEBOOK_APP_SECRET;
+
+    if (!appId || !appSecret) {
+      throw new Error("Missing Facebook client configuration");
+    }
+
+    const params = new URLSearchParams({
+      grant_type: "fb_exchange_token",
+      client_id: appId,
+      client_secret: appSecret,
+      fb_exchange_token: currentToken,
+    });
+
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/oauth/access_token?${params.toString()}`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+      console.error("Failed to refresh Facebook token:", data.error);
+      return null;
+    }
+
+    return {
+      access_token: data.access_token,
+      expires_in: data.expires_in || 5184000, // 60 days default
+    };
+  } catch (error) {
+    console.error("Error refreshing Facebook token:", error);
+    return null;
+  }
 }

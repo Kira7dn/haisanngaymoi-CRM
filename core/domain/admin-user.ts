@@ -140,4 +140,22 @@ export const Permissions = {
   canViewDashboard: (role: AdminRole): boolean => {
     return ["admin", "sale", "warehouse"].includes(role)
   },
+
+  // Social Media Management
+  canManageSocialMedia: (role: AdminRole): boolean => {
+    // Admin and Sale can manage social media integrations
+    return ["admin", "sale"].includes(role)
+  },
+
+  canConnectTikTok: (role: AdminRole): boolean => {
+    return ["admin", "sale"].includes(role)
+  },
+
+  canPublishTikTok: (role: AdminRole): boolean => {
+    return ["admin", "sale"].includes(role)
+  },
+
+  canViewTikTokAnalytics: (role: AdminRole): boolean => {
+    return ["admin", "sale"].includes(role)
+  },
 }
