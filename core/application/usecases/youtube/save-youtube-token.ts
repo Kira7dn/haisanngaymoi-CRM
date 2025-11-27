@@ -9,6 +9,7 @@ import { ObjectId } from "mongodb"
 export interface SaveYouTubeTokenRequest {
   userId: ObjectId
   openId: string
+  pageName: string
   accessToken: string
   refreshToken: string
   expiresInSeconds: number
@@ -37,6 +38,7 @@ export class SaveYouTubeTokenUseCase {
     const payload: SocialAuthPayload = {
       platform: "youtube",
       openId: request.openId,
+      pageName: request.pageName,
       accessToken: request.accessToken,
       refreshToken: request.refreshToken,
       expiresAt,

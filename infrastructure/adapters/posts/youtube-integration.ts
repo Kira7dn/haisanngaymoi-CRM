@@ -12,8 +12,7 @@ export interface YouTubeConfig {
   apiKey: string;
   clientId: string;
   clientSecret: string;
-  refreshToken: string;
-  channelId: string;
+  refreshToken: string
 }
 
 /**
@@ -335,14 +334,32 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
   }
 
   /**
-   * Upload video to YouTube
+   * Upload video to YouTube using resumable upload protocol
+   * Streams video from URL without loading entire file into memory
+   * Implements retry logic with exponential backoff for 5xx errors
    */
   async uploadVideo(media: PostMedia, title: string, description?: string): Promise<string> {
     try {
-      const token = await this.getValidAccessToken(); // Lấy token hợp lệ
+      const token = await this.getValidAccessToken();
 
-      // Step 1: Initialize upload with metadata
-      const url = `${this.uploadUrl}/videos`;
+      // Step 1: Get video size from HEAD request (without downloading)
+      console.log(`Checking video size from URL: ${media.url}`);
+      const headResponse = await fetch(media.url, { method: "HEAD" });
+
+      if (!headResponse.ok) {
+        throw new Error(`Failed to access video URL: ${headResponse.status} ${headResponse.statusText}`);
+      }
+
+      const contentLength = headResponse.headers.get("Content-Length");
+      if (!contentLength) {
+        throw new Error("Video URL does not provide Content-Length header");
+      }
+
+      const videoSize = parseInt(contentLength, 10);
+      console.log(`Video size: ${videoSize} bytes (${(videoSize / 1024 / 1024).toFixed(2)} MB)`);
+
+      // Step 2: Initialize resumable upload session
+      const initUrl = `${this.uploadUrl}/videos`;
       const params = new URLSearchParams({
         part: "snippet,status",
         uploadType: "resumable",
@@ -361,45 +378,134 @@ export class YouTubeIntegration implements YouTubeIntegrationService {
         },
       };
 
-      // Initialize resumable upload
-      const initResponse = await fetch(`${url}?${params.toString()}`, {
+      console.log("Initializing resumable upload session...");
+      const initResponse = await fetch(`${initUrl}?${params.toString()}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json; charset=UTF-8",
+          "X-Upload-Content-Length": videoSize.toString(),
           "X-Upload-Content-Type": "video/*",
         },
         body: JSON.stringify(metadata),
       });
 
-      const uploadUrl = initResponse.headers.get("Location");
-      if (!uploadUrl) {
-        throw new Error("Failed to get upload URL");
+      if (!initResponse.ok) {
+        const errorText = await initResponse.text();
+        throw new Error(`Failed to initialize upload: ${initResponse.status} - ${errorText}`);
       }
 
-      // Step 2: Upload video file
-      const videoResponse = await fetch(media.url);
-      const videoBlob = await videoResponse.blob();
-
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "video/*",
-        },
-        body: videoBlob,
-      });
-
-      const data: YouTubeVideoUploadResponse = await uploadResponse.json();
-
-      if (!data.id) {
-        throw new Error("Failed to get video ID from upload response");
+      // Step 3: Get the resumable session URI from Location header
+      const uploadSessionUri = initResponse.headers.get("Location");
+      if (!uploadSessionUri) {
+        throw new Error("Failed to get upload session URI from Location header");
       }
 
-      return data.id;
+      console.log(`Upload session initialized. Session URI obtained.`);
+
+      // Step 4: Stream video directly from URL to YouTube
+      const videoId = await this.uploadVideoStream(uploadSessionUri, media.url, videoSize);
+
+      console.log(`Video uploaded successfully. Video ID: ${videoId}`);
+      return videoId;
     } catch (error) {
-      throw new Error(`Failed to upload video: ${error instanceof Error ? error.message : "Unknown error"}`);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("YouTube upload error:", errorMessage);
+      throw new Error(`Failed to upload video to YouTube: ${errorMessage}`);
     }
   }
+
+  /**
+   * Stream video directly from URL to YouTube without buffering entire file
+   */
+  private async uploadVideoStream(
+    sessionUri: string,
+    videoUrl: string,
+    videoSize: number,
+    maxRetries = 3
+  ): Promise<string> {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        console.log(`Upload attempt ${attempt + 1}/${maxRetries}...`);
+
+        // Fetch video and stream it directly
+        const videoResponse = await fetch(videoUrl);
+
+        if (!videoResponse.ok) {
+          throw new Error(`Failed to fetch video: ${videoResponse.status}`);
+        }
+
+        if (!videoResponse.body) {
+          throw new Error("Video response has no body stream");
+        }
+
+        // Upload with streaming body
+        const uploadResponse = await fetch(sessionUri, {
+          method: "PUT",
+          headers: {
+            "Content-Length": videoSize.toString(),
+            "Content-Type": "video/*",
+          },
+          body: videoResponse.body, // Stream the body directly
+          // @ts-ignore - duplex is needed for streaming in Node.js fetch
+          duplex: "half",
+        });
+
+        // HTTP 200 or 201 - Upload successful
+        if (uploadResponse.status === 200 || uploadResponse.status === 201) {
+          const data: YouTubeVideoUploadResponse = await uploadResponse.json();
+          if (!data.id) {
+            throw new Error("Upload completed but no video ID in response");
+          }
+          console.log(`Upload successful! Video ID: ${data.id}, Status: ${data.status?.uploadStatus}`);
+          return data.id;
+        }
+
+        // HTTP 308 - Resume incomplete
+        if (uploadResponse.status === 308) {
+          console.log("Upload incomplete (308). Retrying...");
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
+
+        // HTTP 5xx - Server error
+        if (uploadResponse.status >= 500) {
+          const waitTime = Math.min(1000 * Math.pow(2, attempt), 16000);
+          console.warn(`Server error ${uploadResponse.status}. Retrying in ${waitTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+
+        // HTTP 4xx - Client error (permanent failure)
+        if (uploadResponse.status >= 400 && uploadResponse.status < 500) {
+          const errorText = await uploadResponse.text();
+          throw new Error(`Upload failed: ${uploadResponse.status} - ${errorText}`);
+        }
+
+        // Unexpected status
+        const errorText = await uploadResponse.text();
+        throw new Error(`Unexpected response ${uploadResponse.status}: ${errorText}`);
+
+      } catch (error) {
+        if (attempt === maxRetries - 1) {
+          throw error; // Max retries exceeded
+        }
+
+        // Retry network errors
+        if (error instanceof TypeError) {
+          const waitTime = Math.min(1000 * Math.pow(2, attempt), 16000);
+          console.warn(`Network error. Retrying in ${waitTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+
+        throw error; // Non-retryable error
+      }
+    }
+
+    throw new Error("Upload failed after maximum retries");
+  }
+
 
   /**
    * Get video processing status
@@ -585,8 +691,7 @@ export async function createYouTubeIntegrationForUser(userId: string, channelId?
     apiKey: process.env.YOUTUBE_API_KEY || "",
     clientId: process.env.YOUTUBE_CLIENT_ID || "",
     clientSecret: process.env.YOUTUBE_CLIENT_SECRET || "",
-    refreshToken: auth.refreshToken,
-    channelId: channelId || process.env.YOUTUBE_CHANNEL_ID || "",
+    refreshToken: auth.refreshToken
   };
 
   if (!config.clientId || !config.clientSecret) {
@@ -603,13 +708,12 @@ export async function createYouTubeIntegrationForUser(userId: string, channelId?
  * Factory function to create YouTubeIntegration with provided refresh token
  * Used by workers and internal services
  */
-export async function createYouTubeIntegration(refreshToken: string, channelId?: string): Promise<YouTubeIntegration> {
+export async function createYouTubeIntegration(refreshToken: string): Promise<YouTubeIntegration> {
   const config: YouTubeConfig = {
     apiKey: process.env.YOUTUBE_API_KEY || "",
     clientId: process.env.YOUTUBE_CLIENT_ID || "",
     clientSecret: process.env.YOUTUBE_CLIENT_SECRET || "",
     refreshToken,
-    channelId: channelId || process.env.YOUTUBE_CHANNEL_ID || "",
   };
 
   if (!config.clientId || !config.clientSecret || !config.refreshToken) {

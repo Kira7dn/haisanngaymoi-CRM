@@ -20,12 +20,10 @@ export class PlatformFactory implements PlatformIntegrationFactory {
    * Create or get cached platform integration service
    * @param platform - Platform to create service for
    * @param userId - User ID for user-specific integrations (required for all platforms)
-   * @param options - Optional platform-specific parameters (pageId, channelId, etc.)
    */
   async create(
     platform: Platform,
-    userId: string,
-    options?: { pageId?: string; channelId?: string }
+    userId: string
   ): Promise<PlatformIntegrationService> {
     // Validate userId
     if (!userId) {
@@ -54,7 +52,7 @@ export class PlatformFactory implements PlatformIntegrationFactory {
         service = await createZaloIntegration();
         break;
       case "youtube":
-        service = await createYouTubeIntegrationForUser(userId, options?.channelId);
+        service = await createYouTubeIntegrationForUser(userId);
         break;
       default:
         throw new Error(`Unsupported platform: ${platform}`);

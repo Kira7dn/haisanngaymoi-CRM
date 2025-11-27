@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { createPostAction, updatePostAction } from '../actions'
 import type { Post, Platform, ContentType, PostMedia } from '@/core/domain/campaigns/post'
 import { MediaUpload } from '@/app/(features)/crm/_components/MediaUpload'
 import { Button } from '@shared/ui/button'
 import { Label } from '@shared/ui/label'
 import { Input } from '@shared/ui/input'
-import { X, Loader2, AlertTriangle } from 'lucide-react'
+import { X, Loader2, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react'
 
 // Platform options
 const PLATFORMS: { value: Platform; label: string; color: string }[] = [
@@ -75,14 +76,63 @@ export default function PostForm({ post, onClose }: { post?: Post; onClose?: () 
 
     startTransition(async () => {
       try {
+        // Show loading toast
+        const loadingToast = toast.loading('Publishing to platforms...', {
+          description: `Uploading to ${selectedPlatforms.length} platform(s)`,
+        })
+
         if (post?.id) {
           await updatePostAction(post.id, formData)
+          toast.success('Post updated successfully', { id: loadingToast })
         } else {
-          await createPostAction(formData)
+          const result = await createPostAction(formData)
+
+          // Dismiss loading toast
+          toast.dismiss(loadingToast)
+
+          // Show results for each platform
+          if (result?.platformResults) {
+            const successfulPlatforms = result.platformResults.filter(r => r.success)
+            const failedPlatforms = result.platformResults.filter(r => !r.success)
+
+            if (successfulPlatforms.length > 0) {
+              successfulPlatforms.forEach(platform => {
+                toast.success(`Published to ${platform.platform}`, {
+                  description: platform.permalink ? (
+                    <a href={platform.permalink} target="_blank" rel="noopener noreferrer" className="underline">
+                      View post
+                    </a>
+                  ) : 'Post published successfully',
+                  icon: <CheckCircle2 className="h-4 w-4" />,
+                })
+              })
+            }
+
+            if (failedPlatforms.length > 0) {
+              failedPlatforms.forEach(platform => {
+                toast.error(`Failed to publish to ${platform.platform}`, {
+                  description: platform.error || 'Unknown error occurred',
+                  icon: <XCircle className="h-4 w-4" />,
+                })
+              })
+            }
+
+            // Show summary
+            if (result.platformResults.length > 1) {
+              toast.info('Publishing Summary', {
+                description: `${successfulPlatforms.length} succeeded, ${failedPlatforms.length} failed`,
+              })
+            }
+          } else {
+            toast.success('Post created successfully')
+          }
         }
+
         onClose?.()
       } catch (error) {
-        alert(error instanceof Error ? error.message : 'Failed to save post')
+        toast.error('Failed to save post', {
+          description: error instanceof Error ? error.message : 'Unknown error occurred',
+        })
       }
     })
   }

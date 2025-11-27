@@ -45,7 +45,7 @@ export async function createPostAction(formData: FormData) {
 
   const now = new Date()
 
-  await useCase.execute({
+  const result = await useCase.execute({
     userId: userIdCookie.value,
     title,
     body,
@@ -59,6 +59,13 @@ export async function createPostAction(formData: FormData) {
   })
 
   revalidatePath("/crm/posts")
+
+  // Return platform results for client-side toast notifications
+  return {
+    success: true,
+    platformResults: result.platformResults,
+    postId: result.post.id
+  }
 }
 
 export async function getPostsAction() {

@@ -1,4 +1,4 @@
-import type { Post, PostMedia, Platform } from "@/core/domain/campaigns/post"
+import type { Post, PostMedia, Platform, PlatformMetadata } from "@/core/domain/campaigns/post"
 import type { PostService, PostPayload } from "@/core/application/interfaces/post-service"
 import type { PlatformIntegrationFactory } from "@/core/application/interfaces/platform-integration-service"
 
@@ -6,8 +6,17 @@ export interface CreatePostRequest extends PostPayload {
   userId: string; // Required for platform authentication
 }
 
+export interface PlatformPublishResult {
+  platform: Platform
+  success: boolean
+  postId?: string
+  permalink?: string
+  error?: string
+}
+
 export interface CreatePostResponse {
   post: Post
+  platformResults: PlatformPublishResult[]
 }
 
 export class CreatePostUseCase {
@@ -17,20 +26,11 @@ export class CreatePostUseCase {
   ) { }
 
   async execute(request: CreatePostRequest): Promise<CreatePostResponse> {
-    // 1️⃣ Lưu post vào DB
-    const post = await this.postService.create({
-      ...request,
-      media: request.media ?? []
-    });
-    console.log("post", post);
+    const platformResults: PlatformPublishResult[] = [];
+    const platformsMetadata: PlatformMetadata[] = [];
 
-    // 2️⃣ Nếu có platform → Publish và cập nhật lại metadata vào DB
-    let updatedPost = post;
-
+    // 1️⃣ Upload to platforms FIRST if platforms are specified
     if (request.platforms && request.platforms.length > 0) {
-      // Sao chép metadata hiện tại để tránh mutate trực tiếp
-      const platformsMetadata = [...post.platforms];
-
       for (const platform of request.platforms) {
         try {
           const platformService = await this.platformFactory.create(
@@ -39,46 +39,67 @@ export class CreatePostUseCase {
           );
 
           const result = await platformService.publish({
-            title: request.title ?? post.title,
+            title: request.title ?? "",
             body: request.body,
             media: request.media ?? [],
             hashtags: request.hashtags ?? [],
             mentions: request.mentions ?? [],
             scheduledAt: request.scheduledAt,
           });
-          console.log(result);
 
+          // Store result for response
+          platformResults.push({
+            platform: platform.platform,
+            success: result.success,
+            postId: result.postId,
+            permalink: result.permalink,
+            error: result.error,
+          });
 
-          // Tìm metadata tương ứng trong post.platforms
-          const metaIndex = platformsMetadata.findIndex((m) => m.platform === platform.platform);
-          if (metaIndex !== -1) {
-            const currentMeta = platformsMetadata[metaIndex];
+          // Build platform metadata for DB
+          platformsMetadata.push({
+            platform: platform.platform,
+            postId: result.postId,
+            permalink: result.permalink,
+            status: result.success ? "published" : "failed",
+            publishedAt: result.success ? new Date() : undefined,
+            error: result.success ? undefined : result.error,
+          });
 
-            platformsMetadata[metaIndex] = {
-              ...currentMeta,
-              postId: result.postId ?? currentMeta.postId,
-              permalink: result.permalink ?? currentMeta.permalink,
-              status: result.success ? "published" : "failed",
-              publishedAt: result.success ? new Date() : currentMeta.publishedAt,
-              error: result.success ? undefined : (result.error ?? currentMeta.error),
-            };
-          }
+          console.log(`Published to ${platform.platform}:`, result);
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
           console.error(`Failed to publish to platform ${platform.platform}:`, error);
+
+          // Store error result
+          platformResults.push({
+            platform: platform.platform,
+            success: false,
+            error: errorMessage,
+          });
+
+          // Store failed metadata for DB
+          platformsMetadata.push({
+            platform: platform.platform,
+            status: "failed",
+            error: errorMessage,
+          });
         }
-      }
-
-      // Lưu lại metadata platform đã cập nhật vào DB
-      const persisted = await this.postService.update({
-        id: post.id,
-        platforms: platformsMetadata,
-      });
-
-      if (persisted) {
-        updatedPost = persisted;
       }
     }
 
-    return { post: updatedPost };
+    // 2️⃣ Create post in DB with platform results
+    const post = await this.postService.create({
+      ...request,
+      media: request.media ?? [],
+      platforms: platformsMetadata,
+    });
+
+    console.log("Post created in DB with platform results:", post);
+
+    return {
+      post,
+      platformResults
+    };
   }
 }

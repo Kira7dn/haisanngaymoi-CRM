@@ -55,7 +55,8 @@ export async function GET(request: NextRequest) {
     const saveTokenUseCase = await createSaveYouTubeTokenUseCase()
     const result = await saveTokenUseCase.execute({
       userId,
-      openId: tokenResponse.data.user_id, // đã fix lấy từ Google API
+      openId: tokenResponse.data.channel_id,
+      pageName: tokenResponse.data.channel_name,
       accessToken: tokenResponse.data.access_token,
       refreshToken: tokenResponse.data.refresh_token,
       expiresInSeconds: tokenResponse.data.expires_in,
@@ -93,7 +94,8 @@ async function exchangeCodeForToken(code: string): Promise<{
     access_token: string
     refresh_token: string
     expires_in: number
-    user_id: string
+    channel_id: string
+    channel_name: string
     scope: string
   }
   error?: string
@@ -133,26 +135,36 @@ async function exchangeCodeForToken(code: string): Promise<{
       }
     }
 
-    // Lấy thông tin user: sử dụng endpoint Google UserInfo
-    const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    })
+    // Fetch YouTube channel information
+    const channelInfoResponse = await fetch(
+      "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",
+      {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      }
+    )
 
-    if (!userInfoResponse.ok) {
-      const errorText = await userInfoResponse.text()
-      return { success: false, error: `Failed to fetch user info: ${errorText}` }
+    if (!channelInfoResponse.ok) {
+      const errorText = await channelInfoResponse.text()
+      return { success: false, error: `Failed to fetch channel info: ${errorText}` }
     }
 
-    const userInfo = await userInfoResponse.json()
+    const channelInfo = await channelInfoResponse.json()
 
-    // Google OAuth2 v2 endpoint trả về 'id' field
-    // OpenID Connect endpoint trả về 'sub' field
-    // Cả hai đều là unique identifier cho Google Account
-    const userId = userInfo.id || userInfo.sub
-    if (!userId) {
+    // Extract channel ID and name from items[0]
+    if (!channelInfo.items || channelInfo.items.length === 0) {
       return {
         success: false,
-        error: `Failed to get user id from Google. Response: ${JSON.stringify(userInfo)}`
+        error: "No YouTube channel found for this account",
+      }
+    }
+
+    const channelId = channelInfo.items[0].id
+    const channelName = channelInfo.items[0].snippet.title
+
+    if (!channelId || !channelName) {
+      return {
+        success: false,
+        error: `Invalid channel data. Response: ${JSON.stringify(channelInfo.items[0])}`,
       }
     }
 
@@ -162,7 +174,8 @@ async function exchangeCodeForToken(code: string): Promise<{
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
         expires_in: tokenData.expires_in || 3600,
-        user_id: userId,
+        channel_id: channelId,
+        channel_name: channelName,
         scope: tokenData.scope || "",
       },
     }
