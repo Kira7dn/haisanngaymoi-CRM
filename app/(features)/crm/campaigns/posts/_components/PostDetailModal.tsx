@@ -1,6 +1,6 @@
 'use client'
 
-import type { Post, Platform } from '@/core/domain/campaigns/post'
+import type { Post, Platform } from '@/core/domain/marketing/post'
 import { Button } from '@shared/ui/button'
 import { X, ExternalLink, TrendingUp, Eye, Heart, MessageCircle, Share2, Calendar, Tag } from 'lucide-react'
 
@@ -14,6 +14,8 @@ const PLATFORM_COLORS: Record<Platform, string> = {
   tiktok: 'bg-black',
   zalo: 'bg-blue-500',
   youtube: 'bg-red-600',
+  website: 'bg-gray-600',
+  telegram: 'bg-blue-400',
 }
 
 const PLATFORM_NAMES: Record<Platform, string> = {
@@ -21,6 +23,8 @@ const PLATFORM_NAMES: Record<Platform, string> = {
   tiktok: 'TikTok',
   zalo: 'Zalo',
   youtube: 'YouTube',
+  website: 'Website',
+  telegram: 'Telegram',
 }
 
 export default function PostDetailModal({ post, onClose }: PostDetailModalProps) {

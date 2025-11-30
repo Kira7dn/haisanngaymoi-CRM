@@ -1,4 +1,4 @@
-import type { Order } from "@/core/domain/managements/order";
+import type { Order } from "@/core/domain/sales/order";
 
 export const notifyOrderWebhook = async (order: Order): Promise<void> => {
   console.log("[notifyOrderWebhook] Starting webhook notification", {

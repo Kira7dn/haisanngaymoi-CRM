@@ -1,14 +1,14 @@
-import { InventoryRepository } from "@/infrastructure/repositories/inventory-repo"
-import { InventoryConfigRepository } from "@/infrastructure/repositories/inventory-config-repo"
+import { InventoryRepository } from "@/infrastructure/repositories/catalog/inventory-repo"
+import { InventoryConfigRepository } from "@/infrastructure/repositories/catalog/inventory-config-repo"
 
 // Stock Movement Use Cases
-import { RecordStockMovementUseCase } from "@/core/application/usecases/inventory/record-stock-movement"
-import { GetStockMovementsUseCase } from "@/core/application/usecases/inventory/get-stock-movements"
-import { GetInventorySummaryUseCase } from "@/core/application/usecases/inventory/get-inventory-summary"
-import { GetAllInventorySummariesUseCase } from "@/core/application/usecases/inventory/get-all-inventory-summaries"
+import { RecordStockMovementUseCase } from "@/core/application/usecases/catalog/inventory/inventory/record-stock-movement"
+import { GetStockMovementsUseCase } from "@/core/application/usecases/catalog/inventory/inventory/get-stock-movements"
+import { GetInventorySummaryUseCase } from "@/core/application/usecases/catalog/inventory/inventory/get-inventory-summary"
+import { GetAllInventorySummariesUseCase } from "@/core/application/usecases/catalog/inventory/inventory/get-all-inventory-summaries"
 
 // Inventory Config Use Cases
-import { UpdateInventoryConfigUseCase } from "@/core/application/usecases/inventory/update-inventory-config"
+import { UpdateInventoryConfigUseCase } from "@/core/application/usecases/catalog/inventory/inventory/update-inventory-config"
 
 // Stock Movement Use Case Factories
 export const recordStockMovementUseCase = async () => {

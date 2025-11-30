@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { formatCurrency } from "@/lib/utils"
-import type { Order } from "@/core/domain/managements/order"
+import type { Order } from "@/core/domain/sales/order"
 import { Card, CardHeader, CardTitle, CardContent } from "@shared/ui/card"
 
 interface RecentOrdersProps {

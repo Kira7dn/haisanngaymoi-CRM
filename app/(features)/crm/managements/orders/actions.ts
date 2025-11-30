@@ -7,7 +7,7 @@ import {
   updateOrderUseCase,
   deleteOrderUseCase,
 } from "@/app/api/orders/depends"
-import type { OrderStatus } from "@/core/domain/managements/order"
+import type { OrderStatus } from "@/core/domain/sales/order"
 
 export async function getOrdersAction(status?: OrderStatus, customerId?: string, platformSource?: string) {
   const useCase = await getOrdersUseCase()

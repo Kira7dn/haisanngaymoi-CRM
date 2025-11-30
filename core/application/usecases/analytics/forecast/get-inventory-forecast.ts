@@ -9,7 +9,7 @@ import { InventoryForecast } from "@/core/domain/analytics/forecast";
 import {
   ForecastService,
   InventoryForecastPayload,
-} from "@/core/application/interfaces/forecast-service";
+} from "@/core/application/interfaces/analytics/forecast-service";
 
 export interface GetInventoryForecastRequest extends InventoryForecastPayload {}
 

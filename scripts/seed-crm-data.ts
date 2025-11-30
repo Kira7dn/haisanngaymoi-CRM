@@ -18,12 +18,12 @@
 import { readFileSync } from "fs"
 import { join } from "path"
 import { ObjectId } from "mongodb"
-import { CustomerRepository } from "../infrastructure/repositories/customer-repo"
-import { OrderRepository } from "../infrastructure/repositories/order-repo"
-import { ProductRepository } from "../infrastructure/repositories/product-repo"
-import { InventoryRepository } from "../infrastructure/repositories/inventory-repo"
-import { InventoryConfigRepository } from "../infrastructure/repositories/inventory-config-repo"
-import { OperationalCostRepository } from "../infrastructure/repositories/operational-cost-repo"
+import { CustomerRepository } from "../infrastructure/repositories/customers/customer-repo"
+import { OrderRepository } from "../infrastructure/repositories/sales/order-repo"
+import { ProductRepository } from "../infrastructure/repositories/catalog/product-repo"
+import { InventoryRepository } from "../infrastructure/repositories/catalog/inventory-repo"
+import { InventoryConfigRepository } from "../infrastructure/repositories/catalog/inventory-config-repo"
+import { OperationalCostRepository } from "../infrastructure/repositories/sales/operational-cost-repo"
 import type { CustomerSource } from "../core/domain/customers/customer"
 import type {
   OrderStatus,
@@ -31,8 +31,8 @@ import type {
   PaymentStatus,
   ShippingProvider,
   OrderItem
-} from "../core/domain/managements/order"
-import type { Product } from "../core/domain/managements/product"
+} from "../core/domain/sales/order"
+import type { Product } from "../core/domain/catalog/product"
 import type { Customer } from "../core/domain/customers/customer"
 
 // ============================================================================

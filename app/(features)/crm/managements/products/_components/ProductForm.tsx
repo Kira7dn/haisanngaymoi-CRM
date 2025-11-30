@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import type { Product, SizeOption } from "@/core/domain/managements/product"
-import type { Category } from "@/core/domain/managements/category"
+import type { Product, SizeOption } from "@/core/domain/catalog/product"
+import type { Category } from "@/core/domain/catalog/category"
 import { createProductAction, updateProductAction } from "../actions"
 import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload"
 

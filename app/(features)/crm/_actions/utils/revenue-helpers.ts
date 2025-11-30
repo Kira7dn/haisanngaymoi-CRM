@@ -3,7 +3,7 @@
  * Shared revenue and financial calculation functions
  */
 
-import type { Order } from "@/core/domain/managements/order"
+import type { Order } from "@/core/domain/sales/order"
 
 /**
  * Calculate total revenue from orders

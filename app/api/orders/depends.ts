@@ -1,19 +1,19 @@
-import { OrderRepository } from '@/infrastructure/repositories/order-repo';
+import { OrderRepository } from '@/infrastructure/repositories/sales/order-repo';
 import { BullMQAdapter } from '@/infrastructure/queue/bullmq-adapter';
-import { ZaloPayGateway } from '@/infrastructure/adapters/gateways/zalopay-gateway';
-import type { OrderService } from '@/core/application/interfaces/order-service';
-import { GetOrdersUseCase } from '@/core/application/usecases/order/get-orders';
-import { CreateOrderUseCase } from '@/core/application/usecases/order/create-order';
-import { GetOrderByIdUseCase } from '@/core/application/usecases/order/get-order-by-id';
-import { UpdateOrderUseCase } from '@/core/application/usecases/order/update-order';
-import { DeleteOrderUseCase } from '@/core/application/usecases/order/delete-order';
-import { LinkOrderUseCase } from '@/core/application/usecases/order/link-order';
-import { PaymentCallbackUseCase } from '@/core/application/usecases/order/payment-callback';
-import { CheckPaymentStatusUseCase } from '@/core/application/usecases/order/check-payment-status';
-import { CheckOrderStatusUseCase } from '@/core/application/usecases/order/check-order-status';
-import { MacRequestUseCase } from '@/core/application/usecases/order/mac-request';
-import { HandleVnpayIpnUseCase } from '@/core/application/usecases/order/handle-vnpay-ipn';
-import { VnpayGatewayImpl } from '@/infrastructure/adapters/gateways/vnpay-gateway';
+import { ZaloPayGateway } from '@/infrastructure/adapters/external/payment/zalopay-gateway';
+import type { OrderService } from '@/core/application/interfaces/sales/order-service';
+import { GetOrdersUseCase } from '@/core/application/usecases/sales/order/order/get-orders';
+import { CreateOrderUseCase } from '@/core/application/usecases/sales/order/order/create-order';
+import { GetOrderByIdUseCase } from '@/core/application/usecases/sales/order/order/get-order-by-id';
+import { UpdateOrderUseCase } from '@/core/application/usecases/sales/order/order/update-order';
+import { DeleteOrderUseCase } from '@/core/application/usecases/sales/order/order/delete-order';
+import { LinkOrderUseCase } from '@/core/application/usecases/sales/order/order/link-order';
+import { PaymentCallbackUseCase } from '@/core/application/usecases/sales/order/order/payment-callback';
+import { CheckPaymentStatusUseCase } from '@/core/application/usecases/sales/order/order/check-payment-status';
+import { CheckOrderStatusUseCase } from '@/core/application/usecases/sales/order/order/check-order-status';
+import { MacRequestUseCase } from '@/core/application/usecases/sales/order/order/mac-request';
+import { HandleVnpayIpnUseCase } from '@/core/application/usecases/sales/order/order/handle-vnpay-ipn';
+import { VnpayGatewayImpl } from '@/infrastructure/adapters/external/payment/vnpay-gateway';
 
 // Shared repository instance creator
 const createOrderRepository = async (): Promise<OrderService> => {

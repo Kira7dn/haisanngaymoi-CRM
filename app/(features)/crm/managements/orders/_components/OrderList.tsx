@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { Order, OrderStatus, PaymentStatus } from "@/core/domain/managements/order"
+import type { Order, OrderStatus, PaymentStatus } from "@/core/domain/sales/order"
 import { deleteOrderAction, updateOrderAction } from "../actions"
 import { OrderDetailModal } from "./OrderDetailModal"
 import { formatCurrency } from "@/lib/utils"

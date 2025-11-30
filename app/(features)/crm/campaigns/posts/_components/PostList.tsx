@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import type { Post, Platform } from '@/core/domain/campaigns/post'
+import type { Post, Platform } from '@/core/domain/marketing/post'
 import { usePostStore } from '../_store/usePostStore'
 import { deletePostAction } from '../actions'
 import { Button } from '@shared/ui/button'
@@ -14,6 +14,8 @@ const PLATFORM_COLORS: Record<Platform, string> = {
   tiktok: 'bg-black text-white',
   zalo: 'bg-blue-500 text-white',
   youtube: 'bg-red-600 text-white',
+  website: 'bg-gray-600 text-white',
+  telegram: 'bg-blue-400 text-white',
 }
 
 const PLATFORM_LABELS: Record<Platform, string> = {
@@ -21,6 +23,8 @@ const PLATFORM_LABELS: Record<Platform, string> = {
   tiktok: 'TT',
   zalo: 'ZL',
   youtube: 'YT',
+  website: 'WS',
+  telegram: 'TG',
 }
 
 export default function PostList({ initialPosts }: { initialPosts: Post[] }) {

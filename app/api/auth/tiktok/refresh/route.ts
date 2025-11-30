@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { ObjectId } from "mongodb"
 import { createRefreshTikTokTokenUseCase } from "../depends"
-import { refreshTikTokToken } from "@/infrastructure/adapters/socials/tiktok-integration"
-import { SocialAuthRepository } from "@/infrastructure/repositories/social-auth-repo"
+import { refreshTikTokToken } from "@/infrastructure/adapters/external/social/tiktok-integration"
+import { SocialAuthRepository } from "@/infrastructure/repositories/social/social-auth-repo"
 
 /**
  * POST /api/auth/tiktok/refresh

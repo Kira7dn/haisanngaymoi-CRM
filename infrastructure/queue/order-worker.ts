@@ -43,7 +43,7 @@ export const addCheckPaymentJob = (data: CheckPaymentJobData) =>
 // Worker Implementation
 // -----------------------------
 import { Worker, Job } from 'bullmq';
-import type { PaymentGateway } from '@/core/application/interfaces/payment-gateway';
+import type { PaymentGateway } from '@/core/application/interfaces/shared/payment-gateway';
 
 // -----------------------------
 // Lazy Redis singleton for workers

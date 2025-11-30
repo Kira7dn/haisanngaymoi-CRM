@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import type { OperationalCost, CostCategory } from "@/core/domain/managements/operational-cost"
-import { calculatePeriodCosts } from "@/core/domain/managements/operational-cost"
+import type { OperationalCost, CostCategory } from "@/core/domain/sales/operational-cost"
+import { calculatePeriodCosts } from "@/core/domain/sales/operational-cost"
 import { deleteCostAction } from "../actions"
 import { CostForm } from "./CostForm"
 import { CategoryStats } from "./CategoryStats"

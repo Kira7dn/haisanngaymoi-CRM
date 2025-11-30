@@ -1,14 +1,14 @@
-import { AdminUserRepository } from "@/infrastructure/repositories/admin-user-repo"
-import type { AdminUserService } from "@/core/application/interfaces/admin-user-service"
+import { AdminUserRepository } from "@/infrastructure/repositories/auth/admin-user-repo"
+import type { AdminUserService } from "@/core/application/interfaces/auth/admin-user-service"
 
 // Use cases
-import { LoginUseCase } from "@/core/application/usecases/admin-user/login"
-import { RegisterAdminUserUseCase } from "@/core/application/usecases/admin-user/register"
-import { GetCurrentUserUseCase } from "@/core/application/usecases/admin-user/get-current-user"
-import { ChangePasswordUseCase } from "@/core/application/usecases/admin-user/change-password"
-import { GetAllUsersUseCase } from "@/core/application/usecases/admin-user/get-all-users"
-import { UpdateAdminUserUseCase } from "@/core/application/usecases/admin-user/update-user"
-import { DeleteAdminUserUseCase } from "@/core/application/usecases/admin-user/delete-user"
+import { LoginUseCase } from "@/core/application/usecases/auth/admin-user/login"
+import { RegisterAdminUserUseCase } from "@/core/application/usecases/auth/admin-user/register"
+import { GetCurrentUserUseCase } from "@/core/application/usecases/auth/admin-user/get-current-user"
+import { ChangePasswordUseCase } from "@/core/application/usecases/auth/admin-user/change-password"
+import { GetAllUsersUseCase } from "@/core/application/usecases/auth/admin-user/get-all-users"
+import { UpdateAdminUserUseCase } from "@/core/application/usecases/auth/admin-user/update-user"
+import { DeleteAdminUserUseCase } from "@/core/application/usecases/auth/admin-user/delete-user"
 
 // Repository factory
 const createAdminUserRepository = async (): Promise<AdminUserService> => {

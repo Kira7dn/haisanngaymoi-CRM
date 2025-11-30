@@ -6,7 +6,7 @@
  */
 
 import { ForecastRepository } from "@/infrastructure/repositories/analytics/forecast-repo";
-import { ForecastService } from "@/core/application/interfaces/forecast-service";
+import { ForecastService } from "@/core/application/interfaces/analytics/forecast-service";
 
 // Use Cases
 import { GetRevenueForecastUseCase } from "@/core/application/usecases/analytics/forecast/get-revenue-forecast";

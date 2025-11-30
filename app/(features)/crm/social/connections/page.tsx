@@ -23,7 +23,7 @@ export default async function SocialConnectionsPage() {
   const userId = new ObjectId(userIdCookie.value)
 
   // Fetch all social auth connections
-  const { SocialAuthRepository } = await import("@/infrastructure/repositories/social-auth-repo")
+  const { SocialAuthRepository } = await import("@/infrastructure/repositories/social/social-auth-repo")
   const repo = new SocialAuthRepository()
 
   const allConnections = await repo.getAllByUser(userId)

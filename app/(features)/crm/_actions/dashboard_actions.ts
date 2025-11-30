@@ -3,9 +3,9 @@
 import { getOrdersUseCase } from "@/app/api/orders/depends"
 import { filterProductsUseCase } from "@/app/api/products/depends"
 import { getAllCustomersUseCase } from "@/app/api/customers/depends"
-import { OperationalCostRepository } from "@/infrastructure/repositories/operational-cost-repo"
-import { InventoryRepository } from "@/infrastructure/repositories/inventory-repo"
-import { calculatePeriodCosts } from "@/core/domain/managements/operational-cost"
+import { OperationalCostRepository } from "@/infrastructure/repositories/sales/operational-cost-repo"
+import { InventoryRepository } from "@/infrastructure/repositories/catalog/inventory-repo"
+import { calculatePeriodCosts } from "@/core/domain/sales/operational-cost"
 import {
   getDateBoundaries,
   filterOrdersByDate,

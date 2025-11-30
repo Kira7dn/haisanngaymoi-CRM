@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { Category } from "@/core/domain/managements/category"
+import type { Category } from "@/core/domain/catalog/category"
 import { createCategoryAction, updateCategoryAction } from "../actions"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@shared/ui/dialog"
 import { Button } from "@shared/ui/button"

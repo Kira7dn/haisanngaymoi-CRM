@@ -1,13 +1,13 @@
-import { PostRepository } from "@/infrastructure/repositories/post-repo";
-import type { PostService } from "@/core/application/interfaces/post-service";
+import { PostRepository } from "@/infrastructure/repositories/marketing/post-repo";
+import type { PostService } from "@/core/application/interfaces/marketing/post-service";
 
-import { GetPostsUseCase } from "@/core/application/usecases/post/get-posts";
-import { CreatePostUseCase } from "@/core/application/usecases/post/create-post";
-import { UpdatePostUseCase } from "@/core/application/usecases/post/update-post";
-import { DeletePostUseCase } from "@/core/application/usecases/post/delete-post";
+import { GetPostsUseCase } from "@/core/application/usecases/marketing/post/post/get-posts";
+import { CreatePostUseCase } from "@/core/application/usecases/marketing/post/post/create-post";
+import { UpdatePostUseCase } from "@/core/application/usecases/marketing/post/post/update-post";
+import { DeletePostUseCase } from "@/core/application/usecases/marketing/post/post/delete-post";
 
-import type { PlatformIntegrationFactory } from "@/core/application/interfaces/platform-integration-service";
-import { getPlatformFactory } from "@/infrastructure/adapters/socials";
+import type { PlatformIntegrationFactory } from "@/core/application/interfaces/social/platform-integration-service";
+import { getPlatformFactory } from "@/infrastructure/adapters/external/social";
 
 // Khởi tạo các dependencies một lần duy nhất
 let postServiceInstance: PostService | null = null;

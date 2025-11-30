@@ -9,7 +9,7 @@ import { TrendAnalysis } from "@/core/domain/analytics/forecast";
 import {
   ForecastService,
   TrendAnalysisPayload,
-} from "@/core/application/interfaces/forecast-service";
+} from "@/core/application/interfaces/analytics/forecast-service";
 
 export interface GetTrendAnalysisRequest extends TrendAnalysisPayload {}
 

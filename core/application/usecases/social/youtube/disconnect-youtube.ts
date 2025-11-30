@@ -1,4 +1,4 @@
-import type { SocialAuthService } from "@/core/application/interfaces/social-auth-service"
+import type { SocialAuthService } from "@/core/application/interfaces/social/social-auth-service"
 import { ObjectId } from "mongodb"
 
 export interface DisconnectYouTubeRequest {

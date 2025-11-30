@@ -1,5 +1,5 @@
-import type { MessageService, MessagePayload } from "@/core/application/interfaces/message-service";
-import type { ConversationService } from "@/core/application/interfaces/conversation-service";
+import type { MessageService, MessagePayload } from "@/core/application/interfaces/messaging/message-service";
+import type { ConversationService } from "@/core/application/interfaces/messaging/conversation-service";
 import type { Message, Platform } from "@/core/domain/messaging/message";
 import { validateMessage } from "@/core/domain/messaging/message";
 

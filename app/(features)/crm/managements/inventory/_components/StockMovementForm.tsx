@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { Product } from "@/core/domain/managements/product"
+import type { Product } from "@/core/domain/catalog/product"
 import { addStockMovementAction } from "../actions"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@shared/ui/dialog"
 import { Button } from "@shared/ui/button"

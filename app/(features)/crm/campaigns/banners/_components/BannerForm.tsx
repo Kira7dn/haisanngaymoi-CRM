@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { Banner } from "@/core/domain/campaigns/banner"
+import type { Banner } from "@/core/domain/marketing/banner"
 import { createBannerAction, updateBannerAction } from "../actions"
 import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload"
 

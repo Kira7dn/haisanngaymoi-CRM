@@ -1,6 +1,6 @@
 "use client"
 
-import type { Order } from "@/core/domain/managements/order"
+import type { Order } from "@/core/domain/sales/order"
 import { formatCurrency } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@shared/ui/dialog"
 import { Button } from "@shared/ui/button"

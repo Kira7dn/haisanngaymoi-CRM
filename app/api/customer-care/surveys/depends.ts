@@ -2,14 +2,14 @@
  * Dependencies for Survey API
  */
 
-import { SurveyRepository } from "@/infrastructure/repositories/customer-care/survey-repo";
-import type { SurveyService } from "@/core/application/interfaces/survey-service";
+import { SurveyRepository } from "@/infrastructure/repositories/customers/survey-repo";
+import type { SurveyService } from "@/core/application/interfaces/customers/survey-service";
 
 // Use Cases
-import { CreateSurveyUseCase } from "@/core/application/usecases/customer-care/survey/create-survey";
-import { GetSurveysUseCase } from "@/core/application/usecases/customer-care/survey/get-surveys";
-import { SubmitResponseUseCase } from "@/core/application/usecases/customer-care/survey/submit-response";
-import { CalculateMetricsUseCase } from "@/core/application/usecases/customer-care/survey/calculate-metrics";
+import { CreateSurveyUseCase } from "@/core/application/usecases/customers/care/customer-care/survey/create-survey";
+import { GetSurveysUseCase } from "@/core/application/usecases/customers/care/customer-care/survey/get-surveys";
+import { SubmitResponseUseCase } from "@/core/application/usecases/customers/care/customer-care/survey/submit-response";
+import { CalculateMetricsUseCase } from "@/core/application/usecases/customers/care/customer-care/survey/calculate-metrics";
 
 // Repository Factory
 const createSurveyRepository = async (): Promise<SurveyService> => {

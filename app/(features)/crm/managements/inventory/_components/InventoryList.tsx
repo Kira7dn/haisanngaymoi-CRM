@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import type { StockMovement, InventorySummary, MovementType } from "@/core/domain/managements/inventory"
-import type { Product } from "@/core/domain/managements/product"
+import type { StockMovement, InventorySummary, MovementType } from "@/core/domain/catalog/inventory"
+import type { Product } from "@/core/domain/catalog/product"
 import { InventoryForm } from "./InventoryForm"
 import { StockMovementForm } from "./StockMovementForm"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/tabs"

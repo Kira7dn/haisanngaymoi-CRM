@@ -1,12 +1,12 @@
-import { TicketRepository } from "@/infrastructure/repositories/customer-care/ticket-repo";
-import { CreateTicketUseCase } from "@/core/application/usecases/customer-care/ticket/create-ticket";
-import { GetTicketsUseCase } from "@/core/application/usecases/customer-care/ticket/get-tickets";
-import { GetTicketByIdUseCase } from "@/core/application/usecases/customer-care/ticket/get-ticket-by-id";
-import { UpdateTicketUseCase } from "@/core/application/usecases/customer-care/ticket/update-ticket";
-import { AssignTicketUseCase } from "@/core/application/usecases/customer-care/ticket/assign-ticket";
-import { ResolveTicketUseCase } from "@/core/application/usecases/customer-care/ticket/resolve-ticket";
-import { AddTicketCommentUseCase } from "@/core/application/usecases/customer-care/ticket/add-comment";
-import type { TicketService } from "@/core/application/interfaces/customer-care/ticket-service";
+import { TicketRepository } from "@/infrastructure/repositories/customers/ticket-repo";
+import { CreateTicketUseCase } from "@/core/application/usecases/customers/care/customer-care/ticket/create-ticket";
+import { GetTicketsUseCase } from "@/core/application/usecases/customers/care/customer-care/ticket/get-tickets";
+import { GetTicketByIdUseCase } from "@/core/application/usecases/customers/care/customer-care/ticket/get-ticket-by-id";
+import { UpdateTicketUseCase } from "@/core/application/usecases/customers/care/customer-care/ticket/update-ticket";
+import { AssignTicketUseCase } from "@/core/application/usecases/customers/care/customer-care/ticket/assign-ticket";
+import { ResolveTicketUseCase } from "@/core/application/usecases/customers/care/customer-care/ticket/resolve-ticket";
+import { AddTicketCommentUseCase } from "@/core/application/usecases/customers/care/customer-care/ticket/add-comment";
+import type { TicketService } from "@/core/application/interfaces/customers/ticket-service";
 
 /**
  * Factory function to create ticket repository instance

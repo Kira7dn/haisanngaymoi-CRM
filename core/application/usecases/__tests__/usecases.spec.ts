@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createPostUseCase } from '@/core/application/usecases/post/create-post'
-import { postRepository } from '@/infrastructure/repositories/post-repo'
+import { createPostUseCase } from '@/core/application/usecases/marketing/post/post/create-post'
+import { postRepository } from '@/infrastructure/repositories/marketing/post-repo'
 
-vi.mock('@/infrastructure/repositories/post-repo', () => ({
+vi.mock('@/infrastructure/repositories/marketing/post-repo', () => ({
   postRepository: {
     create: vi.fn().mockResolvedValue({ id: '1', title: 'T', body: 'B' }),
   },

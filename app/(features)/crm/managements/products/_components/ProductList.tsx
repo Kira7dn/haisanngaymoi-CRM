@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import type { Product } from "@/core/domain/managements/product"
-import type { Category } from "@/core/domain/managements/category"
+import type { Product } from "@/core/domain/catalog/product"
+import type { Category } from "@/core/domain/catalog/category"
 import { deleteProductAction } from "../actions"
 import { ProductForm } from "./ProductForm"
 import { formatCurrency } from "@/lib/utils"

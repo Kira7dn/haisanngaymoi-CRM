@@ -1,11 +1,11 @@
-import { MessageTemplateRepository } from "@/infrastructure/repositories/customer-care/message-template-repo";
-import type { MessageTemplateService } from "@/core/application/interfaces/customer-care/message-template-service";
+import { MessageTemplateRepository } from "@/infrastructure/repositories/customers/message-template-repo";
+import type { MessageTemplateService } from "@/core/application/interfaces/customers/message-template-service";
 
 // Use cases
-import { CreateTemplateUseCase } from "@/core/application/usecases/customer-care/message-template/create-template";
-import { GetTemplatesUseCase } from "@/core/application/usecases/customer-care/message-template/get-templates";
-import { UpdateTemplateUseCase } from "@/core/application/usecases/customer-care/message-template/update-template";
-import { RenderTemplateUseCase } from "@/core/application/usecases/customer-care/message-template/render-template";
+import { CreateTemplateUseCase } from "@/core/application/usecases/customers/care/customer-care/message-template/create-template";
+import { GetTemplatesUseCase } from "@/core/application/usecases/customers/care/customer-care/message-template/get-templates";
+import { UpdateTemplateUseCase } from "@/core/application/usecases/customers/care/customer-care/message-template/update-template";
+import { RenderTemplateUseCase } from "@/core/application/usecases/customers/care/customer-care/message-template/render-template";
 
 /**
  * Factory function to create MessageTemplateRepository

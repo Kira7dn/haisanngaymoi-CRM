@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/ui/card"
 import { Button } from "@shared/ui/button"
 import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw } from "lucide-react"
-import type { SocialPlatform } from "@/core/domain/social-auth"
+import type { SocialPlatform } from "@/core/domain/social/social-auth"
 
 interface Connection {
   id: string

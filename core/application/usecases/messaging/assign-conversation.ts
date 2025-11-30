@@ -1,4 +1,4 @@
-import type { ConversationService } from "@/core/application/interfaces/conversation-service";
+import type { ConversationService } from "@/core/application/interfaces/messaging/conversation-service";
 
 export interface AssignConversationRequest {
   conversationId: string;

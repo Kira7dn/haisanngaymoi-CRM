@@ -1,11 +1,11 @@
-import { CustomerRepository } from '@/infrastructure/repositories/customer-repo';
-import type { CustomerService } from '@/core/application/interfaces/customer-service';
-import { GetAllCustomersUseCase } from '@/core/application/usecases/customer/get-all-customers';
-import { CreateCustomerUseCase } from '@/core/application/usecases/customer/create-customer';
-import { GetCustomerByIdUseCase } from '@/core/application/usecases/customer/get-customer-by-id';
-import { UpdateCustomerUseCase } from '@/core/application/usecases/customer/update-customer';
-import { DeleteCustomerUseCase } from '@/core/application/usecases/customer/delete-customer';
-import { SearchCustomersByNameUseCase } from '@/core/application/usecases/customer/search-customers-by-name';
+import { CustomerRepository } from '@/infrastructure/repositories/customers/customer-repo';
+import type { CustomerService } from '@/core/application/interfaces/customers/customer-service';
+import { GetAllCustomersUseCase } from '@/core/application/usecases/customers/customer/customer/get-all-customers';
+import { CreateCustomerUseCase } from '@/core/application/usecases/customers/customer/customer/create-customer';
+import { GetCustomerByIdUseCase } from '@/core/application/usecases/customers/customer/customer/get-customer-by-id';
+import { UpdateCustomerUseCase } from '@/core/application/usecases/customers/customer/customer/update-customer';
+import { DeleteCustomerUseCase } from '@/core/application/usecases/customers/customer/customer/delete-customer';
+import { SearchCustomersByNameUseCase } from '@/core/application/usecases/customers/customer/customer/search-customers-by-name';
 
 // Get CustomerRepository instance
 const createCustomerRepository = async (): Promise<CustomerService> => {

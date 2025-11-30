@@ -1,8 +1,8 @@
-import { CopilotConversationRepository } from "@/infrastructure/repositories/copilot-conversation-repo";
-import type { CopilotConversationService } from "@/core/application/interfaces/copilot-conversation-service";
-import { SaveConversationUseCase } from "@/core/application/usecases/copilot-conversation/save-conversation";
-import { GetUserConversationsUseCase } from "@/core/application/usecases/copilot-conversation/get-user-conversations";
-import { GetConversationUseCase } from "@/core/application/usecases/copilot-conversation/get-conversation";
+import { CopilotConversationRepository } from "@/infrastructure/repositories/ai/copilot-conversation-repo";
+import type { CopilotConversationService } from "@/core/application/interfaces/ai/copilot-conversation-service";
+import { SaveConversationUseCase } from "@/core/application/usecases/ai/copilot-conversation/copilot-conversation/save-conversation";
+import { GetUserConversationsUseCase } from "@/core/application/usecases/ai/copilot-conversation/copilot-conversation/get-user-conversations";
+import { GetConversationUseCase } from "@/core/application/usecases/ai/copilot-conversation/copilot-conversation/get-conversation";
 
 // Create repository instance
 export const createConversationRepository = async (): Promise<CopilotConversationService> => {

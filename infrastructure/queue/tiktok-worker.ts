@@ -160,8 +160,8 @@ export const shutdownTikTokWorker = async () => {
  */
 async function handleRefreshToken(data: RefreshTokenJobData) {
   try {
-    const { SocialAuthRepository } = await import("@/infrastructure/repositories/social-auth-repo");
-    const { refreshTikTokToken } = await import("@/infrastructure/adapters/socials/tiktok-integration");
+    const { SocialAuthRepository } = await import("@/infrastructure/repositories/social/social-auth-repo");
+    const { refreshTikTokToken } = await import("@/infrastructure/adapters/external/social/tiktok-integration");
     const { createRefreshTikTokTokenUseCase } = await import("@/app/api/auth/tiktok/depends");
     const { ObjectId } = await import("mongodb");
 
@@ -217,7 +217,7 @@ async function handleRefreshToken(data: RefreshTokenJobData) {
  */
 async function handleSyncAnalytics(data: SyncAnalyticsJobData) {
   try {
-    const { createTikTokIntegrationForUser } = await import("@/infrastructure/adapters/socials/tiktok-integration");
+    const { createTikTokIntegrationForUser } = await import("@/infrastructure/adapters/external/social/tiktok-integration");
 
     const integration = await createTikTokIntegrationForUser(data.userId);
     const metrics = await integration.getMetrics(data.postId);
@@ -237,7 +237,7 @@ async function handleSyncAnalytics(data: SyncAnalyticsJobData) {
  */
 async function handleCheckExpiringTokens() {
   try {
-    const { SocialAuthRepository } = await import("@/infrastructure/repositories/social-auth-repo");
+    const { SocialAuthRepository } = await import("@/infrastructure/repositories/social/social-auth-repo");
 
     const repo = new SocialAuthRepository();
     const allTikTokAuths = await repo.getAllByPlatform("tiktok");

@@ -1,7 +1,7 @@
-import { MessageRepository } from "@/infrastructure/repositories/message-repo";
-import { ConversationRepository } from "@/infrastructure/repositories/conversation-repo";
-import type { MessageService } from "@/core/application/interfaces/message-service";
-import type { ConversationService } from "@/core/application/interfaces/conversation-service";
+import { MessageRepository } from "@/infrastructure/repositories/messaging/message-repo";
+import { ConversationRepository } from "@/infrastructure/repositories/messaging/conversation-repo";
+import type { MessageService } from "@/core/application/interfaces/messaging/message-service";
+import type { ConversationService } from "@/core/application/interfaces/messaging/conversation-service";
 import { ReceiveMessageUseCase } from "@/core/application/usecases/messaging/receive-message";
 import { SendMessageUseCase } from "@/core/application/usecases/messaging/send-message";
 import { AssignConversationUseCase } from "@/core/application/usecases/messaging/assign-conversation";

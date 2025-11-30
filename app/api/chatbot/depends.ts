@@ -1,6 +1,6 @@
-import { ChatbotRepository } from "@/infrastructure/repositories/chatbot/chatbot-repo";
-import { QueryChatbotUseCase } from "@/core/application/usecases/chatbot/query-chatbot";
-import type { ChatbotService } from "@/core/application/interfaces/chatbot/chatbot-service";
+import { ChatbotRepository } from "@/infrastructure/repositories/ai/chatbot-repo";
+import { QueryChatbotUseCase } from "@/core/application/usecases/ai/chatbot/chatbot/query-chatbot";
+import type { ChatbotService } from "@/core/application/interfaces/ai/chatbot-service";
 
 /**
  * Factory function to create chatbot repository instance

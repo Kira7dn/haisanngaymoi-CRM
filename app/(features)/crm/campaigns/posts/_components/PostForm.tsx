@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { createPostAction, updatePostAction } from '../actions'
-import type { Post, Platform, ContentType, PostMedia } from '@/core/domain/campaigns/post'
+import type { Post, Platform, ContentType, PostMedia } from '@/core/domain/marketing/post'
 import { MediaUpload } from '@/app/(features)/crm/_components/MediaUpload'
 import { Button } from '@shared/ui/button'
 import { Label } from '@shared/ui/label'
@@ -29,12 +29,54 @@ const CONTENT_TYPES: { value: ContentType; label: string }[] = [
 
 // Compatibility mapping
 const CONTENT_PLATFORM_MAP: Record<ContentType, Record<Platform, "supported" | "warning" | "unsupported">> = {
-  reel: { facebook: "supported", youtube: "supported", tiktok: "supported", zalo: "unsupported" },
-  short: { facebook: "supported", youtube: "supported", tiktok: "supported", zalo: "unsupported" }, // Thêm dòng này
-  post: { facebook: "supported", youtube: "unsupported", tiktok: "warning", zalo: "supported" },
-  video: { facebook: "supported", youtube: "supported", tiktok: "unsupported", zalo: "unsupported" },
-  article: { facebook: "warning", youtube: "supported", tiktok: "unsupported", zalo: "supported" },
-  story: { facebook: "supported", youtube: "unsupported", tiktok: "supported", zalo: "unsupported" }, // Thêm dòng này
+  reel: {
+    facebook: "supported",
+    youtube: "supported",
+    tiktok: "supported",
+    zalo: "unsupported",
+    website: "unsupported",
+    telegram: "unsupported"
+  },
+  short: {
+    facebook: "supported",
+    youtube: "supported",
+    tiktok: "supported",
+    zalo: "unsupported",
+    website: "unsupported",
+    telegram: "unsupported"
+  },
+  post: {
+    facebook: "supported",
+    youtube: "unsupported",
+    tiktok: "warning",
+    zalo: "supported",
+    website: "supported",
+    telegram: "supported"
+  },
+  video: {
+    facebook: "supported",
+    youtube: "supported",
+    tiktok: "unsupported",
+    zalo: "unsupported",
+    website: "supported",
+    telegram: "unsupported"
+  },
+  article: {
+    facebook: "warning",
+    youtube: "supported",
+    tiktok: "unsupported",
+    zalo: "supported",
+    website: "supported",
+    telegram: "supported"
+  },
+  story: {
+    facebook: "supported",
+    youtube: "unsupported",
+    tiktok: "supported",
+    zalo: "unsupported",
+    website: "unsupported",
+    telegram: "unsupported"
+  },
 }
 
 export default function PostForm({ post, onClose }: { post?: Post; onClose?: () => void }) {

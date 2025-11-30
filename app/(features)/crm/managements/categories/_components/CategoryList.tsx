@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { Category } from "@/core/domain/managements/category"
+import type { Category } from "@/core/domain/catalog/category"
 import { deleteCategoryAction } from "../actions"
 import { CategoryForm } from "./CategoryForm"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@shared/ui/card"

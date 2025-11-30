@@ -1,7 +1,7 @@
 "use client"
 
-import type { OperationalCost } from "@/core/domain/managements/operational-cost"
-import { calculatePeriodCosts } from "@/core/domain/managements/operational-cost"
+import type { OperationalCost } from "@/core/domain/sales/operational-cost"
+import { calculatePeriodCosts } from "@/core/domain/sales/operational-cost"
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/card"
 
 interface CategoryStatsProps {

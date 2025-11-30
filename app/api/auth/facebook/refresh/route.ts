@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { ObjectId } from "mongodb"
 import { createRefreshFacebookTokenUseCase } from "../depends"
-import { SocialAuthRepository } from "@/infrastructure/repositories/social-auth-repo"
+import { SocialAuthRepository } from "@/infrastructure/repositories/social/social-auth-repo"
 
 export async function POST(request: NextRequest) {
   try {

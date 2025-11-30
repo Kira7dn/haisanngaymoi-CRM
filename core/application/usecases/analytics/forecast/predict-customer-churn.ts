@@ -9,7 +9,7 @@ import { ChurnPrediction } from "@/core/domain/analytics/forecast";
 import {
   ForecastService,
   ChurnPredictionPayload,
-} from "@/core/application/interfaces/forecast-service";
+} from "@/core/application/interfaces/analytics/forecast-service";
 
 export interface PredictCustomerChurnRequest extends ChurnPredictionPayload {}
 

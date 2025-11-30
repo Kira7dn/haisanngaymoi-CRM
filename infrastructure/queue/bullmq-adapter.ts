@@ -1,6 +1,6 @@
 import { Queue } from 'bullmq';
 import Redis from 'ioredis';
-import type { QueueService } from '@/core/application/interfaces/queue-service';
+import type { QueueService } from '@/core/application/interfaces/shared/queue-service';
 
 export class BullMQAdapter implements QueueService {
   private queues: Map<string, Queue> = new Map();

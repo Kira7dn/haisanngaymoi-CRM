@@ -1,6 +1,6 @@
-import type { MessageService } from "@/core/application/interfaces/message-service";
-import type { ConversationService } from "@/core/application/interfaces/conversation-service";
-import { getSocialIntegrationFactory } from "@/infrastructure/adapters/socials/social-integration-factory";
+import type { MessageService } from "@/core/application/interfaces/messaging/message-service";
+import type { ConversationService } from "@/core/application/interfaces/messaging/conversation-service";
+import { getSocialIntegrationFactory } from "@/infrastructure/adapters/external/social/social-integration-factory";
 import { Platform } from "@/core/domain/messaging/message";
 
 export interface SyncMessagesRequest {

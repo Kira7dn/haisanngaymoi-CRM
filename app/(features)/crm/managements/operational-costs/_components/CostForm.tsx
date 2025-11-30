@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { OperationalCost, CostCategory, CostType } from "@/core/domain/managements/operational-cost"
+import type { OperationalCost, CostCategory, CostType } from "@/core/domain/sales/operational-cost"
 import { createCostAction, updateCostAction } from "../actions"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@shared/ui/dialog"
 import { Button } from "@shared/ui/button"

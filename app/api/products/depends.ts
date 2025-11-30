@@ -1,10 +1,10 @@
-import { ProductRepository } from '@/infrastructure/repositories/product-repo';
-import type { ProductService } from '@/core/application/interfaces/product-service';
-import { FilterProductsUseCase } from '@/core/application/usecases/product/filter-products';
-import { CreateProductUseCase } from '@/core/application/usecases/product/create-product';
-import { GetProductByIdUseCase } from '@/core/application/usecases/product/get-product-by-id';
-import { UpdateProductUseCase } from '@/core/application/usecases/product/update-product';
-import { DeleteProductUseCase } from '@/core/application/usecases/product/delete-product';
+import { ProductRepository } from '@/infrastructure/repositories/catalog/product-repo';
+import type { ProductService } from '@/core/application/interfaces/catalog/product-service';
+import { FilterProductsUseCase } from '@/core/application/usecases/catalog/product/product/filter-products';
+import { CreateProductUseCase } from '@/core/application/usecases/catalog/product/product/create-product';
+import { GetProductByIdUseCase } from '@/core/application/usecases/catalog/product/product/get-product-by-id';
+import { UpdateProductUseCase } from '@/core/application/usecases/catalog/product/product/update-product';
+import { DeleteProductUseCase } from '@/core/application/usecases/catalog/product/product/delete-product';
 
 // Create ProductRepository instance
 const createProductRepository = async (): Promise<ProductService> => {

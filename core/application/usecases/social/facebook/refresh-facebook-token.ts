@@ -1,5 +1,5 @@
-import type { SocialAuth } from "@/core/domain/social-auth"
-import type { SocialAuthService, RefreshTokenPayload } from "@/core/application/interfaces/social-auth-service"
+import type { SocialAuth } from "@/core/domain/social/social-auth"
+import type { SocialAuthService, RefreshTokenPayload } from "@/core/application/interfaces/social/social-auth-service"
 import { ObjectId } from "mongodb"
 
 export interface RefreshFacebookTokenRequest {

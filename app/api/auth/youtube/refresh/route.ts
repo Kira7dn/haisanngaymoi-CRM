@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { ObjectId } from "mongodb"
 import { createRefreshYouTubeTokenUseCase } from "../depends"
-import { SocialAuthRepository } from "@/infrastructure/repositories/social-auth-repo"
-import { refreshYouTubeToken } from "@/infrastructure/adapters/socials/youtube-integration"
+import { SocialAuthRepository } from "@/infrastructure/repositories/social/social-auth-repo"
+import { refreshYouTubeToken } from "@/infrastructure/adapters/external/social/youtube-integration"
 
 export async function POST(request: NextRequest) {
   try {

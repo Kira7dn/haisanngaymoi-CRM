@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { getCostsUseCase, createCostUseCase, updateCostUseCase, deleteCostUseCase } from "@/app/api/operational-costs/depends"
-import type { CostCategory, CostType } from "@/core/domain/managements/operational-cost"
+import type { CostCategory, CostType } from "@/core/domain/sales/operational-cost"
 
 export async function getCostsAction() {
   const useCase = await getCostsUseCase()

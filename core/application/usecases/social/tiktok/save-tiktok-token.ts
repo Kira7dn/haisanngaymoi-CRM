@@ -1,9 +1,9 @@
-import type { SocialAuth } from "@/core/domain/social-auth"
-import { validateSocialAuth, calculateExpiresAt } from "@/core/domain/social-auth"
+import type { SocialAuth } from "@/core/domain/social/social-auth"
+import { validateSocialAuth, calculateExpiresAt } from "@/core/domain/social/social-auth"
 import type {
   SocialAuthService,
   SocialAuthPayload,
-} from "@/core/application/interfaces/social-auth-service"
+} from "@/core/application/interfaces/social/social-auth-service"
 import { ObjectId } from "mongodb"
 
 export interface SaveTikTokTokenRequest {

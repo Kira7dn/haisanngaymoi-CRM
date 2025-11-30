@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { AdminUser } from "@/core/domain/admin-user"
+import type { AdminUser } from "@/core/domain/auth/admin-user"
 import { deleteUserAction } from "../actions"
 import { ObjectId } from "mongodb"
 import { Button } from "@shared/ui/button"

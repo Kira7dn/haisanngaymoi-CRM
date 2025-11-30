@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { getPostsUseCase, createPostUseCase, updatePostUseCase, deletePostUseCase } from "@/app/api/posts/depends"
-import type { Platform, ContentType, PostMedia, PlatformMetadata } from "@/core/domain/campaigns/post"
+import type { Platform, ContentType, PostMedia, PlatformMetadata } from "@/core/domain/marketing/post"
 
 export async function createPostAction(formData: FormData) {
   const useCase = await createPostUseCase()
