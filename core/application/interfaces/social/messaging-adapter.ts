@@ -14,6 +14,10 @@ export interface SendMessageResult {
  */
 export interface MessagingService {
   platform: Platform;
+  /**
+   * Get customer info
+   */
+  getCustomerInfo(platformUserId: string): Promise<{ name: string; avatar: string }>;
 
   /**
    * Send a text message to a user on the platform
@@ -48,6 +52,7 @@ export interface MessagingService {
    * Mark message as read (optional)
    */
   markAsRead?(platformUserId: string): Promise<void>;
+
 }
 
 /**

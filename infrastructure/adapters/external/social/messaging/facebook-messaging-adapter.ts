@@ -15,6 +15,43 @@ export class FacebookMessagingAdapter extends BaseMessagingAdapter {
     super();
   }
 
+  async getCustomerInfo(platformUserId: string): Promise<{ name: string; avatar: string }> {
+    this.validateParams({ platformUserId });
+
+    try {
+      this.log("Getting customer info from Facebook Messenger", platformUserId);
+
+      const url = `${this.baseUrl}/${platformUserId}?access_token=${this.auth.getAccessToken()}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        this.logError("Facebook Messenger API error", data);
+        throw new Error(
+          `Facebook Messenger API error: ${data.error?.message || "Unknown error"}`
+        );
+      }
+
+      this.log("Customer info retrieved successfully", data);
+
+      // Facebook returns message_id in the response
+      return {
+        name: `${data.first_name} ${data.last_name}`,
+        avatar: data.profile_pic,
+      };
+    } catch (error: any) {
+      this.logError("Failed to get customer info from Facebook", error);
+      throw error;
+    }
+  }
+
   async sendMessage(platformUserId: string, content: string): Promise<SendMessageResult> {
     this.validateParams({ platformUserId, content });
 
@@ -105,6 +142,8 @@ export class FacebookMessagingAdapter extends BaseMessagingAdapter {
 
     await this.sendToMessenger(payload);
   }
+
+
 
   private async sendToMessenger(payload: any): Promise<SendMessageResult> {
     try {

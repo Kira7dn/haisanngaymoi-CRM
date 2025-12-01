@@ -7,10 +7,19 @@ import type { Conversation } from "@/core/domain/messaging/conversation";
 import { Badge } from "@/@shared/ui/badge";
 import { Input } from "@/@shared/ui/input";
 import { ScrollArea } from "@/@shared/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/@shared/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/@shared/ui/avatar";
+
+// Extended conversation type with customer data
+type ConversationWithCustomer = Conversation & {
+  customer?: {
+    id: string;
+    name?: string;
+    avatar?: string;
+  } | null;
+};
 
 interface ConversationSidebarProps {
-  conversations: Conversation[];
+  conversations: ConversationWithCustomer[];
   selectedConversationId?: string;
   onSelectConversation: (conversationId: string) => void;
 }
@@ -22,9 +31,12 @@ export function ConversationSidebar({
 }: ConversationSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.customerId.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConversations = conversations.filter((conv) => {
+    const customerName = conv.customer?.name || "";
+    const customerId = conv.customerId || "";
+    const query = searchQuery.toLowerCase();
+    return customerName.toLowerCase().includes(query) || customerId.toLowerCase().includes(query);
+  });
 
   const getPlatformColor = (platform: string) => {
     switch (platform) {
@@ -103,11 +115,16 @@ export function ConversationSidebar({
                 )}
               >
                 <div className="flex items-start gap-3">
-                  {/* Platform Avatar */}
+                  {/* Customer Avatar */}
                   <div className="relative">
                     <Avatar className="h-10 w-10">
+                      {conversation.customer?.avatar && (
+                        <AvatarImage src={conversation.customer.avatar} alt={conversation.customer.name} />
+                      )}
                       <AvatarFallback className={getPlatformColor(conversation.platform)}>
-                        {conversation.platform.charAt(0).toUpperCase()}
+                        {conversation.customer?.name
+                          ? conversation.customer.name.charAt(0).toUpperCase()
+                          : conversation.platform.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div
@@ -122,7 +139,7 @@ export function ConversationSidebar({
                   <div className="flex-1 overflow-hidden">
                     <div className="flex items-center justify-between gap-2">
                       <p className="truncate font-medium">
-                        Customer {conversation.customerId.slice(-6)}
+                        {conversation.customer?.name || `Customer ${conversation.customerId.slice(-6)}`}
                       </p>
                       <span className="text-xs text-muted-foreground">
                         {formatTime(conversation.lastMessageAt)}

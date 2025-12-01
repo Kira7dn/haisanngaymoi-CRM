@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/ui/card"
 import { Button } from "@shared/ui/button"
-import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw } from "lucide-react"
+import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw, Settings } from "lucide-react"
 import type { SocialPlatform } from "@/core/domain/social/social-auth"
+import ConfigurationDialog from "./ConfigurationDialog"
 
 interface Connection {
   id: string
@@ -14,6 +15,7 @@ interface Connection {
   expiresAt: string
   createdAt: string
   scope?: string
+  platformConfig?: any
 }
 
 interface SocialConnectionsManagerProps {
@@ -21,6 +23,17 @@ interface SocialConnectionsManagerProps {
 }
 
 const PLATFORMS = [
+  {
+    id: "zalo" as SocialPlatform,
+    name: "Zalo",
+    description: "Connect with customers via Zalo OA",
+    color: "bg-[#0068FF]",
+    icon: (
+      <svg className="h-8 w-8 fill-white" viewBox="0 0 24 24">
+        <path d="M12 0C5.373 0 0 4.97 0 11.111c0 3.497 1.745 6.616 4.472 8.652V24l4.086-2.242c1.104.305 2.279.464 3.442.464 6.627 0 12-4.974 12-11.111C24 4.97 18.627 0 12 0zm.676 14.842h-5.16c-.415 0-.75-.224-.75-.5s.335-.5.75-.5h5.16c.414 0 .75.224.75.5s-.336.5-.75.5zm2.858-3.643h-8.02c-.414 0-.75-.224-.75-.5s.336-.5.75-.5h8.02c.414 0 .75.224.75.5s-.336.5-.75.5zm0-3.286h-8.02c-.414 0-.75-.224-.75-.5s.336-.5.75-.5h8.02c.414 0 .75.224.75.5s-.336.5-.75.5z"/>
+      </svg>
+    ),
+  },
   {
     id: "tiktok" as SocialPlatform,
     name: "TikTok",
@@ -65,6 +78,10 @@ export default function SocialConnectionsManager({ connections: initialConnectio
     type: "success" | "error"
     text: string
   } | null>(null)
+  const [showConfigDialog, setShowConfigDialog] = useState(false)
+  const [configPlatform, setConfigPlatform] = useState<SocialPlatform | null>(null)
+  const [configConnectionId, setConfigConnectionId] = useState<string | null>(null)
+  const [configExisting, setConfigExisting] = useState<any>(null)
 
   // Handle OAuth callback status
   useEffect(() => {
@@ -77,6 +94,16 @@ export default function SocialConnectionsManager({ connections: initialConnectio
         type: "success",
         text: `${platform.charAt(0).toUpperCase() + platform.slice(1)} account connected successfully!`,
       })
+
+      // Show configuration dialog for the newly connected platform
+      const connection = connections.find(c => c.platform === platform)
+      if (connection) {
+        setConfigPlatform(platform)
+        setConfigConnectionId(connection.id)
+        setConfigExisting(connection.platformConfig)
+        setShowConfigDialog(true)
+      }
+
       // Refresh connections
       router.refresh()
       // Clear URL params
@@ -87,7 +114,7 @@ export default function SocialConnectionsManager({ connections: initialConnectio
         text: `Failed to connect: ${decodeURIComponent(error)}`,
       })
     }
-  }, [searchParams, router])
+  }, [searchParams, router, connections])
 
   const handleConnect = (platform: SocialPlatform) => {
     setLoadingPlatform(platform)
@@ -257,18 +284,31 @@ export default function SocialConnectionsManager({ connections: initialConnectio
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setConfigPlatform(platform.id)
+                          setConfigConnectionId(connection.id)
+                          setConfigExisting(connection.platformConfig)
+                          setShowConfigDialog(true)
+                        }}
+                        disabled={isLoading}
+                      >
+                        <Settings className="h-4 w-4 mr-1" />
+                        Settings
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleRefresh(platform.id)}
                         disabled={isLoading}
-                        className="flex-1"
                       >
                         {isLoading ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                         ) : (
-                          <RefreshCw className="h-4 w-4 mr-2" />
+                          <RefreshCw className="h-4 w-4 mr-1" />
                         )}
                         Refresh
                       </Button>
@@ -277,7 +317,6 @@ export default function SocialConnectionsManager({ connections: initialConnectio
                         size="sm"
                         onClick={() => handleDisconnect(platform.id)}
                         disabled={isLoading}
-                        className="flex-1"
                       >
                         Disconnect
                       </Button>
@@ -307,6 +346,17 @@ export default function SocialConnectionsManager({ connections: initialConnectio
           )
         })}
       </div>
+
+      {/* Configuration Dialog */}
+      {showConfigDialog && configPlatform && configConnectionId && (
+        <ConfigurationDialog
+          open={showConfigDialog}
+          onOpenChange={setShowConfigDialog}
+          platform={configPlatform}
+          connectionId={configConnectionId}
+          existingConfig={configExisting}
+        />
+      )}
     </div>
   )
 }

@@ -24,9 +24,6 @@ export class CustomerRepository extends BaseRepository<Customer, string> impleme
   }
 
   async create(payload: CustomerPayload): Promise<Customer> {
-    if (!payload.id) {
-      throw new Error("Customer ID is required for creation")
-    }
 
     const now = new Date()
 
@@ -82,6 +79,19 @@ export class CustomerRepository extends BaseRepository<Customer, string> impleme
       .toArray()
 
     return docs.map(doc => this.toDomain(doc))
+  }
+
+  async findByPlatformId(platform: string, platformUserId: string): Promise<Customer | null> {
+    const collection = await this.getCollection()
+    const doc = await collection.findOne({
+      platformIds: {
+        $elemMatch: {
+          platform,
+          platformUserId
+        }
+      }
+    })
+    return doc ? this.toDomain(doc) : null
   }
 
 }

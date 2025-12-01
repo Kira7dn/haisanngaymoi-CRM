@@ -3081,9 +3081,9 @@
         "dependencies": [
           "96"
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [],
-        "updatedAt": "2025-12-01T03:59:30.444Z"
+        "updatedAt": "2025-12-01T04:01:11.767Z"
       },
       {
         "id": "98",
@@ -3111,15 +3111,207 @@
           "97",
           "98"
         ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-01T04:02:00.463Z"
+      },
+      {
+        "id": "100",
+        "title": "Extend Database Schema for Platform Configuration",
+        "description": "Update the database schema to support platform-specific configurations.",
+        "details": "Modify the SocialAuth domain entity to include optional fields for platform-specific configurations. Ensure backward compatibility. Implement necessary methods in SocialAuthService and SocialAuthRepository to handle these configurations.",
+        "testStrategy": "Write unit tests to verify the schema changes and ensure backward compatibility.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze Current Database Schema",
+            "description": "Review the existing database schema to identify necessary changes for platform-specific configurations.",
+            "dependencies": [],
+            "details": "Examine the SocialAuth domain entity and identify where new fields can be added.",
+            "status": "pending",
+            "testStrategy": "Ensure the schema review covers all current use cases.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Design New Schema Changes",
+            "description": "Design the schema changes to include optional fields for platform-specific configurations.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a detailed schema design document outlining the new fields and their data types.",
+            "status": "pending",
+            "testStrategy": "Review the design document with the team to ensure completeness.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Implement Schema Changes",
+            "description": "Modify the database schema to add new fields for platform-specific configurations.",
+            "dependencies": [
+              2
+            ],
+            "details": "Use migration scripts to update the database schema without affecting existing data.",
+            "status": "pending",
+            "testStrategy": "Run migration scripts in a test environment to verify changes.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Update Domain Entity and Repository",
+            "description": "Modify the SocialAuth domain entity and repository to handle new configurations.",
+            "dependencies": [
+              3
+            ],
+            "details": "Update the SocialAuthService and SocialAuthRepository to include methods for new fields.",
+            "status": "pending",
+            "testStrategy": "Write unit tests to verify the new methods work as expected.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Ensure Backward Compatibility",
+            "description": "Ensure that the schema changes do not break existing functionality.",
+            "dependencies": [
+              4
+            ],
+            "details": "Test the application with existing data to ensure no disruptions occur.",
+            "status": "pending",
+            "testStrategy": "Perform regression testing to confirm backward compatibility.",
+            "parentId": "undefined"
+          }
+        ],
+        "updatedAt": "2025-12-01T11:51:27.437Z"
+      },
+      {
+        "id": "101",
+        "title": "Create Platform Configuration API",
+        "description": "Develop an API endpoint to save platform configurations.",
+        "details": "Create a POST endpoint at /api/social-auth/config/route.ts to handle platform configuration updates. Implement validation for platform-specific fields. Use the UpdatePlatformConfigUseCase for business logic.",
+        "testStrategy": "Test the API endpoint with valid and invalid data to ensure proper validation and error handling.",
+        "priority": "medium",
+        "dependencies": [
+          "100"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-01T11:51:42.478Z"
+      },
+      {
+        "id": "102",
+        "title": "Build Configuration Dialog UI",
+        "description": "Develop the UI component for the configuration dialog with tabs for settings and webhook guide.",
+        "details": "Create a ConfigurationDialog component with two tabs: Platform Settings and Webhook Setup. Implement dynamic forms for different platforms using PlatformSettingsForm and WebhookGuidePanel components.",
+        "testStrategy": "Perform UI tests to ensure the dialog displays correctly and handles user input as expected.",
+        "priority": "medium",
+        "dependencies": [
+          "101"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-01T11:51:48.490Z"
+      },
+      {
+        "id": "103",
+        "title": "Integrate Dialog into Connection Flow",
+        "description": "Integrate the configuration dialog into the existing social connection flow.",
+        "details": "Update SocialConnectionsManager.tsx to detect successful OAuth callbacks and automatically display the configuration dialog. Manage dialog state and handle form submissions.",
+        "testStrategy": "Test the complete flow from OAuth success to configuration saving to ensure seamless integration.",
+        "priority": "medium",
+        "dependencies": [
+          "102"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-01T11:51:54.305Z"
+      },
+      {
+        "id": "104",
+        "title": "Add Manual Configuration Trigger",
+        "description": "Implement a manual trigger to reopen the configuration dialog for existing connections.",
+        "details": "Add a 'Settings' button to connected platforms that allows users to reopen the configuration dialog. Pre-fill the dialog with existing configuration values.",
+        "testStrategy": "Test the manual trigger to ensure it correctly opens the dialog with pre-filled values.",
+        "priority": "medium",
+        "dependencies": [
+          "103"
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": "105",
+        "title": "Test and Document Platform Configurations",
+        "description": "Conduct thorough testing and update documentation for the new configuration flow.",
+        "details": "Test the configuration flow for all supported platforms (Zalo, TikTok, Facebook). Update user documentation to reflect the new configuration process.",
+        "testStrategy": "Perform unit, integration, and manual tests. Verify documentation accuracy and clarity.",
+        "priority": "medium",
+        "dependencies": [
+          "104"
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": "106",
+        "title": "Deploy Backend Changes",
+        "description": "Deploy the backend changes including API routes and use cases.",
+        "details": "Deploy the updated backend components to handle platform configuration updates. Ensure the database migration is executed smoothly.",
+        "testStrategy": "Test the backend deployment in a staging environment to ensure all components function correctly.",
+        "priority": "medium",
+        "dependencies": [
+          "105"
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": "107",
+        "title": "Deploy Frontend Changes",
+        "description": "Deploy the frontend changes including UI components and integration.",
+        "details": "Deploy the updated UI components and ensure they integrate seamlessly with the backend changes. Verify mobile responsiveness and error handling.",
+        "testStrategy": "Test the frontend deployment in a staging environment to ensure UI components function correctly.",
+        "priority": "medium",
+        "dependencies": [
+          "106"
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": "108",
+        "title": "Update User Documentation",
+        "description": "Update the user documentation to include the new configuration flow and features.",
+        "details": "Revise the user guide to include instructions for configuring social media webhooks and platform settings. Highlight new features and provide troubleshooting tips.",
+        "testStrategy": "Review the updated documentation for accuracy and completeness. Gather feedback from users.",
+        "priority": "medium",
+        "dependencies": [
+          "107"
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": "109",
+        "title": "Monitor and Gather Feedback",
+        "description": "Monitor the deployment and gather user feedback to identify any issues or areas for improvement.",
+        "details": "After deployment, monitor system performance and user feedback. Identify any issues and plan for future enhancements based on user needs.",
+        "testStrategy": "Collect and analyze user feedback. Monitor system logs for errors and performance metrics.",
+        "priority": "medium",
+        "dependencies": [
+          "108"
+        ],
         "status": "pending",
         "subtasks": []
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-01T03:59:30.447Z",
-      "taskCount": 99,
-      "completedCount": 78,
+      "lastModified": "2025-12-01T11:51:54.309Z",
+      "taskCount": 109,
+      "completedCount": 84,
       "tags": [
         "master"
       ]

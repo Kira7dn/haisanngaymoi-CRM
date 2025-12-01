@@ -1,4 +1,4 @@
-import type { Customer } from "@/core/domain/customers/customer"
+import type { Customer, CustomerSource } from "@/core/domain/customers/customer"
 
 export interface CustomerPayload extends Partial<Customer> { }
 
@@ -10,4 +10,5 @@ export interface CustomerService {
   update(payload: CustomerPayload): Promise<Customer | null>
   delete(id: string): Promise<boolean>
   searchByName(name: string): Promise<Customer[]>
+  findByPlatformId(platform: CustomerSource, platformUserId: string): Promise<Customer | null>
 }

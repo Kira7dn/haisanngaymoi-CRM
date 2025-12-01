@@ -48,13 +48,3 @@ export async function createTikTokAuthServiceForUser(userId: string): Promise<Ti
 
   return new TikTokAuthService(config);
 }
-
-export function createTikTokAuthService(accessToken: string): TikTokAuthService {
-  const config: TikTokAuthConfig = {
-    clientKey: process.env.TIKTOK_CLIENT_KEY || "",
-    clientSecret: process.env.TIKTOK_CLIENT_SECRET || "",
-    accessToken,
-  };
-
-  return new TikTokAuthService(config);
-}

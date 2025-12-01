@@ -29,4 +29,5 @@ export abstract class BaseMessagingAdapter implements MessagingService {
   }
 
   abstract sendMessage(platformUserId: string, content: string): Promise<SendMessageResult>;
+  abstract getCustomerInfo(platformUserId: string): Promise<{ name: string; avatar: string }>;
 }

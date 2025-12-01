@@ -84,17 +84,8 @@ export class PlatformMessagingAdapterFactory implements MessagingAdapterFactory 
       }
 
       case "tiktok": {
-        if (channelId) {
-          const { createTikTokAuthServiceForUser } = await import("../auth/tiktok-auth-service");
-          authService = await createTikTokAuthServiceForUser(channelId);
-        } else {
-          const { createTikTokAuthService } = await import("../auth/tiktok-auth-service");
-          const ttToken = process.env.TIKTOK_ACCESS_TOKEN;
-          if (!ttToken) {
-            throw new Error("TIKTOK_ACCESS_TOKEN environment variable not set");
-          }
-          authService = createTikTokAuthService(ttToken);
-        }
+        const { createTikTokAuthServiceForUser } = await import("../auth/tiktok-auth-service");
+        authService = await createTikTokAuthServiceForUser(channelId);
         break;
       }
 

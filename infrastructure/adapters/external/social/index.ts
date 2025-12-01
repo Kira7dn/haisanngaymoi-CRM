@@ -11,7 +11,7 @@ export type { FacebookAuthConfig } from "./auth/facebook-auth-service";
 export { FacebookAuthService, createFacebookAuthServiceForUser } from "./auth/facebook-auth-service";
 
 export type { TikTokAuthConfig } from "./auth/tiktok-auth-service";
-export { TikTokAuthService, createTikTokAuthServiceForUser, createTikTokAuthService } from "./auth/tiktok-auth-service";
+export { TikTokAuthService, createTikTokAuthServiceForUser } from "./auth/tiktok-auth-service";
 
 export type { YouTubeAuthConfig } from "./auth/youtube-auth-service";
 export { YouTubeAuthService, createYouTubeAuthServiceForUser } from "./auth/youtube-auth-service";

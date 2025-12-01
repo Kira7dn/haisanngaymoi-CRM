@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createConversationRepository } from "../depends";
+import { getCustomerByIdUseCase } from "../../customers/depends";
 
 /**
  * GET /api/messaging/conversations
@@ -40,9 +41,36 @@ export async function GET(request: NextRequest) {
       return timeB - timeA;
     });
 
+    // Populate customer data for each conversation
+    const customerUseCase = await getCustomerByIdUseCase();
+    const conversationsWithCustomers = await Promise.all(
+      filtered.map(async (conversation) => {
+        // Use contactId if available, fallback to customerId for backward compatibility
+        const customerIdToFetch = conversation.contactId || conversation.customerId;
+
+        try {
+          const { customer } = await customerUseCase.execute({ id: customerIdToFetch });
+          return {
+            ...conversation,
+            customer: customer ? {
+              id: customer.id,
+              name: customer.name,
+              avatar: customer.avatar,
+            } : null,
+          };
+        } catch (error) {
+          console.error(`Failed to fetch customer ${customerIdToFetch}:`, error);
+          return {
+            ...conversation,
+            customer: null,
+          };
+        }
+      })
+    );
+
     return NextResponse.json({
-      conversations: filtered,
-      total: filtered.length,
+      conversations: conversationsWithCustomers,
+      total: conversationsWithCustomers.length,
     });
   } catch (error) {
     console.error("Failed to fetch conversations:", error);

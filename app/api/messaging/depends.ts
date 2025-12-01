@@ -1,7 +1,9 @@
 import { MessageRepository } from "@/infrastructure/repositories/messaging/message-repo";
 import { ConversationRepository } from "@/infrastructure/repositories/messaging/conversation-repo";
+import { CustomerRepository } from "@/infrastructure/repositories/customers/customer-repo";
 import type { MessageService } from "@/core/application/interfaces/messaging/message-service";
 import type { ConversationService } from "@/core/application/interfaces/messaging/conversation-service";
+import type { CustomerService } from "@/core/application/interfaces/customers/customer-service";
 import { ReceiveMessageUseCase } from "@/core/application/usecases/messaging/receive-message";
 import { SendMessageUseCase } from "@/core/application/usecases/messaging/send-message";
 import { AssignConversationUseCase } from "@/core/application/usecases/messaging/assign-conversation";
@@ -18,6 +20,10 @@ export const createConversationRepository = async (): Promise<ConversationServic
   return new ConversationRepository();
 };
 
+export const createCustomerRepository = async (): Promise<CustomerService> => {
+  return new CustomerRepository();
+};
+
 // Shared messaging factory instance
 const messagingFactoryInstance: MessagingAdapterFactory = getMessagingAdapterFactory();
 
@@ -25,7 +31,8 @@ const messagingFactoryInstance: MessagingAdapterFactory = getMessagingAdapterFac
 export const receiveMessageUseCase = async () => {
   const messageService = await createMessageRepository();
   const conversationService = await createConversationRepository();
-  return new ReceiveMessageUseCase(messageService, conversationService);
+  const customerService = await createCustomerRepository();
+  return new ReceiveMessageUseCase(messageService, conversationService, customerService, messagingFactoryInstance);
 };
 
 export const sendMessageUseCase = async () => {

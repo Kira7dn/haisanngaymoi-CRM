@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ConversationSidebar } from "./_components/conversation-sidebar";
 import { MessageThread } from "./_components/message-thread";
 import { MessageInput } from "./_components/message-input";
 import { CustomerProfilePanel } from "./_components/customer-profile-panel";
 import { MessageCircle } from "lucide-react";
+import { useSSEConnection } from "@/app/hooks/useSSEConnection";
 import type { Conversation } from "@/core/domain/messaging/conversation";
 import type { Message, Attachment } from "@/core/domain/messaging/message";
 import type { Customer } from "@/core/domain/customers/customer";
@@ -17,38 +18,123 @@ export function MessageManagementClient() {
   const [currentCustomer, setCurrentCustomer] = useState<Customer | undefined>();
   const [isLoading, setIsLoading] = useState(true);
 
+  // Use ref to track current selected conversation ID for SSE handlers
+  const selectedConversationIdRef = useRef<string | undefined>(selectedConversationId);
+
+  // Update ref when selectedConversationId changes
+  useEffect(() => {
+    selectedConversationIdRef.current = selectedConversationId;
+  }, [selectedConversationId]);
+
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId);
+
+  // Setup SSE connection for real-time updates
+  const { isConnected } = useSSEConnection({
+    autoConnect: true,
+    autoReconnect: true,
+    onEvent: {
+      new_message: (data) => {
+        console.log("[SSE] New message event received:", data);
+        const { message } = data;
+
+        if (!message) {
+          console.error("[SSE] Invalid message data:", data);
+          return;
+        }
+
+        console.log("[SSE] Processing new message:", {
+          messageId: message.id,
+          conversationId: message.conversationId,
+          currentConversationId: selectedConversationIdRef.current,
+        });
+
+        // Always update conversation list
+        setConversations((prev) => {
+          const updated = prev.map((c) =>
+            c.id === message.conversationId
+              ? { ...c, lastMessageAt: message.sentAt }
+              : c
+          );
+          console.log("[SSE] Updated conversations:", updated.length);
+          return updated;
+        });
+
+        // Update messages only if it's for the currently selected conversation
+        setMessages((prev) => {
+          // Check if this message is for current conversation (use ref for latest value)
+          if (message.conversationId !== selectedConversationIdRef.current) {
+            console.log("[SSE] Message not for current conversation, skipping UI update");
+            return prev;
+          }
+
+          // Avoid duplicates
+          const exists = prev.some(
+            (m) => m.id === message.id || (message.platformMessageId && m.platformMessageId === message.platformMessageId)
+          );
+
+          if (exists) {
+            console.log("[SSE] Duplicate message detected, skipping");
+            return prev;
+          }
+
+          console.log("[SSE] Adding new message to UI, total:", prev.length + 1);
+          return [...prev, message];
+        });
+      },
+
+      new_conversation: (data) => {
+        console.log("[SSE] New conversation event received:", data);
+        fetchConversations();
+      },
+
+      message_delivered: (data) => {
+        console.log("[SSE] Message delivered event:", data);
+        const { platformMessageIds } = data;
+
+        if (!platformMessageIds || !Array.isArray(platformMessageIds)) {
+          console.error("[SSE] Invalid platformMessageIds:", data);
+          return;
+        }
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            platformMessageIds.includes(msg.platformMessageId)
+              ? { ...msg, deliveryStatus: "delivered" as const }
+              : msg
+          )
+        );
+      },
+
+      message_read: (data) => {
+        console.log("[SSE] Message read event:", data);
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.sender === "customer" ? { ...msg, isRead: true } : msg
+          )
+        );
+      },
+    },
+    onConnect: () => {
+      console.log("[SSE] ✅ Connected to real-time messaging");
+    },
+    onError: (error) => {
+      console.error("[SSE] ❌ Connection error:", error);
+    },
+  });
 
   // Fetch conversations on mount
   useEffect(() => {
     fetchConversations();
   }, []);
 
-  // Poll for new conversations every 10 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchConversations();
-    }, 10000); // 10 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Poll for new messages in selected conversation every 5 seconds
-  useEffect(() => {
-    if (!selectedConversationId) return;
-
-    const interval = setInterval(() => {
-      fetchMessages(selectedConversationId);
-    }, 5000); // 5 seconds
-
-    return () => clearInterval(interval);
-  }, [selectedConversationId]);
-
   // Fetch messages when conversation is selected
   useEffect(() => {
     if (selectedConversationId) {
       fetchMessages(selectedConversationId);
-      fetchCustomer(selectedConversation?.customerId);
+      // Use contactId if available, fallback to customerId for backward compatibility
+      const customerIdToFetch = selectedConversation?.contactId || selectedConversation?.customerId;
+      fetchCustomer(customerIdToFetch);
     } else {
       setMessages([]);
       setCurrentCustomer(undefined);
@@ -211,17 +297,28 @@ export function MessageManagementClient() {
           <>
             {/* Header */}
             <div className="border-b px-6 py-4">
-              <h2 className="text-lg font-semibold">
-                {currentCustomer?.name || `Customer ${selectedConversation?.customerId.slice(-6)}`}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {selectedConversation?.platform} • {selectedConversation?.status}
-              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    {currentCustomer?.name || `Customer ${selectedConversation?.customerId.slice(-6)}`}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedConversation?.platform} • {selectedConversation?.status}
+                  </p>
+                </div>
+                {/* SSE Connection Status */}
+                <div className="flex items-center gap-2 text-xs">
+                  <div className={`h-2 w-2 rounded-full ${isConnected ? "bg-green-500" : "bg-gray-400"}`} />
+                  <span className="text-muted-foreground">
+                    {isConnected ? "Real-time" : "Offline"}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Message Thread */}
             <div className="flex-1 overflow-hidden">
-              <MessageThread messages={messages} />
+              <MessageThread messages={messages} customer={currentCustomer} />
             </div>
 
             {/* Message Input */}

@@ -1,7 +1,10 @@
 import type { MessageService, MessagePayload } from "@/core/application/interfaces/messaging/message-service";
 import type { ConversationService } from "@/core/application/interfaces/messaging/conversation-service";
+import type { CustomerService } from "@/core/application/interfaces/customers/customer-service";
 import type { Message, Platform } from "@/core/domain/messaging/message";
+import type { CustomerSource } from "@/core/domain/customers/customer";
 import { validateMessage } from "@/core/domain/messaging/message";
+import { MessagingAdapterFactory } from "../../interfaces/social/messaging-adapter";
 
 /**
  * Request payload for receiving a message from webhook
@@ -50,8 +53,10 @@ export interface ReceiveMessageResponse {
 export class ReceiveMessageUseCase {
   constructor(
     private messageService: MessageService,
-    private conversationService: ConversationService
-  ) {}
+    private conversationService: ConversationService,
+    private customerService: CustomerService,
+    private messagingFactory: MessagingAdapterFactory
+  ) { }
 
   async execute(request: ReceiveMessageRequest): Promise<ReceiveMessageResponse> {
     console.log('[ReceiveMessageUseCase] Processing incoming message:', request);
@@ -73,11 +78,22 @@ export class ReceiveMessageUseCase {
       }
     }
 
-    // Step 3: Find or create conversation
-    const { conversation, isNew } = await this.findOrCreateConversation(
+
+    // Step 3: Find or create customer from platform ID
+    const { customer, isNew: isNewCustomer } = await this.findOrCreateCustomer(
       request.channelId,
       request.senderPlatformId,
       request.platform
+    );
+
+    console.log('[ReceiveMessageUseCase] Customer:', customer.id, 'isNew:', isNewCustomer);
+
+    // Step 4: Find or create conversation
+    const { conversation, isNew } = await this.findOrCreateConversation(
+      request.channelId,
+      request.senderPlatformId,
+      request.platform,
+      customer.id
     );
 
     console.log('[ReceiveMessageUseCase] Using conversation:', conversation.id, 'isNew:', isNew);
@@ -139,13 +155,49 @@ export class ReceiveMessageUseCase {
   }
 
   /**
+   * Find existing customer or create new one
+   * Uses channelId + senderPlatformId for accurate mapping
+   */
+  private async findOrCreateCustomer(
+    channelId: string,
+    senderPlatformId: string,
+    platform: Platform
+  ): Promise<{ customer: any; isNew: boolean }> {
+    // Try to find existing customer using channelId + senderPlatformId
+    let customer = await this.customerService.findByPlatformId(
+      platform,
+      senderPlatformId
+    );
+
+    if (customer) {
+      return { customer, isNew: false };
+    }
+
+    // Step 4: Get the appropriate messaging adapter
+    const integration = await this.messagingFactory.create(platform, channelId);
+    const customerInfo = await integration.getCustomerInfo(senderPlatformId);
+    // Create new customer
+    const now = new Date();
+    customer = await this.customerService.create({
+      platformIds: [{ platform, platformUserId: senderPlatformId }],
+      createdAt: now,
+      name: customerInfo.name,
+      avatar: customerInfo.avatar,
+    });
+
+    console.log('[ReceiveMessageUseCase] Created new customer:', customer.id);
+    return { customer, isNew: true };
+  }
+
+  /**
    * Find existing conversation or create new one
    * Uses channelId + senderPlatformId for accurate mapping
    */
   private async findOrCreateConversation(
     channelId: string,
     senderPlatformId: string,
-    platform: Platform
+    platform: Platform,
+    customerId: string
   ): Promise<{ conversation: any; isNew: boolean }> {
     // Try to find existing active conversation using channelId + senderPlatformId
     let conversation = await this.conversationService.findOpenByChannelAndCustomer(
@@ -154,6 +206,16 @@ export class ReceiveMessageUseCase {
     );
 
     if (conversation) {
+      // Update contactId if not set (for backward compatibility with old conversations)
+      if (!conversation.contactId && customerId) {
+        await this.conversationService.update({
+          id: conversation.id,
+          contactId: customerId,
+        });
+        conversation.contactId = customerId;
+        console.log('[ReceiveMessageUseCase] Updated conversation with contactId:', customerId);
+      }
+
       // Reopen conversation if it was closed
       if (conversation.status === "closed") {
         await this.conversationService.updateStatus(conversation.id, "open");
@@ -166,7 +228,8 @@ export class ReceiveMessageUseCase {
     const now = new Date();
     conversation = await this.conversationService.create({
       channelId,
-      customerId: senderPlatformId, // Will be mapped to contactId later
+      customerId: senderPlatformId, // DEPRECATED: Kept for backward compatibility
+      contactId: customerId, // NEW: Link to actual Customer entity
       platform,
       status: "open",
       lastMessageAt: now,

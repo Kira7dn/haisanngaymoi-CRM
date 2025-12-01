@@ -4,23 +4,24 @@ import { useRef, useEffect } from "react";
 import { FileText, Image, Video, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message } from "@/core/domain/messaging/message";
+import type { Customer } from "@/core/domain/customers/customer";
 import { ScrollArea } from "@/@shared/ui/scroll-area";
 import { Badge } from "@/@shared/ui/badge";
-import { Avatar, AvatarFallback } from "@/@shared/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/@shared/ui/avatar";
 
 interface MessageThreadProps {
   messages: Message[];
   currentUserId?: number;
+  customer?: Customer;
 }
 
-export function MessageThread({ messages, currentUserId }: MessageThreadProps) {
+export function MessageThread({ messages, currentUserId, customer }: MessageThreadProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
-    // Scroll to bottom when messages change
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const formatTime = (date: Date) => {
@@ -99,10 +100,13 @@ export function MessageThread({ messages, currentUserId }: MessageThreadProps) {
                 >
                   {/* Avatar */}
                   <Avatar className="h-8 w-8">
+                    {!isAgent && customer?.avatar && (
+                      <AvatarImage src={customer.avatar} alt={customer.name || "Customer"} />
+                    )}
                     <AvatarFallback
                       className={isAgent ? "bg-primary text-primary-foreground" : "bg-muted"}
                     >
-                      {isAgent ? "A" : "C"}
+                      {isAgent ? "A" : (customer?.name?.charAt(0).toUpperCase() || "C")}
                     </AvatarFallback>
                   </Avatar>
 
@@ -172,6 +176,8 @@ export function MessageThread({ messages, currentUserId }: MessageThreadProps) {
             </div>
           );
         })}
+        {/* Invisible element at the end for auto-scroll */}
+        <div ref={messagesEndRef} />
       </div>
     </ScrollArea>
   );
