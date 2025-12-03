@@ -33,6 +33,20 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
     super();
   }
 
+  /**
+   * Get valid access token (with auto-refresh if expired)
+   */
+  private getAccessToken(): string {
+    return this.auth.getAccessToken();
+  }
+
+  /**
+   * Get page ID for posting
+   */
+  private getPageId(): string {
+    return this.auth.getPageId();
+  }
+
   async publish(request: PostingPublishRequest): Promise<PostingPublishResponse> {
     try {
       if (!request.title && !request.body) {
@@ -64,7 +78,7 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
       const url = `${this.baseUrl}/${postId}`;
       const params = new URLSearchParams({
         message,
-        access_token: this.auth.getAccessToken(),
+        access_token: this.getAccessToken(),
       });
 
       const response = await fetch(url, {
@@ -101,7 +115,7 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
     try {
       const url = `${this.baseUrl}/${postId}`;
       const params = new URLSearchParams({
-        access_token: this.auth.getAccessToken(),
+        access_token: this.getAccessToken(),
       });
 
       const response = await fetch(`${url}?${params.toString()}`, {
@@ -121,7 +135,7 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
       const url = `${this.baseUrl}/${postId}`;
       const params = new URLSearchParams({
         fields: "reactions.summary(true),shares,comments.summary(true)",
-        access_token: this.auth.getAccessToken(),
+        access_token: this.getAccessToken(),
       });
 
       const response = await fetch(`${url}?${params.toString()}`);
@@ -131,7 +145,7 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
       const insightsUrl = `${this.baseUrl}/${postId}/insights`;
       const insightsParams = new URLSearchParams({
         metric: "post_impressions,post_impressions_unique,post_engaged_users",
-        access_token: this.auth.getAccessToken(),
+        access_token: this.getAccessToken(),
       });
 
       const insightsResponse = await fetch(`${insightsUrl}?${insightsParams.toString()}`);
@@ -180,10 +194,10 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
   }
 
   private async publishTextPost(message: string): Promise<PostingPublishResponse> {
-    const url = `${this.baseUrl}/${this.auth.getPageId()}/feed`;
+    const url = `${this.baseUrl}/${this.getPageId()}/feed`;
     const params = new URLSearchParams({
       message,
-      access_token: this.auth.getAccessToken(),
+      access_token: this.getAccessToken(),
     });
 
     const response = await fetch(url, {
@@ -232,11 +246,11 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
   }
 
   private async publishPhoto(message: string, photoUrl: string): Promise<PostingPublishResponse> {
-    const url = `${this.baseUrl}/${this.auth.getPageId()}/photos`;
+    const url = `${this.baseUrl}/${this.getPageId()}/photos`;
     const params = new URLSearchParams({
       url: photoUrl,
       message,
-      access_token: this.auth.getAccessToken(),
+      access_token: this.getAccessToken(),
     });
 
     const response = await fetch(url, {
@@ -261,11 +275,11 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
   }
 
   private async publishVideo(message: string, videoUrl: string): Promise<PostingPublishResponse> {
-    const url = `${this.baseUrl}/${this.auth.getPageId()}/videos`;
+    const url = `${this.baseUrl}/${this.getPageId()}/videos`;
     const params = new URLSearchParams({
       file_url: videoUrl,
       description: message,
-      access_token: this.auth.getAccessToken(),
+      access_token: this.getAccessToken(),
     });
 
     const response = await fetch(url, {
@@ -300,11 +314,11 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
         }
       }
 
-      const url = `${this.baseUrl}/${this.auth.getPageId()}/feed`;
+      const url = `${this.baseUrl}/${this.getPageId()}/feed`;
       const params = new URLSearchParams({
         message,
         attached_media: JSON.stringify(uploadedPhotoIds.map((id) => ({ media_fbid: id }))),
-        access_token: this.auth.getAccessToken(),
+        access_token: this.getAccessToken(),
       });
 
       const response = await fetch(url, {
@@ -336,11 +350,11 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
 
   private async uploadMedia(media: PostMedia): Promise<string> {
     try {
-      const url = `${this.baseUrl}/${this.auth.getPageId()}/photos`;
+      const url = `${this.baseUrl}/${this.getPageId()}/photos`;
       const params = new URLSearchParams({
         url: media.url,
         published: "false",
-        access_token: this.auth.getAccessToken(),
+        access_token: this.getAccessToken(),
       });
 
       const response = await fetch(url, {

@@ -15,18 +15,13 @@ export class ZaloMessagingAdapter extends BaseMessagingAdapter {
     try {
       this.log("Getting customer info from Zalo", platformUserId);
 
-      const accessToken = this.auth.getAccessToken();
-      if (!accessToken) {
-        throw new Error("No Zalo access token available");
-      }
-
       const url = `https://openapi.zalo.me/v2.0/oa/getprofile?data={"user_id":"${platformUserId}"}`;
 
       const response = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          access_token: accessToken,
+          access_token: this.auth.getAccessToken(),
         },
       });
 
@@ -50,7 +45,51 @@ export class ZaloMessagingAdapter extends BaseMessagingAdapter {
   }
 
   async sendMessage(platformUserId: string, content: string): Promise<SendMessageResult> {
-    // TODO: Implement Zalo messaging
-    throw new Error("Zalo messaging not yet implemented");
+    this.validateParams({ platformUserId, content });
+
+    try {
+      this.log("Sending message to Zalo user", { platformUserId, content });
+
+      const url = `https://openapi.zalo.me/v2.0/oa/message`;
+      const params = new URLSearchParams({
+        access_token: this.auth.getAccessToken(),
+      });
+
+      const response = await fetch(`${url}?${params.toString()}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          recipient: {
+            user_id: platformUserId,
+          },
+          message: {
+            text: content,
+          },
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.error !== 0) {
+        this.logError("Zalo send message error", result);
+        return {
+          success: false,
+        };
+      }
+
+      this.log("Message sent successfully", result.data);
+
+      return {
+        success: true,
+        platformMessageId: result.data?.message_id || "",
+      };
+    } catch (error: any) {
+      this.logError("Failed to send message to Zalo", error);
+      return {
+        success: false,
+      };
+    }
   }
 }

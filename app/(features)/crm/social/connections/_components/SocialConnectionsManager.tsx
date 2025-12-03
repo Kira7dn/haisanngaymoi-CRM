@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/ui/card"
 import { Button } from "@shared/ui/button"
-import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw, Settings } from "lucide-react"
+import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw, Settings, Webhook, Unplug } from "lucide-react"
 import type { SocialPlatform } from "@/core/domain/social/social-auth"
 import ConfigurationDialog from "./ConfigurationDialog"
 
@@ -197,8 +197,8 @@ export default function SocialConnectionsManager({ connections: initialConnectio
       {message && (
         <div
           className={`p-4 rounded-lg border ${message.type === "success"
-              ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200"
-              : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
+            ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200"
+            : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
             }`}
         >
           <div className="flex items-center gap-2">
@@ -213,7 +213,7 @@ export default function SocialConnectionsManager({ connections: initialConnectio
       )}
 
       {/* Platform Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
         {PLATFORMS.map((platform) => {
           const connection = getConnectionForPlatform(platform.id)
           const isConnected = !!connection
@@ -238,8 +238,8 @@ export default function SocialConnectionsManager({ connections: initialConnectio
                 </div>
                 <div
                   className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium w-fit ${isConnected
-                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                     }`}
                 >
                   {isConnected ? (
@@ -290,8 +290,8 @@ export default function SocialConnectionsManager({ connections: initialConnectio
                         }}
                         disabled={isLoading}
                       >
-                        <Settings className="h-4 w-4 mr-1" />
-                        Settings
+                        <Webhook className="h-4 w-4 mr-1" />
+                        Webhook
                       </Button>
                       <Button
                         variant="outline"
@@ -312,6 +312,7 @@ export default function SocialConnectionsManager({ connections: initialConnectio
                         onClick={() => handleDisconnect(platform.id)}
                         disabled={isLoading}
                       >
+                        <Unplug className="h-4 w-4 mr-1" />
                         Disconnect
                       </Button>
                     </div>
@@ -342,12 +343,11 @@ export default function SocialConnectionsManager({ connections: initialConnectio
       </div>
 
       {/* Configuration Dialog */}
-      {showConfigDialog && configPlatform && configConnectionId && (
+      {showConfigDialog && configPlatform && (
         <ConfigurationDialog
           open={showConfigDialog}
           onOpenChange={setShowConfigDialog}
           platform={configPlatform}
-          connectionId={configConnectionId}
         />
       )}
     </div>

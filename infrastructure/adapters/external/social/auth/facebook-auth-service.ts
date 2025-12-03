@@ -15,16 +15,41 @@ export interface FacebookAuthConfig extends PlatformAuthConfig {
  */
 export class FacebookAuthService extends BasePlatformAuthService {
   protected baseUrl = "https://graph.facebook.com/v19.0";
+  private _cachedAccessToken: string | null = null;
+  private _tokenExpireTime: number | null = null;
 
   constructor(private fbConfig: FacebookAuthConfig) {
     super(fbConfig);
   }
 
+  /**
+   * Get valid access token, refreshing if necessary
+   */
+  private async getValidAccessToken(): Promise<string> {
+    // Check if we have a cached token that's still valid
+    if (this._cachedAccessToken && this._tokenExpireTime && Date.now() < this._tokenExpireTime) {
+      return this._cachedAccessToken;
+    }
+
+    // Check if the config token is expired
+    if (this.isExpired()) {
+      // Refresh the token
+      const { accessToken, expiresIn } = await this.refreshToken();
+      this._cachedAccessToken = accessToken;
+      this._tokenExpireTime = Date.now() + (expiresIn * 1000) - (5 * 60 * 1000); // 5 min buffer
+      return accessToken;
+    }
+
+    // Use the token from config
+    return this.getAccessToken();
+  }
+
   async verifyAuth(): Promise<boolean> {
     try {
+      const token = await this.getValidAccessToken();
       const url = `${this.baseUrl}/me`;
       const params = new URLSearchParams({
-        access_token: this.getAccessToken(),
+        access_token: token,
       });
 
       const response = await fetch(`${url}?${params.toString()}`);
@@ -68,10 +93,11 @@ export class FacebookAuthService extends BasePlatformAuthService {
 
   async getPageAccessToken(pageId: string): Promise<string> {
     try {
+      const token = await this.getValidAccessToken();
       const url = `${this.baseUrl}/${pageId}`;
       const params = new URLSearchParams({
         fields: "access_token",
-        access_token: this.getAccessToken(),
+        access_token: token,
       });
 
       const response = await fetch(`${url}?${params.toString()}`);

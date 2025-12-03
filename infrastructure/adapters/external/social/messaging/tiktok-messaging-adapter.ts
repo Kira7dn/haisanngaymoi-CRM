@@ -15,11 +15,6 @@ export class TikTokMessagingAdapter extends BaseMessagingAdapter {
     try {
       this.log("Getting customer info from TikTok", platformUserId);
 
-      const accessToken = this.auth.getAccessToken();
-      if (!accessToken) {
-        throw new Error("No TikTok access token available");
-      }
-
       // TikTok uses open_id as the user identifier
       const url = `https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url`;
 
@@ -27,7 +22,7 @@ export class TikTokMessagingAdapter extends BaseMessagingAdapter {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${this.auth.getAccessToken()}`,
         },
       });
 

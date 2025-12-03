@@ -3,6 +3,7 @@ import { Montserrat } from "next/font/google";
 import { CopilotKit } from "@copilotkit/react-core";
 import "@copilotkit/react-ui/styles.css";
 import "./globals.css";
+import { ThemeProvider } from "@/app/(features)/crm/campaigns/posts/_components/scheduler/theme-provider";
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
@@ -103,9 +104,16 @@ export default function RootLayout({
       <body
         className={`${montserrat.variable} antialiased font-sans`}
       >
+        {/* <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        > */}
         <CopilotKit runtimeUrl="/api/copilotkit" publicLicenseKey="ck_pub_9f183f4c59f3d2b59e41ff75d5aace3e">
           {children}
         </CopilotKit>
+        {/* </ThemeProvider> */}
       </body>
     </html>
   );

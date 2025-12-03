@@ -9,19 +9,44 @@ export interface TikTokAuthConfig extends PlatformAuthConfig {
 
 export class TikTokAuthService extends BasePlatformAuthService {
   protected baseUrl = "https://open.tiktokapis.com";
+  private _cachedAccessToken: string | null = null;
+  private _tokenExpireTime: number | null = null;
 
   constructor(private tkConfig: TikTokAuthConfig) {
     super(tkConfig);
   }
 
+  /**
+   * Get valid access token, refreshing if necessary
+   */
+  private async getValidAccessToken(): Promise<string> {
+    // Check if we have a cached token that's still valid
+    if (this._cachedAccessToken && this._tokenExpireTime && Date.now() < this._tokenExpireTime) {
+      return this._cachedAccessToken;
+    }
+
+    // Check if the config token is expired
+    if (this.isExpired()) {
+      // Refresh the token
+      const { accessToken, expiresIn } = await this.refreshToken();
+      this._cachedAccessToken = accessToken;
+      this._tokenExpireTime = Date.now() + (expiresIn * 1000) - (5 * 60 * 1000); // 5 min buffer
+      return accessToken;
+    }
+
+    // Use the token from config
+    return this.getAccessToken();
+  }
+
   /** Verify access token bằng cách lấy thông tin user */
   async verifyAuth(): Promise<boolean> {
     try {
+      const token = await this.getValidAccessToken();
       const url = `${this.baseUrl}/v2/user/info/?fields=open_id,display_name,avatar_url`;
       const resp = await fetch(url, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${this.getAccessToken()}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await resp.json();

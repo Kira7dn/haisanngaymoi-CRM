@@ -2815,7 +2815,7 @@ export default async function RevenueAnalyticsPage({
 ```typescript
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/card"
 import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, CreditCard } from "lucide-react"
 import type { RevenueMetrics } from "@/core/domain/analytics/revenue-metrics"
 
@@ -2981,8 +2981,8 @@ export default async function Page({ searchParams }) {
 ```typescript
 "use client"
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@shared/ui/card"
+import { Button } from "@shared/ui/button"
 
 export default function Component({ data }) {
   return <div>{/* Shadcn UI components */}</div>

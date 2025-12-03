@@ -25,12 +25,6 @@ export default function WebhookGuidePanel({ platform }: WebhookGuidePanelProps) 
 
   const renderZaloGuide = () => (
     <div className="space-y-4">
-      <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
-        <AlertDescription>
-          <strong>Note:</strong> Zalo webhook is configured through the Zalo Developer Portal,
-          not programmatically.
-        </AlertDescription>
-      </Alert>
 
       <div className="space-y-3">
         <h3 className="font-semibold">Step-by-Step Guide:</h3>
@@ -88,23 +82,11 @@ export default function WebhookGuidePanel({ platform }: WebhookGuidePanelProps) 
           <li>Save your webhook configuration</li>
         </ol>
       </div>
-
-      <Alert>
-        <AlertDescription>
-          💡 <strong>Tip:</strong> Make sure your webhook URL is publicly accessible.
-          Use ngrok for local development.
-        </AlertDescription>
-      </Alert>
     </div>
   )
 
   const renderTikTokGuide = () => (
     <div className="space-y-4">
-      <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
-        <AlertDescription>
-          <strong>Note:</strong> TikTok webhook is configured through the Developer Portal.
-        </AlertDescription>
-      </Alert>
 
       <div className="space-y-3">
         <h3 className="font-semibold">Step-by-Step Guide:</h3>
@@ -160,77 +142,23 @@ export default function WebhookGuidePanel({ platform }: WebhookGuidePanelProps) 
           <li>After verification, you'll start receiving POST requests for events</li>
         </ol>
       </div>
-
-      <Alert>
-        <AlertDescription>
-          💡 <strong>Tip:</strong> TikTok retries failed deliveries for up to 72 hours using exponential backoff.
-        </AlertDescription>
-      </Alert>
     </div>
   )
 
   const renderFacebookGuide = () => (
     <div className="space-y-4">
-      <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200">
-        <AlertDescription>
-          <strong>Good news!</strong> Facebook webhook subscription is handled automatically
-          when you select a page.
-        </AlertDescription>
-      </Alert>
 
       <div className="space-y-3">
-        <h3 className="font-semibold">What happens automatically:</h3>
+        <h3 className="font-semibold">No need to set up webhook:</h3>
 
         <ul className="space-y-2 list-disc list-inside">
-          <li>
-            When you select a Facebook Page during OAuth, the system automatically subscribes
-            to webhook events:
-            <ul className="list-disc list-inside ml-6 mt-2 space-y-1 text-sm">
-              <li><code>messages</code> - Incoming messages</li>
-              <li><code>messaging_postbacks</code> - Button clicks and interactions</li>
-            </ul>
-          </li>
+          When you select a  Facebook Page during OAuth, the system automatically subscribes
+          to webhook events:
+          <ul className="list-disc list-inside ml-6 mt-2 space-y-1 text-sm">
+            <li><code>messages</code> - Incoming messages</li>
+            <li><code>messaging_postbacks</code> - Button clicks and interactions</li>
+          </ul>
         </ul>
-
-        <h3 className="font-semibold mt-6">Manual verification (if needed):</h3>
-
-        <ol className="space-y-3 list-decimal list-inside">
-          <li>
-            Go to{" "}
-            <a
-              href="https://developers.facebook.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline inline-flex items-center gap-1"
-            >
-              Facebook Developer Portal
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </li>
-
-          <li>Select your app → Webhooks</li>
-
-          <li>
-            Verify webhook URL is set to:
-            <div className="flex items-center gap-2 mt-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-md font-mono text-sm">
-              <code className="flex-1 break-all">{webhookUrl}</code>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={copyToClipboard}
-                className="shrink-0"
-              >
-                {copied ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </li>
-
-          <li>Check that your Page is subscribed to webhook events</li>
-        </ol>
       </div>
     </div>
   )
