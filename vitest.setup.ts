@@ -3,13 +3,9 @@ import { expect, vi } from 'vitest'
 
 declare global {
   var testServer: import('http').Server;
-  var expect: typeof import('vitest')['expect'];
-  var vi: typeof import('vitest')['vi'];
 }
 
-// Make expect and vi global
-global.expect = expect
-global.vi = vi
+// No need to redeclare or reassign expect and vi as they're already available globally in Vitest
 
 // Ensure environment variables are set
 process.env.MONGODB_URI = process.env.MONGODB_URI

@@ -1,9 +1,10 @@
 /**
- * LLM Service using Anthropic Claude API
+ * LLM Service using OpenAI API
  * Provides AI capabilities for chatbot and content generation
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
+import { ChatCompletionMessageParam } from "openai/resources/chat";
 
 /**
  * LLM Request configuration
@@ -32,88 +33,107 @@ export interface LLMResponse {
  * LLM Service class
  */
 export class LLMService {
-  private client: Anthropic;
-  private readonly defaultModel = "claude-3-5-sonnet-20241022";
+  private client: OpenAI;
+  private readonly defaultModel = "gpt-4o-mini";
   private readonly defaultMaxTokens = 1024;
   private readonly defaultTemperature = 0.7;
 
   constructor() {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
-      throw new Error("ANTHROPIC_API_KEY environment variable is required");
+      throw new Error("OPENAI_API_KEY environment variable is required");
     }
 
-    this.client = new Anthropic({
-      apiKey,
-    });
+    this.client = new OpenAI({ apiKey });
   }
 
   /**
-   * Generate completion using Claude API
+   * Generate completion using OpenAI API
    */
   async generateCompletion(request: LLMRequest): Promise<LLMResponse> {
     try {
-      const response = await this.client.messages.create({
+      const messages: ChatCompletionMessageParam[] = [];
+
+      if (request.systemPrompt) {
+        messages.push({
+          role: "system",
+          content: request.systemPrompt,
+        } as const);
+      }
+
+      messages.push({
+        role: "user",
+        content: request.prompt,
+      } as const);
+
+      const response = await this.client.chat.completions.create({
         model: request.model || this.defaultModel,
         max_tokens: request.maxTokens || this.defaultMaxTokens,
         temperature: request.temperature ?? this.defaultTemperature,
-        system: request.systemPrompt,
-        messages: [
-          {
-            role: "user",
-            content: request.prompt,
-          },
-        ],
+        messages,
       });
 
-      // Extract text content from response
-      const textContent = response.content
-        .filter((block) => block.type === "text")
-        .map((block) => (block.type === "text" ? block.text : ""))
-        .join("");
+      const textContent = response.choices[0]?.message?.content ?? "";
 
       return {
         content: textContent,
         usage: {
-          inputTokens: response.usage.input_tokens,
-          outputTokens: response.usage.output_tokens,
+          inputTokens: response.usage?.prompt_tokens ?? 0,
+          outputTokens: response.usage?.completion_tokens ?? 0,
         },
-        model: response.model,
+        model: response.model ?? request.model ?? this.defaultModel,
       };
     } catch (error) {
       console.error("LLM Service Error:", error);
-      throw new Error(`Failed to generate completion: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to generate completion: ${error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
   /**
-   * Generate streaming completion (for future real-time features)
+   * Generate streaming completion (OpenAI Streaming)
    */
-  async *generateStreamingCompletion(request: LLMRequest): AsyncGenerator<string, void, unknown> {
+  async *generateStreamingCompletion(
+    request: LLMRequest
+  ): AsyncGenerator<string, void, unknown> {
     try {
-      const stream = await this.client.messages.create({
+      const messages: ChatCompletionMessageParam[] = [];
+
+      if (request.systemPrompt) {
+        messages.push({
+          role: "system",
+          content: request.systemPrompt,
+        } as const);
+      }
+
+      messages.push({
+        role: "user",
+        content: request.prompt,
+      } as const);
+
+      const stream = await this.client.chat.completions.create({
         model: request.model || this.defaultModel,
         max_tokens: request.maxTokens || this.defaultMaxTokens,
         temperature: request.temperature ?? this.defaultTemperature,
-        system: request.systemPrompt,
-        messages: [
-          {
-            role: "user",
-            content: request.prompt,
-          },
-        ],
+        messages,
         stream: true,
       });
 
-      for await (const event of stream) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          yield event.delta.text;
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+          yield delta;
         }
       }
     } catch (error) {
       console.error("LLM Streaming Error:", error);
-      throw new Error(`Failed to generate streaming completion: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to generate streaming completion: ${error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
@@ -121,7 +141,7 @@ export class LLMService {
    * Check if API key is configured
    */
   static isConfigured(): boolean {
-    return !!process.env.ANTHROPIC_API_KEY;
+    return !!process.env.OPENAI_API_KEY;
   }
 }
 
@@ -136,7 +156,9 @@ let llmServiceInstance: LLMService | null = null;
 export function getLLMService(): LLMService {
   if (!llmServiceInstance) {
     if (!LLMService.isConfigured()) {
-      throw new Error("LLM Service is not configured. Please set ANTHROPIC_API_KEY environment variable.");
+      throw new Error(
+        "LLM Service is not configured. Please set OPENAI_API_KEY environment variable."
+      );
     }
     llmServiceInstance = new LLMService();
   }

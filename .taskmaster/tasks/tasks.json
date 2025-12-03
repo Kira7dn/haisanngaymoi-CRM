@@ -57,7 +57,7 @@
             "description": "Loại bỏ parser dựa trên quy tắc cũ trong core/domain/chatbot/chat-message.ts.",
             "dependencies": [],
             "details": "Đảm bảo rằng parser cũ không còn được sử dụng trong hệ thống mới.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra lại hệ thống để đảm bảo không có lỗi phát sinh sau khi loại bỏ parser cũ.",
             "parentId": "undefined"
           }
@@ -152,7 +152,7 @@
             "description": "Tạo các hành động phân tích như getRevenueStats, getTopProducts, v.v.",
             "dependencies": [],
             "details": "Sử dụng các hook useCopilotAction để tạo các hành động phân tích mới.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
             "parentId": "undefined"
           },
@@ -164,7 +164,7 @@
               1
             ],
             "details": "Đảm bảo các hành động phân tích mới được tích hợp vào các trường hợp sử dụng hiện có.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
             "parentId": "undefined"
           },
@@ -176,7 +176,7 @@
               2
             ],
             "details": "Sử dụng thư viện trực quan hóa để hiển thị dữ liệu một cách hiệu quả.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
             "parentId": "undefined"
           },
@@ -188,7 +188,7 @@
               3
             ],
             "details": "Tích hợp AI để tự động phân tích và cung cấp thông tin chi tiết.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
             "parentId": "undefined"
           }
@@ -295,7 +295,7 @@
             "description": "Develop the payment link generation feature for CopilotKit actions.",
             "dependencies": [],
             "details": "Ensure the payment link generation is integrated with existing use cases and follows the same standards for permission checks and type safety.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test the payment link generation by simulating user requests and verifying the correct link is generated.",
             "parentId": "undefined"
           }
@@ -1263,7 +1263,7 @@
             "dependencies": [
               1
             ],
-            "details": "Phân tích OrdersChart để xác định dữ liệu cho từng widget. Refactor thành hai component độc lập, sử dụng React.memo và useMemo để tối ưu hiệu suất render, đảm bảo mỗi widget chỉ nhận đúng dữ liệu cần thiết qua props.\n<info added on 2025-11-22T05:48:54.295Z>\nSuccessfully split OrdersChart into two independent widgets with React.memo optimization:\n\n1. OrderStatusWidget (widgets/OrderStatusWidget.tsx):\n   - Displays order distribution by status (Pending, Shipping, Completed)\n   - Features progress bars with color coding (yellow, blue, green)\n   - Shows percentage and count\n   - Wrapped with React.memo to prevent unnecessary re-renders\n\n2. PaymentStatusWidget (widgets/PaymentStatusWidget.tsx):\n   - Displays payment distribution (Pending, Success, Failed)\n   - Features progress bars with color coding (gray, green, red)\n   - Shows percentage and count\n   - Wrapped with React.memo to prevent unnecessary re-renders\n\nBoth widgets:\n- Accept only the data they need (single responsibility)\n- Use memoization to optimize render performance\n- Maintain consistent UI patterns with progress bars\n- Calculate percentages from totals\n- Handle empty states gracefully (0 total)\n</info added on 2025-11-22T05:48:54.295Z>",
+            "details": "Phân tích OrdersChart để xác định dữ liệu cho từng widget. Refactor thành hai component độc lập, sử dụng React.memo và useMemo để tối ưu hiệu suất render, đảm bảo mỗi widget chỉ nhận đúng dữ liệu cần thiết qua props.\n<info added on 2025-11-22T05:48:54.295Z>\nSuccessfully split OrdersChart into two independent widgets with React.memo optimization:\n\n1. OrderStatusWidget (widgets/OrderStatusWidget.tsx):\n   - Displays order distribution by status (done, Shipping, Completed)\n   - Features progress bars with color coding (yellow, blue, green)\n   - Shows percentage and count\n   - Wrapped with React.memo to prevent unnecessary re-renders\n\n2. PaymentStatusWidget (widgets/PaymentStatusWidget.tsx):\n   - Displays payment distribution (done, Success, Failed)\n   - Features progress bars with color coding (gray, green, red)\n   - Shows percentage and count\n   - Wrapped with React.memo to prevent unnecessary re-renders\n\nBoth widgets:\n- Accept only the data they need (single responsibility)\n- Use memoization to optimize render performance\n- Maintain consistent UI patterns with progress bars\n- Calculate percentages from totals\n- Handle empty states gracefully (0 total)\n</info added on 2025-11-22T05:48:54.295Z>",
             "status": "done",
             "testStrategy": "Viết unit test kiểm tra từng widget render đúng dữ liệu. Sử dụng profiling để xác nhận không bị render lại không cần thiết khi props không thay đổi.",
             "parentId": "undefined",
@@ -1426,7 +1426,7 @@
               1
             ],
             "details": "Sử dụng fs để đọc file scripts/seeds/crm_db.products.json, kiểm tra sản phẩm bằng Prisma Client trước khi insert.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
             "parentId": "undefined"
           },
@@ -1438,7 +1438,7 @@
               2
             ],
             "details": "Sử dụng Prisma Client để kiểm tra và tạo khách hàng, đơn hàng, đảm bảo mỗi đơn hàng liên kết đúng với khách hàng và sản phẩm hợp lệ.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
             "parentId": "undefined"
           },
@@ -1450,7 +1450,7 @@
               3
             ],
             "details": "Sử dụng try/catch để xử lý lỗi, ghi log chi tiết bằng console hoặc thư viện logging như winston.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
             "parentId": "undefined"
           },
@@ -1462,7 +1462,7 @@
               4
             ],
             "details": "Sử dụng upsert hoặc kiểm tra tồn tại trước khi insert, viết unit test bằng Jest để kiểm tra tính đúng đắn của liên kết giữa khách hàng, đơn hàng, sản phẩm.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": null,
             "parentId": "undefined"
           }
@@ -1608,7 +1608,7 @@
             "description": "Tạo thư mục và các file cần thiết tại đường dẫn 'app/(features)/crm/managements/operational-costs/' để chuẩn bị cho việc phát triển giao diện.",
             "dependencies": [],
             "details": "Tạo mới thư mục 'operational-costs' và các file chính như index.tsx, các file component cho từng tab, và file style nếu cần. Đảm bảo cấu trúc phù hợp với kiến trúc dự án hiện tại.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra sự tồn tại của thư mục và các file, xác nhận import/export không lỗi khi chạy ứng dụng.",
             "parentId": "undefined"
           },
@@ -1620,7 +1620,7 @@
               1
             ],
             "details": "Sử dụng shadcn/ui hoặc Tailwind CSS để xây dựng giao diện nhất quán. Tạo component cha quản lý state tab hiện tại, render component con tương ứng với từng tab. Đảm bảo khả năng chuyển đổi tab mượt mà.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra giao diện hiển thị đúng các tab, chuyển đổi tab không lỗi, UI đồng nhất với hệ thống.",
             "parentId": "undefined"
           },
@@ -1632,7 +1632,7 @@
               2
             ],
             "details": "Tạo form nhập liệu, bảng danh sách chi phí, các nút thao tác CRUD. Sử dụng hooks hoặc Zustand để quản lý state, gọi server actions để đồng bộ dữ liệu với backend. Xử lý lỗi và hiển thị thông báo cho người dùng.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Thực hiện các thao tác CRUD, xác nhận dữ liệu cập nhật đúng trên UI và backend, kiểm tra thông báo lỗi khi nhập sai.",
             "parentId": "undefined"
           },
@@ -1644,7 +1644,7 @@
               2
             ],
             "details": "Sử dụng thư viện hỗ trợ đọc/ghi file CSV/Excel. Xây dựng UI cho phép chọn file, xác thực dữ liệu trước khi import, hiển thị tiến trình và kết quả import/export. Kết nối server actions để xử lý dữ liệu.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra import/export với file mẫu, xác thực dữ liệu, xử lý lỗi nhập sai, xác nhận dữ liệu được cập nhật đúng.",
             "parentId": "undefined"
           },
@@ -1656,7 +1656,7 @@
               2
             ],
             "details": "Tạo form nhập liệu, bảng danh sách loại chi phí, các nút thao tác CRUD. Kết nối server actions để đồng bộ dữ liệu với backend. Áp dụng best practices về quản lý state, xác thực dữ liệu và xử lý lỗi.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Thực hiện các thao tác CRUD trên danh mục, xác nhận dữ liệu cập nhật đúng trên UI và backend, kiểm tra thông báo lỗi khi nhập sai.",
             "parentId": "undefined"
           }
@@ -1681,7 +1681,7 @@
             "description": "Tạo thư mục và file trang tại 'app/(features)/crm/managements/inventory/'. Thiết lập cấu trúc cơ bản cho trang quản lý kho.",
             "dependencies": [],
             "details": "Tạo mới thư mục inventory trong đúng đường dẫn. Khởi tạo file index.tsx (hoặc tương đương) và các file cấu hình cần thiết. Đảm bảo trang có thể truy cập được từ hệ thống routing hiện tại.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra truy cập được trang inventory qua URL, xác nhận cấu trúc thư mục đúng chuẩn.",
             "parentId": "undefined"
           },
@@ -1693,7 +1693,7 @@
               1
             ],
             "details": "Sử dụng shadcn/ui hoặc Tailwind CSS để thiết kế giao diện nhất quán. Tạo component chính quản lý state tab hiện tại. Mỗi tab là một component riêng biệt, dễ bảo trì và mở rộng.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra hiển thị đúng các tab, chuyển đổi tab mượt mà, giao diện đồng nhất với hệ thống.",
             "parentId": "undefined"
           },
@@ -1705,7 +1705,7 @@
               2
             ],
             "details": "Sử dụng server actions từ crm-actions.ts (task 16) để thao tác dữ liệu. Mỗi tab triển khai form nhập liệu, bảng dữ liệu, nút thao tác CRUD. Đảm bảo xử lý lỗi và hiển thị thông báo rõ ràng.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Thực hiện các thao tác CRUD trên từng tab, xác nhận dữ liệu cập nhật đúng trên UI và backend.",
             "parentId": "undefined"
           },
@@ -1717,7 +1717,7 @@
               3
             ],
             "details": "Tích hợp thư viện đọc/ghi file CSV/XLSX. Xây dựng UI cho import/export, xác thực dữ liệu trước khi lưu, cung cấp file mẫu cho người dùng. Hiển thị lỗi rõ ràng khi dữ liệu không hợp lệ.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra import/export với file mẫu, xác thực dữ liệu và xử lý các trường hợp nhập sai định dạng.",
             "parentId": "undefined"
           },
@@ -1729,7 +1729,7 @@
               4
             ],
             "details": "Tích hợp kiểm tra quyền người dùng trước khi hiển thị hoặc cho phép thao tác nhạy cảm. Thêm loading skeleton, xác nhận khi xóa, cập nhật UI ngay sau thao tác CRUD. Đảm bảo code tách biệt logic và UI, dễ mở rộng.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra phân quyền với các vai trò khác nhau, xác nhận UI phản hồi đúng, loading skeleton hiển thị hợp lý, xác nhận khi xóa và cập nhật UI tức thì.",
             "parentId": "undefined"
           }
@@ -2237,7 +2237,7 @@
             "description": "Implement getMessageHistory() for Facebook, Zalo, and TikTok to complete full integration.",
             "dependencies": [],
             "details": "Use pseudocode provided in the current implementation as a guide for developing platform-specific methods.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test each platform method to ensure correct message history retrieval and integration.",
             "parentId": "undefined"
           }
@@ -2284,7 +2284,7 @@
             "description": "Tạo hàm xây dựng URL ủy quyền TikTok, sử dụng client key, redirect URI và các tham số cần thiết theo chuẩn OAuth 2.0.",
             "dependencies": [],
             "details": "Tham khảo tài liệu TikTok để xác định các tham số bắt buộc như client_key, redirect_uri, scope, response_type, state, code_challenge, code_challenge_method. Đảm bảo redirect URI đã được đăng ký hợp lệ và các tham số được encode đúng chuẩn. Có thể sử dụng hàm tạo state ngẫu nhiên để chống CSRF.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra URL sinh ra có đầy đủ tham số, đúng định dạng, và redirect URI hợp lệ. So sánh với ví dụ trong tài liệu TikTok[2][3][6].",
             "parentId": "undefined"
           },
@@ -2296,7 +2296,7 @@
               1
             ],
             "details": "Sử dụng framework backend (ví dụ: Express, NestJS) để tạo endpoint GET `/api/auth/tiktok/start`. Khi nhận request, gọi hàm xây dựng URL ủy quyền (từ bước 1), sau đó trả về response redirect (HTTP 302) đến URL này. Đảm bảo lưu lại state vào cookie/session để xác thực sau khi TikTok redirect về.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Gửi request đến endpoint và xác nhận trình duyệt được chuyển hướng đúng đến trang ủy quyền TikTok với đầy đủ tham số. Kiểm tra state được lưu đúng cách để chống CSRF[2][3][5].",
             "parentId": "undefined"
           }
@@ -2324,7 +2324,7 @@
             "description": "Xử lý request callback từ TikTok, trích xuất mã ủy quyền từ query parameters.",
             "dependencies": [],
             "details": "Viết logic để nhận và kiểm tra mã ủy quyền từ URL callback, đảm bảo mã hợp lệ và xử lý các trường hợp lỗi.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra với các mã hợp lệ và không hợp lệ, kiểm tra khi không có mã trong query.",
             "parentId": "undefined"
           },
@@ -2336,7 +2336,7 @@
               1
             ],
             "details": "Thực hiện POST request đến endpoint TikTok OAuth token với các tham số cần thiết, xử lý phản hồi và trích xuất token.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Mock API response từ TikTok, kiểm tra xử lý thành công và lỗi.",
             "parentId": "undefined"
           },
@@ -2348,7 +2348,7 @@
               2
             ],
             "details": "Gọi phương thức lưu trữ trong SocialAuthRepository, đảm bảo dữ liệu được lưu đúng định dạng và liên kết với user.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra dữ liệu được lưu chính xác trong MongoDB, kiểm tra xử lý lỗi khi lưu.",
             "parentId": "undefined"
           }
@@ -2410,7 +2410,7 @@
         "dependencies": [
           "62"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -2418,7 +2418,7 @@
             "description": "Xây dựng logic backend để nhận file video từ người dùng, kiểm tra định dạng và kích thước, lưu tạm file trước khi gửi lên TikTok.",
             "dependencies": [],
             "details": "Sử dụng middleware hoặc controller để xử lý upload file, kiểm tra định dạng MP4/H.264, giới hạn kích thước, lưu file tạm trên server.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm thử với các file video hợp lệ và không hợp lệ, kiểm tra xử lý lỗi khi upload.",
             "parentId": "undefined"
           },
@@ -2430,7 +2430,7 @@
               1
             ],
             "details": "Sử dụng TikTokIntegration.publish() để gọi API TikTok, truyền thông tin video, tiêu đề, hashtag, đảm bảo có access token và open ID hợp lệ.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm thử với các thông tin hợp lệ và không hợp lệ, kiểm tra phản hồi từ API.",
             "parentId": "undefined"
           },
@@ -2442,7 +2442,7 @@
               2
             ],
             "details": "Phân tích phản hồi API, trích xuất permalink và video ID, cập nhật thông tin vào cơ sở dữ liệu CRM.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm thử với phản hồi API thành công và thất bại, kiểm tra việc lưu thông tin vào CRM.",
             "parentId": "undefined"
           }
@@ -2461,7 +2461,7 @@
         "dependencies": [
           "63"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -2469,7 +2469,7 @@
             "description": "Thực hiện gọi API TikTok Display API endpoint /video/query/ để lấy các chỉ số tương tác như lượt thích, lượt xem, lượt chia sẻ và bình luận cho các video đã đăng.",
             "dependencies": [],
             "details": "Sử dụng access token hợp lệ, gọi POST /v2/video/query/ với danh sách video_ids và các trường cần lấy (id, like_count, comment_count, share_count, view_count). Xử lý phản hồi JSON và trích xuất dữ liệu cần thiết.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra API trả về dữ liệu đúng định dạng và đầy đủ các chỉ số cho từng video.",
             "parentId": "undefined"
           },
@@ -2481,7 +2481,7 @@
               1
             ],
             "details": "Chuyển đổi dữ liệu từ phản hồi API thành định dạng phù hợp với dashboard CRM, cập nhật vào cơ sở dữ liệu hoặc giao diện người dùng.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra dữ liệu hiển thị trên dashboard chính xác với dữ liệu từ API.",
             "parentId": "undefined"
           }
@@ -2508,7 +2508,7 @@
             "description": "Xây dựng logic kiểm tra thời hạn hiệu lực của token TikTok, xác định khi nào cần làm mới token.",
             "dependencies": [],
             "details": "Viết hàm hoặc job kiểm tra thời gian hết hạn của token trong MongoDB, so sánh với thời gian hiện tại để xác định cần refresh.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra bằng cách tạo token có thời hạn ngắn và xác minh cơ chế phát hiện hết hạn.",
             "parentId": "undefined"
           },
@@ -2520,7 +2520,7 @@
               1
             ],
             "details": "Sử dụng refresh_token để gọi endpoint refresh token của TikTok, xử lý phản hồi và lỗi từ API.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm thử bằng cách mô phỏng API TikTok trả về token mới và xử lý các trường hợp lỗi.",
             "parentId": "undefined"
           },
@@ -2532,7 +2532,7 @@
               2
             ],
             "details": "Cập nhật bản ghi token trong MongoDB với access_token, refresh_token, thời gian hết hạn mới.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra việc cập nhật token mới và xác minh dữ liệu trong MongoDB.",
             "parentId": "undefined"
           }
@@ -2579,7 +2579,7 @@
             "description": "Tạo giao diện người dùng cho phép người dùng bắt đầu quá trình kết nối tài khoản TikTok với CRM.",
             "dependencies": [],
             "details": "Thiết kế một trang hoặc modal trong CRM, bao gồm nút 'Kết nối TikTok', hướng dẫn người dùng và các trường cần thiết để bắt đầu OAuth.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra giao diện hiển thị đúng, nút kết nối hoạt động và chuyển hướng đúng đến endpoint OAuth.",
             "parentId": "undefined"
           },
@@ -2591,7 +2591,7 @@
               1
             ],
             "details": "Cập nhật giao diện để phản ánh trạng thái kết nối: chờ, đang chuyển hướng, đã kết nối hoặc lỗi, sử dụng biểu tượng và thông báo phù hợp.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra từng trạng thái được hiển thị chính xác khi thay đổi trạng thái kết nối.",
             "parentId": "undefined"
           },
@@ -2603,7 +2603,7 @@
               2
             ],
             "details": "Viết logic xử lý trạng thái kết nối, cập nhật UI và thông báo người dùng khi trạng thái thay đổi, đảm bảo trải nghiệm người dùng mượt mà.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm thử toàn bộ luồng trạng thái, đảm bảo UI phản hồi chính xác với từng trạng thái.",
             "parentId": "undefined"
           }
@@ -2631,7 +2631,7 @@
             "description": "Xác định và cấu hình các quyền truy cập cho từng vai trò (Admin, Social Marketing) đối với các tính năng kết nối TikTok, tải video và xem phân tích.",
             "dependencies": [],
             "details": "Phân tích các tính năng TikTok cần kiểm soát truy cập. Thiết lập bảng phân quyền trong hệ thống, đảm bảo chỉ những vai trò phù hợp (Admin, Social Marketing) mới có quyền sử dụng các tính năng: kết nối TikTok, tải video, xem analytics. Áp dụng kiểm tra quyền ở tầng backend và frontend.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Kiểm tra bằng cách đăng nhập với từng vai trò và xác nhận chỉ những vai trò được phép mới truy cập được các tính năng TikTok.",
             "parentId": "undefined"
           },
@@ -2643,7 +2643,7 @@
               1
             ],
             "details": "Tích hợp kiểm tra quyền vào các API và giao diện người dùng. Khi người dùng thực hiện thao tác (kết nối, tải video, xem analytics), hệ thống phải xác thực vai trò và từ chối truy cập nếu không đủ quyền. Ghi log các lần truy cập bị từ chối để phục vụ kiểm tra bảo mật.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Thử truy cập các tính năng TikTok với tài khoản không đủ quyền để xác nhận hệ thống từ chối đúng và ghi nhận sự kiện.",
             "parentId": "undefined"
           }
@@ -2690,7 +2690,7 @@
         "dependencies": [
           "70"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2703,7 +2703,7 @@
         "dependencies": [
           "71"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2716,7 +2716,7 @@
         "dependencies": [
           "72"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2729,7 +2729,7 @@
         "dependencies": [
           "73"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2742,7 +2742,7 @@
         "dependencies": [
           "74"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2771,7 +2771,7 @@
           "71",
           "73"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2784,7 +2784,7 @@
         "dependencies": [
           "72"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2805,7 +2805,7 @@
           "77",
           "78"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2836,7 +2836,7 @@
         "id": "82",
         "title": "Implement Webhook Handler",
         "description": "Develop a function to handle incoming webhooks and process messages, including support for channelId, delivery/read/postback events, and a fire-and-forget pattern for platforms like Facebook, TikTok, and Zalo.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "80",
           "81"
@@ -2851,7 +2851,7 @@
             "description": "Modify the existing webhook handler to include channelId in the processing logic.",
             "dependencies": [],
             "details": "Ensure that the channelId is correctly extracted and utilized in the `handleIncomingWebhook` function.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test with mock payloads containing channelId to verify correct processing.",
             "parentId": "undefined"
           },
@@ -2861,7 +2861,7 @@
             "description": "Add support for handling delivery, read, and postback events in the webhook handler.",
             "dependencies": [],
             "details": "Extend the `handleIncomingWebhook` function to process these events and update the system accordingly.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Use mock events to ensure they are processed and logged correctly.",
             "parentId": "undefined"
           },
@@ -2871,7 +2871,7 @@
             "description": "Ensure the webhook handler uses a fire-and-forget pattern for processing.",
             "dependencies": [],
             "details": "Optimize the `handleIncomingWebhook` function to process incoming data asynchronously without blocking.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify that the handler processes incoming data efficiently without delays.",
             "parentId": "undefined"
           }
@@ -2881,7 +2881,7 @@
         "id": "83",
         "title": "Develop ReceiveMessageUseCase",
         "description": "Implement the use case for receiving messages according to the new domain model with enhanced multi-channel support.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "80",
           "81",
@@ -2917,7 +2917,7 @@
         "dependencies": [
           "84"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2931,7 +2931,7 @@
           "82",
           "83"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2944,7 +2944,7 @@
         "dependencies": [
           "85"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2957,7 +2957,7 @@
         "dependencies": [
           "86"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -2974,7 +2974,7 @@
           "85",
           "86"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -3095,7 +3095,7 @@
         "dependencies": [
           "96"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -3131,7 +3131,7 @@
             "description": "Review the existing database schema to identify necessary changes for platform-specific configurations.",
             "dependencies": [],
             "details": "Examine the SocialAuth domain entity and identify where new fields can be added.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Ensure the schema review covers all current use cases.",
             "parentId": "undefined"
           },
@@ -3143,7 +3143,7 @@
               1
             ],
             "details": "Create a detailed schema design document outlining the new fields and their data types.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Review the design document with the team to ensure completeness.",
             "parentId": "undefined"
           },
@@ -3155,7 +3155,7 @@
               2
             ],
             "details": "Use migration scripts to update the database schema without affecting existing data.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Run migration scripts in a test environment to verify changes.",
             "parentId": "undefined"
           },
@@ -3167,7 +3167,7 @@
               3
             ],
             "details": "Update the SocialAuthService and SocialAuthRepository to include methods for new fields.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Write unit tests to verify the new methods work as expected.",
             "parentId": "undefined"
           },
@@ -3179,7 +3179,7 @@
               4
             ],
             "details": "Test the application with existing data to ensure no disruptions occur.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Perform regression testing to confirm backward compatibility.",
             "parentId": "undefined"
           }
@@ -3238,7 +3238,7 @@
         "dependencies": [
           "103"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -3251,7 +3251,7 @@
         "dependencies": [
           "104"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -3264,7 +3264,7 @@
         "dependencies": [
           "105"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -3277,7 +3277,7 @@
         "dependencies": [
           "106"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -3290,7 +3290,7 @@
         "dependencies": [
           "107"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -3303,15 +3303,763 @@
         "dependencies": [
           "108"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
+      },
+      {
+        "id": "110",
+        "title": "Create Settings Modal Component",
+        "description": "Develop a modal component for settings in the CRM campaigns page.",
+        "details": "Create a new component `PostContentSettings.tsx` with a form containing fields for product description, niche, style, and language. Implement state management to handle form inputs and save settings to localStorage or user preferences.",
+        "testStrategy": "Test the modal for correct rendering, input handling, and data persistence in localStorage.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:05:51.108Z"
+      },
+      {
+        "id": "111",
+        "title": "Add Settings Button to Page",
+        "description": "Add a settings button to the CRM campaigns page to open the settings modal.",
+        "details": "In `page.tsx`, add a settings icon button that triggers the `PostContentSettings` modal. Ensure the button is styled according to the existing UI guidelines.",
+        "testStrategy": "Verify the button appears correctly and opens the settings modal on click.",
+        "priority": "medium",
+        "dependencies": [
+          "110"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:05:56.074Z"
+      },
+      {
+        "id": "112",
+        "title": "Convert PostForm to Modal",
+        "description": "Transform the PostForm component to open as a modal dialog.",
+        "details": "Wrap the existing `<PostForm />` component in a Dialog/Modal component. Ensure it is triggered by the 'Create New Post' button.",
+        "testStrategy": "Check that the PostForm opens as a modal and functions correctly within the modal context.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:06:01.068Z"
+      },
+      {
+        "id": "113",
+        "title": "Trigger PostForm Modal from Button",
+        "description": "Ensure the 'Create New Post' button opens the PostForm as a modal.",
+        "details": "Modify the 'Create New Post' button in `page.tsx` to open the PostForm modal. Ensure seamless integration with the existing UI.",
+        "testStrategy": "Test that clicking the 'Create New Post' button opens the PostForm modal without errors.",
+        "priority": "medium",
+        "dependencies": [
+          "112"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:31:13.237Z"
+      },
+      {
+        "id": "114",
+        "title": "Load Settings in PostForm",
+        "description": "Load user settings into the PostForm when it opens.",
+        "details": "Modify `PostForm.tsx` to load settings from localStorage or user preferences when the modal opens. Populate the form fields with these settings.",
+        "testStrategy": "Ensure the form fields in PostForm are pre-filled with the correct settings from localStorage.",
+        "priority": "medium",
+        "dependencies": [
+          "110",
+          "112"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:31:17.834Z"
+      },
+      {
+        "id": "115",
+        "title": "Implement Product Description Field",
+        "description": "Add and handle the product description field in the settings modal.",
+        "details": "Ensure the product description field is functional in `PostContentSettings.tsx`, with validation and state management.",
+        "testStrategy": "Test input validation and data persistence for the product description field.",
+        "priority": "medium",
+        "dependencies": [
+          "110"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:31:22.524Z"
+      },
+      {
+        "id": "116",
+        "title": "Implement Niche/Category Field",
+        "description": "Add and manage the niche/category field in the settings modal.",
+        "details": "Add a dropdown or input for niche/category in `PostContentSettings.tsx`. Implement state management and persistence.",
+        "testStrategy": "Verify the niche/category field functions correctly and saves data as expected.",
+        "priority": "medium",
+        "dependencies": [
+          "110"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:31:27.077Z"
+      },
+      {
+        "id": "117",
+        "title": "Implement Content Style Field",
+        "description": "Add and manage the content style field in the settings modal.",
+        "details": "Add a selection input for content style in `PostContentSettings.tsx`. Ensure proper state management and persistence.",
+        "testStrategy": "Test the content style field for correct input handling and data saving.",
+        "priority": "medium",
+        "dependencies": [
+          "110"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:31:31.756Z"
+      },
+      {
+        "id": "118",
+        "title": "Implement Language Selection",
+        "description": "Add and handle the language selection field in the settings modal.",
+        "details": "Provide options for Vietnamese and English in the language selection field. Ensure state management and persistence in `PostContentSettings.tsx`.",
+        "testStrategy": "Check that language selection works correctly and persists the chosen language.",
+        "priority": "medium",
+        "dependencies": [
+          "110"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:31:36.721Z"
+      },
+      {
+        "id": "119",
+        "title": "Integrate Settings with PostForm",
+        "description": "Ensure settings from the modal are applied to the PostForm.",
+        "details": "Modify `PostForm.tsx` to apply settings from the modal to the form fields when creating a new post.",
+        "testStrategy": "Test that changes in settings are reflected in the PostForm when it is opened.",
+        "priority": "medium",
+        "dependencies": [
+          "114"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:31:41.266Z"
+      },
+      {
+        "id": "120",
+        "title": "Rename and Setup PostScheduler Component",
+        "description": "Rename PostList.tsx to PostScheduler.tsx and set up the calendar component.",
+        "details": "Rename the file from PostList.tsx to PostScheduler.tsx. Import FullCalendar components: @fullcalendar/react and @fullcalendar/daygrid. Initialize the calendar with the initialView set to 'dayGridMonth'.",
+        "testStrategy": "Verify that the component is renamed and the calendar displays correctly with the month view.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T07:15:13.266Z"
+      },
+      {
+        "id": "121",
+        "title": "Transform Posts into Calendar Events",
+        "description": "Map Post objects to calendar event format for display on the calendar.",
+        "details": "Create a function to map Post[] to calendar events. Each event should have an id, title, start date, backgroundColor, and extendedProps containing the post object.",
+        "testStrategy": "Check that posts are correctly transformed into events and displayed on the calendar with appropriate colors.",
+        "priority": "high",
+        "dependencies": [
+          "120"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T07:15:18.166Z"
+      },
+      {
+        "id": "122",
+        "title": "Implement Date Click Handler",
+        "description": "Handle clicks on calendar dates to open a modal for creating or editing posts.",
+        "details": "Implement the dateClick handler to open the PostForm modal. Pass the clicked date as scheduledAt. Check post status to determine if editing is allowed.",
+        "testStrategy": "Click on a date and verify that the modal opens with the correct date. Ensure editing is only allowed for non-published posts.",
+        "priority": "high",
+        "dependencies": [
+          "121"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T07:15:23.172Z"
+      },
+      {
+        "id": "123",
+        "title": "Ensure ScheduledAt is Required in PostForm",
+        "description": "Update Post domain to make scheduledAt a required field when using the scheduler.",
+        "details": "Modify the PostForm component to require the scheduledAt field. Ensure validation is in place to prevent form submission without this field.",
+        "testStrategy": "Attempt to submit the PostForm without a scheduledAt date and verify that validation prevents submission.",
+        "priority": "medium",
+        "dependencies": [
+          "122"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:31:57.347Z"
+      },
+      {
+        "id": "124",
+        "title": "Display Posts on Calendar by Scheduled Date",
+        "description": "Ensure posts are displayed on the calendar according to their scheduled dates.",
+        "details": "Use the start date from the calendar events to position posts on the calendar. Ensure each post is displayed on its scheduled date.",
+        "testStrategy": "Verify that each post appears on the correct date in the calendar view.",
+        "priority": "high",
+        "dependencies": [
+          "121"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T07:15:28.049Z"
+      },
+      {
+        "id": "125",
+        "title": "Limit Posts Per Day",
+        "description": "Restrict the number of posts displayed per day to 1-2.",
+        "details": "Implement logic to limit the number of posts shown per day to a maximum of two. Consider UI adjustments if more posts are scheduled.",
+        "testStrategy": "Schedule multiple posts on the same day and ensure only up to two are displayed.",
+        "priority": "medium",
+        "dependencies": [
+          "124"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:32:01.963Z"
+      },
+      {
+        "id": "126",
+        "title": "Implement Post Viewing Restrictions",
+        "description": "Restrict editing of posts that are already published.",
+        "details": "Check the status of each post's platforms. If any platform is published, disable editing in the PostForm modal.",
+        "testStrategy": "Attempt to edit a published post and verify that editing is disabled.",
+        "priority": "medium",
+        "dependencies": [
+          "122"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:32:06.456Z"
+      },
+      {
+        "id": "127",
+        "title": "Integrate Platform Colors",
+        "description": "Use platform-specific colors for post backgrounds in the calendar.",
+        "details": "Assign background colors to calendar events based on the platform associated with each post. Use a predefined color scheme for consistency.",
+        "testStrategy": "Verify that each post displays with the correct background color according to its platform.",
+        "priority": "low",
+        "dependencies": [
+          "121"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:32:11.210Z"
+      },
+      {
+        "id": "128",
+        "title": "Test Calendar Month View",
+        "description": "Ensure the calendar displays correctly in month view with all functionalities.",
+        "details": "Test the calendar's month view to ensure all posts are displayed correctly, and interactions like date clicks function as expected.",
+        "testStrategy": "Perform a comprehensive test of the month view, checking for correct post display and interaction handling.",
+        "priority": "high",
+        "dependencies": [
+          "120",
+          "124"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T07:15:33.495Z"
+      },
+      {
+        "id": "129",
+        "title": "Finalize and Review Implementation",
+        "description": "Conduct a final review of the implementation to ensure all requirements are met.",
+        "details": "Review the entire implementation against the PRD requirements. Ensure all functionalities are working as expected and make any necessary adjustments.",
+        "testStrategy": "Conduct a final walkthrough of the application, verifying that all features are implemented and functioning correctly.",
+        "priority": "high",
+        "dependencies": [
+          "128"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T08:32:15.919Z"
+      },
+      {
+        "id": "130",
+        "title": "Create Use Case for AI Content Generation",
+        "description": "Develop the use case for generating AI-based social media content.",
+        "details": "Implement the `GeneratePostContentUseCase` class in `generate-post-content.ts`. This should include loading settings, building the prompt, calling the AI service, and parsing the response using the provided schema.",
+        "testStrategy": "Write unit tests to ensure the prompt is correctly built and the response is parsed as expected.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T09:01:46.012Z"
+      },
+      {
+        "id": "131",
+        "title": "Implement Dependencies Factory",
+        "description": "Set up the dependencies factory for the content generation use case.",
+        "details": "Create a function `createGeneratePostContentUseCase` in `depends.ts` that returns an instance of `GeneratePostContentUseCase`. Ensure it correctly initializes the use case with necessary dependencies.",
+        "testStrategy": "Test the factory to ensure it returns a properly initialized use case instance.",
+        "priority": "medium",
+        "dependencies": [
+          "130"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T09:02:34.926Z"
+      },
+      {
+        "id": "132",
+        "title": "Develop Server Action for Content Generation",
+        "description": "Create a server action to handle AI content generation requests.",
+        "details": "In `actions.ts`, implement `generatePostContentAction` to invoke the use case and handle success or error responses. Ensure it returns the generated content or an error message.",
+        "testStrategy": "Test the server action by simulating requests and verifying correct responses for both success and error scenarios.",
+        "priority": "high",
+        "dependencies": [
+          "131"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T09:03:36.103Z"
+      },
+      {
+        "id": "133",
+        "title": "Integrate AI Button in PostForm UI",
+        "description": "Add a button to trigger AI content generation in the PostForm component.",
+        "details": "Update `PostForm.tsx` to include a 'Generate with AI' button. Implement the `handleGenerateAI` function to manage the button's click event, calling the server action and updating the UI state.",
+        "testStrategy": "Perform UI tests to ensure the button appears correctly and triggers the content generation process.",
+        "priority": "medium",
+        "dependencies": [
+          "132"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T09:08:17.663Z"
+      },
+      {
+        "id": "134",
+        "title": "Implement Loading State in PostForm",
+        "description": "Add a loading state to the PostForm to indicate AI generation is in progress.",
+        "details": "Modify `PostForm.tsx` to include a loading spinner when the AI generation is in progress. Use the `isGenerating` state to toggle the spinner.",
+        "testStrategy": "Test the UI to ensure the loading spinner appears and disappears correctly during the generation process.",
+        "priority": "medium",
+        "dependencies": [
+          "133"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T09:08:23.663Z"
+      },
+      {
+        "id": "135",
+        "title": "Add Variations Selector in PostForm",
+        "description": "Enable selection of content variations in the PostForm component.",
+        "details": "Update `PostForm.tsx` to display a selector for content variations if they exist. Use the `variations` state to manage the available options.",
+        "testStrategy": "Test the UI to ensure variations are displayed and selectable when available.",
+        "priority": "medium",
+        "dependencies": [
+          "134"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T09:08:29.649Z"
+      },
+      {
+        "id": "136",
+        "title": "Validate AI Content Generation Flow",
+        "description": "Conduct end-to-end testing of the AI content generation feature.",
+        "details": "Perform comprehensive testing of the entire content generation flow, from button click to content display. Ensure all components interact correctly and handle errors gracefully.",
+        "testStrategy": "Execute integration tests covering all user interactions and edge cases.",
+        "priority": "high",
+        "dependencies": [
+          "135"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T09:08:35.597Z"
+      },
+      {
+        "id": "137",
+        "title": "Optimize Prompt Building Logic",
+        "description": "Refine the logic for building AI prompts to improve content quality.",
+        "details": "Review and optimize the prompt construction in `GeneratePostContentUseCase` to enhance the relevance and creativity of generated content.",
+        "testStrategy": "Test various prompt configurations to evaluate improvements in generated content quality.",
+        "priority": "low",
+        "dependencies": [
+          "130"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T14:18:58.962Z"
+      },
+      {
+        "id": "138",
+        "title": "Enhance Error Handling in Server Action",
+        "description": "Improve error handling mechanisms in the server action for robustness.",
+        "details": "Enhance `generatePostContentAction` to provide more detailed error messages and handle different failure scenarios more gracefully.",
+        "testStrategy": "Simulate error conditions and verify that informative error messages are returned.",
+        "priority": "low",
+        "dependencies": [
+          "132"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T14:19:05.633Z"
+      },
+      {
+        "id": "139",
+        "title": "Document AI Content Generation Feature",
+        "description": "Create comprehensive documentation for the AI content generation feature.",
+        "details": "Document the architecture, use case, server action, and UI integration of the AI content generation feature. Include usage instructions and troubleshooting tips.",
+        "testStrategy": "Review documentation for completeness and clarity, ensuring it covers all aspects of the feature.",
+        "priority": "low",
+        "dependencies": [
+          "136"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T14:19:12.460Z"
+      },
+      {
+        "id": "140",
+        "title": "Implement GeneratePostContentUseCase",
+        "description": "Create the use case for generating post content using AI.",
+        "details": "Implement the GeneratePostContentUseCase class in TypeScript. This class should load settings, build a prompt, call the AI service, and parse the response using zod for validation.",
+        "testStrategy": "Write unit tests to ensure the prompt is correctly built and the response is parsed and validated as expected.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T13:48:46.242Z"
+      },
+      {
+        "id": "141",
+        "title": "Create Dependencies Factory",
+        "description": "Set up a factory for creating instances of GeneratePostContentUseCase.",
+        "details": "Implement the createGeneratePostContentUseCase function in depends.ts to return an instance of GeneratePostContentUseCase.",
+        "testStrategy": "Test the factory to ensure it returns a valid instance of GeneratePostContentUseCase.",
+        "priority": "medium",
+        "dependencies": [
+          "140"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T13:48:52.543Z"
+      },
+      {
+        "id": "142",
+        "title": "Develop Server Action for Content Generation",
+        "description": "Create a server action to handle content generation requests.",
+        "details": "Implement generatePostContentAction in actions.ts to use the GeneratePostContentUseCase for generating content based on provided parameters.",
+        "testStrategy": "Test the server action to ensure it correctly handles requests and returns the expected results.",
+        "priority": "medium",
+        "dependencies": [
+          "141"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T13:48:58.814Z"
+      },
+      {
+        "id": "143",
+        "title": "Integrate AI Button into PostForm UI",
+        "description": "Add a 'Generate with AI' button to the PostForm component.",
+        "details": "Update PostForm.tsx to include a button that triggers content generation. Manage loading state and display generated variations.",
+        "testStrategy": "Perform UI tests to ensure the button appears correctly and triggers the generation process.",
+        "priority": "medium",
+        "dependencies": [
+          "142"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T13:49:06.394Z"
+      },
+      {
+        "id": "144",
+        "title": "Implement Structured Memory with MongoDB",
+        "description": "Migrate brand memory from localStorage to MongoDB.",
+        "details": "Create domain entities and repositories for brand memory. Implement server actions to load and save brand memory data.",
+        "testStrategy": "Test CRUD operations for brand memory to ensure data is correctly stored and retrieved from MongoDB.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Domain Entities for Brand Memory",
+            "description": "Define and model the domain entities representing brand memory data to be stored in MongoDB.",
+            "dependencies": [],
+            "details": "Analyze the current brand memory structure in localStorage and design equivalent domain entities with appropriate fields and data types for MongoDB storage, ensuring they support future CRUD operations and scalability.",
+            "status": "done",
+            "testStrategy": "Review entity schema correctness and consistency with existing data models.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T13:50:30.304Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement Brand Memory Repositories",
+            "description": "Develop repository classes to handle CRUD operations for brand memory entities in MongoDB.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create repository interfaces and implementations that interact with MongoDB collections to load, save, update, and delete brand memory data, using efficient queries and indexes to optimize performance.",
+            "status": "done",
+            "testStrategy": "Unit test repository methods for correct data persistence and retrieval.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T13:51:41.953Z"
+          },
+          {
+            "id": 3,
+            "title": "Develop Server Actions for Loading Brand Memory",
+            "description": "Implement server-side actions to load brand memory data from MongoDB for client consumption.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create API endpoints or server functions that query the brand memory repositories to fetch data, handle errors, and return structured responses to clients requesting brand memory.",
+            "status": "done",
+            "testStrategy": "Integration tests to verify correct data loading and response formatting.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T13:52:16.074Z"
+          },
+          {
+            "id": 4,
+            "title": "Develop Server Actions for Saving Brand Memory",
+            "description": "Implement server-side actions to save or update brand memory data into MongoDB.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create API endpoints or server functions that accept brand memory data from clients, validate inputs, and use repositories to persist changes in MongoDB, ensuring data integrity and concurrency control.",
+            "status": "done",
+            "testStrategy": "Integration tests to verify data saving, validation, and error handling.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T13:53:45.566Z"
+          },
+          {
+            "id": 5,
+            "title": "Test CRUD Operations for Brand Memory in MongoDB",
+            "description": "Perform comprehensive testing of create, read, update, and delete operations for brand memory data in MongoDB.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Execute end-to-end tests covering all CRUD operations through server actions and repositories, verifying data correctness, consistency, and performance in MongoDB.",
+            "status": "done",
+            "testStrategy": "Automated tests simulating client requests and verifying database state and responses.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T13:56:46.778Z"
+          }
+        ],
+        "updatedAt": "2025-12-03T13:56:46.778Z"
+      },
+      {
+        "id": "145",
+        "title": "Set Up Semantic Memory with Qdrant",
+        "description": "Implement a vector database for semantic memory to prevent content duplication.",
+        "details": "Set up Qdrant and implement services for storing and querying content embeddings. Integrate with the content generation use case.",
+        "testStrategy": "Test embedding storage and similarity checks to ensure content duplication is effectively managed.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up Qdrant Cloud Cluster and Obtain Credentials",
+            "description": "Create a Qdrant Cloud account, set up a new cluster, and obtain the API key and cluster URL for access.",
+            "dependencies": [],
+            "details": "Sign up on Qdrant Cloud platform, navigate to the Clusters section, create a new cluster with an appropriate name, then copy the API key and cluster URL. Store these securely for later use, preferably in environment variables.",
+            "status": "done",
+            "testStrategy": "Verify that the cluster is accessible via the Qdrant console and that API key and URL are correctly stored.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T14:01:35.960Z"
+          },
+          {
+            "id": 2,
+            "title": "Configure Development Environment and Install Dependencies",
+            "description": "Prepare the local development environment by creating a virtual environment and installing required libraries for Qdrant integration.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a Python virtual environment (or equivalent), then install necessary packages such as qdrant-client, python-dotenv, and any embedding libraries. Load environment variables from a .env file containing the Qdrant credentials.",
+            "status": "done",
+            "testStrategy": "Test that the environment activates correctly and that the Qdrant client library can be imported without errors.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T14:02:48.477Z"
+          },
+          {
+            "id": 3,
+            "title": "Implement Qdrant Client Initialization and Connection Verification",
+            "description": "Write code to instantiate the Qdrant client using stored credentials and verify successful connection to the cluster.",
+            "dependencies": [
+              2
+            ],
+            "details": "Use the Qdrant client SDK to create a client instance with the API key and cluster URL. Implement a connection test by listing collections or pinging the cluster to confirm connectivity.",
+            "status": "done",
+            "testStrategy": "Run unit tests to confirm client instantiation and successful connection to the Qdrant cluster.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T14:04:14.055Z"
+          },
+          {
+            "id": 4,
+            "title": "Create Vector Collection and Define Schema for Content Embeddings",
+            "description": "Create a vector collection in Qdrant with appropriate vector size and distance metric to store content embeddings.",
+            "dependencies": [
+              3
+            ],
+            "details": "Determine the embedding vector dimensionality based on the embedding model used. Define the collection with a suitable distance metric (e.g., cosine similarity). Use the Qdrant client to create the collection programmatically.",
+            "status": "done",
+            "testStrategy": "Verify collection creation by querying the list of collections and checking the collection schema matches specifications.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T14:05:13.416Z"
+          },
+          {
+            "id": 5,
+            "title": "Implement Services for Storing and Querying Content Embeddings and Integrate with Content Generation",
+            "description": "Develop backend services to store new content embeddings and query existing embeddings to detect duplicates, integrating these services with the content generation workflow.",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement functions to add vectors with metadata to the Qdrant collection and to perform similarity searches to identify duplicate content. Integrate these services into the content generation use case to prevent duplication.",
+            "status": "done",
+            "testStrategy": "Test embedding storage and similarity queries to ensure duplicates are detected and prevented during content generation.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T14:06:48.681Z"
+          }
+        ],
+        "updatedAt": "2025-12-03T14:06:48.681Z"
+      },
+      {
+        "id": "146",
+        "title": "Develop Episodic Memory for Multi-pass Generation",
+        "description": "Implement short-term memory for multi-pass content generation.",
+        "details": "Create a caching service to store intermediate results of multi-pass generation. Implement use cases for each generation pass.",
+        "testStrategy": "Test the caching mechanism to ensure intermediate results are stored and cleared correctly.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design caching service architecture for multi-pass generation",
+            "description": "Define the architecture and data structures for a caching service to store intermediate results during multi-pass content generation.",
+            "dependencies": [],
+            "details": "Specify the caching mechanism, data format for intermediate results, expiration policies, and interfaces for storing and retrieving cached data to support multiple generation passes efficiently.",
+            "status": "done",
+            "testStrategy": "Verify caching service can store and retrieve intermediate results correctly under various load conditions.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T14:11:00.626Z"
+          },
+          {
+            "id": 2,
+            "title": "Implement caching service for storing intermediate generation results",
+            "description": "Develop the caching service based on the designed architecture to store intermediate outputs of each generation pass.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement the caching logic, including APIs for saving, retrieving, and clearing intermediate results. Ensure thread safety and performance optimization for quick access during multi-pass generation.",
+            "status": "done",
+            "testStrategy": "Unit test caching APIs for correctness, concurrency, and performance benchmarks.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T14:11:08.063Z"
+          },
+          {
+            "id": 3,
+            "title": "Develop use cases for each generation pass utilizing episodic memory",
+            "description": "Implement specific use cases that leverage the caching service to enable multi-pass content generation with short-term memory.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create use case modules that interact with the caching service to read and write intermediate results for each pass, ensuring proper sequencing and data consistency across passes.",
+            "status": "done",
+            "testStrategy": "Test use cases to confirm correct usage of cached data and proper multi-pass generation flow.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T14:12:22.033Z"
+          },
+          {
+            "id": 4,
+            "title": "Integrate episodic memory caching with multi-pass generation workflow",
+            "description": "Integrate the caching service and use cases into the existing multi-pass generation pipeline to enable episodic memory functionality.",
+            "dependencies": [
+              3
+            ],
+            "details": "Modify the generation pipeline to invoke caching service at appropriate stages, handle cache hits/misses, and manage lifecycle of cached data during generation.",
+            "status": "done",
+            "testStrategy": "Perform integration testing to validate end-to-end multi-pass generation with episodic memory support.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T14:14:32.268Z"
+          },
+          {
+            "id": 5,
+            "title": "Test and validate caching mechanism and episodic memory functionality",
+            "description": "Conduct comprehensive testing to ensure intermediate results are stored, retrieved, and cleared correctly, and that multi-pass generation behaves as expected.",
+            "dependencies": [
+              4
+            ],
+            "details": "Develop test cases covering caching correctness, data integrity, cache expiration, error handling, and overall multi-pass generation quality with episodic memory.",
+            "status": "done",
+            "testStrategy": "Execute unit, integration, and system tests; verify caching behavior and generation output consistency across multiple passes.",
+            "parentId": "undefined",
+            "updatedAt": "2025-12-03T14:14:41.591Z"
+          }
+        ],
+        "updatedAt": "2025-12-03T14:14:41.591Z"
+      },
+      {
+        "id": "147",
+        "title": "Enhance PostForm with Generation Progress UI",
+        "description": "Add UI elements to display the progress of multi-pass content generation.",
+        "details": "Update PostForm.tsx to show progress indicators for each generation pass. Display warnings for similar content.",
+        "testStrategy": "Perform UI tests to ensure progress indicators and warnings are displayed correctly.",
+        "priority": "medium",
+        "dependencies": [
+          "143",
+          "146"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T14:16:10.398Z"
+      },
+      {
+        "id": "148",
+        "title": "Integration Testing for Content Generation Flow",
+        "description": "Conduct integration tests for the entire content generation process.",
+        "details": "Test the complete flow from UI interaction to content generation and storage. Ensure all components work together seamlessly.",
+        "testStrategy": "Perform end-to-end tests to validate the integration of all components in the content generation process.",
+        "priority": "medium",
+        "dependencies": [
+          "144",
+          "145",
+          "146",
+          "147"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T14:16:19.133Z"
+      },
+      {
+        "id": "149",
+        "title": "Add Unit Tests for New Features",
+        "description": "Implement unit tests for new functionalities added during development.",
+        "details": "Write unit tests for each new class and function to ensure they perform as expected under various conditions.",
+        "testStrategy": "Run unit tests to verify the correctness and reliability of each individual component.",
+        "priority": "medium",
+        "dependencies": [
+          "140",
+          "141",
+          "142",
+          "144",
+          "145",
+          "146"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-12-03T14:16:26.410Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-12-01T11:51:54.309Z",
-      "taskCount": 109,
-      "completedCount": 84,
+      "lastModified": "2025-12-03T14:19:12.465Z",
+      "taskCount": 149,
+      "completedCount": 148,
       "tags": [
         "master"
       ]
