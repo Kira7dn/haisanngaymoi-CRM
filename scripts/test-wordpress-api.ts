@@ -2,8 +2,8 @@
  * Test script to verify WordPress API connection
  */
 
-const siteId = "245226340";
-const accessToken = "(mSoJ^Z%ESrBE^fvm6H^m5HQLczcolBWZPCB2LwGT%ny5lBMYF)BxRpQa7v!Ou(a";
+const wpSiteId = "245226340";
+const wpAccessToken = "(mSoJ^Z%ESrBE^fvm6H^m5HQLczcolBWZPCB2LwGT%ny5lBMYF)BxRpQa7v!Ou(a";
 
 async function testWordPressAPI() {
   console.log("Testing WordPress.com API...\n");
@@ -12,9 +12,9 @@ async function testWordPressAPI() {
   console.log("1. Checking site info...");
   try {
     const siteRes = await fetch(
-      `https://public-api.wordpress.com/rest/v1.1/sites/${siteId}`,
+      `https://public-api.wordpress.com/rest/v1.1/sites/${wpSiteId}`,
       {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${wpAccessToken}` },
       }
     );
 
@@ -28,9 +28,9 @@ async function testWordPressAPI() {
   console.log("\n2. Checking posts endpoint...");
   try {
     const postsRes = await fetch(
-      `https://public-api.wordpress.com/rest/v1.1/sites/${siteId}/posts`,
+      `https://public-api.wordpress.com/rest/v1.1/sites/${wpSiteId}/posts`,
       {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${wpAccessToken}` },
       }
     );
 
@@ -44,11 +44,11 @@ async function testWordPressAPI() {
   console.log("\n3. Testing POST to create post...");
   try {
     const createRes = await fetch(
-      `https://public-api.wordpress.com/rest/v1.1/sites/${siteId}/posts/new`,
+      `https://public-api.wordpress.com/rest/v1.1/sites/${wpSiteId}/posts/new`,
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${wpAccessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

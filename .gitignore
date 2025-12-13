@@ -72,3 +72,6 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+
+# scripts
+scripts/
