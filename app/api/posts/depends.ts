@@ -1,5 +1,5 @@
 import { PostRepository } from "@/infrastructure/repositories/marketing/post-repo";
-import type { PostService } from "@/core/application/interfaces/marketing/post-service";
+import type { PostRepo } from "@/core/application/interfaces/marketing/post-repo";
 
 import { GetPostsUseCase } from "@/core/application/usecases/marketing/post/get-posts";
 import { CreatePostUseCase } from "@/core/application/usecases/marketing/post/create-post";
@@ -11,15 +11,28 @@ import { getPostingAdapterFactory } from "@/infrastructure/adapters/external/soc
 import { BullMQAdapter } from "@/infrastructure/queue/bullmq-adapter";
 import type { QueueService } from "@/core/application/interfaces/shared/queue-service";
 
-// Khởi tạo các dependencies một lần duy nhất
-let postServiceInstance: PostService | null = null;
+/**
+ * Dependencies Initialization (Singleton Pattern)
+ *
+ * 📌 PlatformPostingAdapterFactory - Auto Token Management
+ * ✅ Auto-fetches SocialAuth from DB using platform + userId
+ * ✅ Auto-checks token expiration (isTokenExpired)
+ * ✅ Auto-refreshes token when needed (OAuthAdapter.refreshToken)
+ * ✅ Auto-updates refreshed token in DB (SocialAuthRepository.refreshToken)
+ * ✅ Caches adapters for performance optimization
+ *
+ * Usage in use cases:
+ *   const adapter = await factory.create(platform, userId);
+ *   // No need to manually handle token refresh!
+ */
+let postServiceInstance: PostRepo | null = null;
 let queueServiceInstance: QueueService | null = null;
 const platformFactoryInstance: PostingAdapterFactory = getPostingAdapterFactory();
 
 /**
  * Lấy hoặc tạo mới instance của PostService
  */
-const getPostService = async (): Promise<PostService> => {
+const getPostService = async (): Promise<PostRepo> => {
   if (!postServiceInstance) {
     postServiceInstance = new PostRepository();
   }

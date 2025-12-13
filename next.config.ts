@@ -5,8 +5,7 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '100mb',
-    },
-    serverComponentsExternalPackages: ["pdf-parse"],
+    }
   },
   serverExternalPackages: ['instrumentation'],
   allowedDevOrigins: ["crm.linkstrategy.io.vn"],

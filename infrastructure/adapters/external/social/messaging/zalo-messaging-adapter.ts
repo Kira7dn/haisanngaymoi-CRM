@@ -1,11 +1,13 @@
 import type { SendMessageResult } from "@/core/application/interfaces/messaging/messaging-adapter";
-import type { ZaloAuthService } from "../auth/zalo-auth-service";
 import { BaseMessagingAdapter } from "./messaging-service";
 
 export class ZaloMessagingAdapter extends BaseMessagingAdapter {
   platform = "zalo" as const;
 
-  constructor(private auth: ZaloAuthService) {
+  constructor(
+    private token: string,
+    private pageId: string
+  ) {
     super();
   }
 
@@ -21,7 +23,7 @@ export class ZaloMessagingAdapter extends BaseMessagingAdapter {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          access_token: this.auth.getAccessToken(),
+          access_token: this.token,
         },
       });
 
@@ -52,7 +54,7 @@ export class ZaloMessagingAdapter extends BaseMessagingAdapter {
 
       const url = `https://openapi.zalo.me/v2.0/oa/message`;
       const params = new URLSearchParams({
-        access_token: this.auth.getAccessToken(),
+        access_token: this.token,
       });
 
       const response = await fetch(`${url}?${params.toString()}`, {

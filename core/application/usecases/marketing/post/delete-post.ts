@@ -1,4 +1,4 @@
-import type { PostService } from "@/core/application/interfaces/marketing/post-service"
+import type { PostRepo } from "@/core/application/interfaces/marketing/post-repo"
 import type { Platform } from "@/core/domain/marketing/post"
 import type { PostingAdapterFactory } from "@/core/application/interfaces/marketing/posting-adapter"
 
@@ -16,14 +16,14 @@ export interface DeletePostResponse {
 
 export class DeletePostUseCase {
   constructor(
-    private postService: PostService,
+    private postRepo: PostRepo,
     private platformFactory: PostingAdapterFactory
   ) { }
 
   async execute(request: DeletePostRequest): Promise<DeletePostResponse> {
     console.log(`[DeletePostUseCase] Starting delete for post:`, { postId: request.id, userId: request.userId });
 
-    const post = await this.postService.getById(request.id);
+    const post = await this.postRepo.getById(request.id);
 
     if (!post) {
       return { success: false, error: "Post not found" };
@@ -76,7 +76,7 @@ export class DeletePostUseCase {
     }
 
     // 2️⃣ Xóa trong CRM
-    const deletedInCRM = await this.postService.delete(request.id);
+    const deletedInCRM = await this.postRepo.delete(request.id);
 
     return {
       success: deletedInCRM && allPlatformsSucceeded,

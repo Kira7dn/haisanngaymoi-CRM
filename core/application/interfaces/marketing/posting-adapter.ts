@@ -6,10 +6,9 @@ import type { Platform, PostMetrics, PostMedia } from "@/core/domain/marketing/p
 export interface PostingPublishRequest {
   title: string;
   body?: string;
-  media: PostMedia[];
+  media?: PostMedia;
   hashtags: string[];
   mentions: string[];
-  scheduledAt?: Date;
 }
 
 /**
@@ -26,7 +25,7 @@ export interface PostingPublishResponse {
  * Posting Service Interface
  * Defines contract for publishing content to social platforms
  */
-export interface PostingService {
+export interface PostingAdapter {
   platform: Platform;
 
   /**
@@ -49,10 +48,6 @@ export interface PostingService {
    */
   getMetrics(postId: string): Promise<PostMetrics>;
 
-  /**
-   * Verify authentication/access token
-   */
-  verifyAuth(): Promise<boolean>;
 }
 
 /**
@@ -60,9 +55,7 @@ export interface PostingService {
  * Creates posting adapters for different platforms
  */
 export interface PostingAdapterFactory {
-  create(platform: Platform, userId: string): Promise<PostingService>;
+  create(platform: Platform, userId: string): Promise<PostingAdapter>;
   clearCache(): void;
   clearUserCache(platform: Platform, userId: string): void;
-  getSupportedPlatforms(): Platform[];
-  isSupported(platform: Platform): boolean;
 }

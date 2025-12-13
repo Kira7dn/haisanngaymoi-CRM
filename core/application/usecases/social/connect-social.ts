@@ -1,12 +1,13 @@
-import type { SocialAuth, SocialPlatform } from "@/core/domain/social/social-auth"
-import type { SocialAuthService, SocialAuthPayload } from "@/core/application/interfaces/social/social-auth-service"
+import type { SocialAuth } from "@/core/domain/social/social-auth"
+import type { SocialAuthRepo, SocialAuthPayload } from "@/core/application/interfaces/social/social-auth-repo"
 import { validateSocialAuth, calculateExpiresAt } from "@/core/domain/social/social-auth"
 import { ObjectId } from "mongodb"
-import { OAuthAdapterResolver } from "../../interfaces/social/oauth-adapter-resolver"
+import { Platform } from "@/core/domain/marketing/post"
+import { OAuthAdapterResolver } from "../../interfaces/social/platform-oauth-adapter"
 
 export interface ConnectSocialAccountRequest {
     userId: ObjectId
-    platform: SocialPlatform
+    platform: Platform
     code: string
 }
 
@@ -20,7 +21,7 @@ export interface ConnectSocialAccountResponse {
 export class ConnectSocialAccountUseCase {
     constructor(
         private readonly resolver: OAuthAdapterResolver,   // platform-specific OAuth client
-        private readonly repo: SocialAuthService // DB repository
+        private readonly repo: SocialAuthRepo // DB repository
     ) { }
 
     async execute(
@@ -51,7 +52,8 @@ export class ConnectSocialAccountUseCase {
             const expiresAt = calculateExpiresAt(tokenResult.expiresIn)
 
             // Extract page name and scope from raw data if available
-            const pageName = tokenResult.raw?.pages?.[0]?.name ||
+            const pageName = tokenResult.raw?.page?.name || // Instagram Business Login flow
+                tokenResult.raw?.pages?.[0]?.name || // Facebook Pages flow
                 tokenResult.raw?.channel_name ||
                 tokenResult.raw?.pageName || ""
             const scope = tokenResult.raw?.scope || tokenResult.scope || ""

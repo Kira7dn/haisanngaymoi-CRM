@@ -3,9 +3,9 @@
 ## Checklist
 
 ### 1. Domain Layer
-- [ ] Update `SocialPlatform` type trong [core/domain/social/social-auth.ts](core/domain/social/social-auth.ts)
+- [ ] Update `Platform` type trong [core/domain/social/social-auth.ts](core/domain/social/social-auth.ts)
   ```ts
-  export type SocialPlatform = "tiktok" | "facebook" | "youtube" | "zalo" | "wordpress";
+  export type Platform = "tiktok" | "facebook" | "youtube" | "zalo" | "wordpress";
   ```
 
 ### 2. Infrastructure Layer - OAuth Gateway

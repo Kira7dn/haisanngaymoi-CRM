@@ -1,15 +1,15 @@
-import type { SocialAuth, SocialPlatform } from "@/core/domain/social/social-auth";
+import type { SocialAuth } from "@/core/domain/social/social-auth";
 import type {
-    SocialAuthService,
+    SocialAuthRepo,
     RefreshTokenPayload,
-} from "@/core/application/interfaces/social/social-auth-service";
-import type { PlatformOAuthAdapter } from "@/core/application/interfaces/social/platform-oauth-adapter";
+} from "@/core/application/interfaces/social/social-auth-repo";
 import { ObjectId } from "mongodb";
-import { OAuthAdapterResolver } from "../../interfaces/social/oauth-adapter-resolver";
+import { Platform } from "@/core/domain/marketing/post";
+import { OAuthAdapterResolver } from "../../interfaces/social/platform-oauth-adapter";
 
 export interface RefreshTokenRequest {
     userId: ObjectId;
-    platform: SocialPlatform;
+    platform: Platform;
 }
 
 export interface RefreshTokenResponse {
@@ -21,7 +21,7 @@ export interface RefreshTokenResponse {
 export class RefreshTokenUseCase {
     constructor(
         private readonly resolver: OAuthAdapterResolver, // Adapter (provider API)
-        private readonly repo: SocialAuthService         // Repository (MongoDB)
+        private readonly repo: SocialAuthRepo         // Repository (MongoDB)
     ) { }
 
     async execute(request: RefreshTokenRequest): Promise<RefreshTokenResponse> {

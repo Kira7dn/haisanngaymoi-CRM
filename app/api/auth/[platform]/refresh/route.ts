@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
-import type { SocialPlatform } from "@/core/domain/social/social-auth"
 import { createRefreshTokenUseCase, redirectWithError } from "../depends"
 import { ObjectId } from "mongodb"
+import { Platform } from "@/core/domain/marketing/post"
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ platform: SocialPlatform }> }
+  { params }: { params: Promise<{ platform: Platform }> }
 ) {
   const { platform } = await params
   const baseUrl = process.env.APP_URL || request.nextUrl.origin

@@ -1,3 +1,5 @@
+import { Platform } from "@/core/domain/marketing/post";
+
 /**
  * Platform OAuth Adapter
  * Stateless interface for all social platform OAuth flows
@@ -54,4 +56,8 @@ export interface PlatformOAuthAdapter {
     accessToken: string,
     refreshToken?: string
   ): Promise<boolean>;
+}
+
+export interface OAuthAdapterResolver {
+  getAdapter(platform: Platform): Promise<PlatformOAuthAdapter>;
 }

@@ -1,6 +1,5 @@
 import { Worker, Job, Queue } from 'bullmq'
 import Redis from 'ioredis'
-import { PostingAdapterFactory } from '@/core/application/interfaces/marketing/posting-adapter'
 import { PostRepository } from '@/infrastructure/repositories/marketing/post-repo'
 import { getPostingAdapterFactory } from '@/infrastructure/adapters/external/social/factories/posting-adapter-factory'
 import type { Platform } from '@/core/domain/marketing/post'
@@ -83,7 +82,7 @@ export const initializeScheduledPostWorker = (): Worker => {
             const result = await adapter.publish({
               title: post.title ?? '',
               body: post.body,
-              media: post.media ?? [],
+              media: post.media, // media is single object or undefined
               hashtags: post.hashtags ?? [],
               mentions: post.mentions ?? [],
             })

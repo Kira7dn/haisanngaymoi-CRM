@@ -75,27 +75,23 @@ export default function PostDetailModal({ post, onClose }: PostDetailModalProps)
           )}
 
           {/* Media */}
-          {post.media.length > 0 && (
+          {post.media && (
             <div>
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Media ({post.media.length})
+                Media
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {post.media.map((media, idx) => (
-                  <div key={idx} className="border rounded-lg overflow-hidden">
-                    {media.type === 'video' ? (
-                      <div className="aspect-video bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                        <video src={media.url} controls className="w-full h-full" />
-                      </div>
-                    ) : (
-                      <img
-                        src={media.url}
-                        alt={`Media ${idx + 1}`}
-                        className="w-full aspect-video object-cover"
-                      />
-                    )}
+              <div className="border rounded-lg overflow-hidden">
+                {post.media.type === 'video' ? (
+                  <div className="aspect-video bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                    <video src={post.media.url} controls className="w-full h-full" />
                   </div>
-                ))}
+                ) : (
+                  <img
+                    src={post.media.url}
+                    alt="Media"
+                    className="w-full aspect-video object-cover"
+                  />
+                )}
               </div>
             </div>
           )}
@@ -261,15 +257,6 @@ export default function PostDetailModal({ post, onClose }: PostDetailModalProps)
             </div>
           )}
 
-          {/* Campaign Link */}
-          {post.campaignId && (
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Linked Campaign
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">Campaign ID: {post.campaignId}</p>
-            </div>
-          )}
         </div>
 
         {/* Footer */}

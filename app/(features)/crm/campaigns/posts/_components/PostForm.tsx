@@ -43,7 +43,7 @@ export default function PostForm({
   const [isSubmitting, startTransition] = useTransition()
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(post?.platforms.map(p => p.platform) || [])
   const [contentType, setContentType] = useState<ContentType>(post?.contentType || 'post')
-  const [media, setMedia] = useState<PostMedia | null>(post?.media?.[0] || null)
+  const [media, setMedia] = useState<PostMedia | null>(post?.media || null)
   const [hashtags, setHashtags] = useState(post?.hashtags?.join(' ') || '')
 
   const [scheduledAt, setScheduledAt] = useState(

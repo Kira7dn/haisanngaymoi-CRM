@@ -1,4 +1,5 @@
-import type { SocialAuth, SocialPlatform } from "@/core/domain/social/social-auth";
+import { Platform } from "@/core/domain/marketing/post";
+import type { SocialAuth } from "@/core/domain/social/social-auth";
 import { ObjectId } from "mongodb";
 
 /**
@@ -11,7 +12,7 @@ export interface SocialAuthPayload extends Partial<SocialAuth> { }
  */
 export interface RefreshTokenPayload {
   userId: ObjectId;
-  platform: SocialPlatform;
+  platform: Platform;
   newAccessToken: string;
   newRefreshToken?: string;   // some platforms don't return refresh token
   expiresInSeconds: number;
@@ -22,7 +23,7 @@ export interface RefreshTokenPayload {
  * Handles all database operations for SocialAuth
  * (UseCases orchestrate flow; repo only does persistence)
  */
-export interface SocialAuthService {
+export interface SocialAuthRepo {
   /** ──────────────────────────────────────────────────────────────
    * Basic CRUD Operations
    * ───────────────────────────────────────────────────────────────
@@ -31,12 +32,12 @@ export interface SocialAuthService {
 
   getByUserAndPlatform(
     userId: ObjectId,
-    platform: SocialPlatform
+    platform: Platform
   ): Promise<SocialAuth | null>;
 
   getByChannelAndPlatform(
     channelId: string,
-    platform: SocialPlatform
+    platform: Platform
   ): Promise<SocialAuth | null>;
 
   create(payload: SocialAuthPayload): Promise<SocialAuth>;
@@ -51,7 +52,7 @@ export interface SocialAuthService {
    */
   deleteByUserAndPlatform(
     userId: ObjectId,
-    platform: SocialPlatform
+    platform: Platform
   ): Promise<boolean>;
 
   /**
@@ -62,5 +63,5 @@ export interface SocialAuthService {
 
   getAllByUser(userId: ObjectId): Promise<SocialAuth[]>;
 
-  getAllByPlatform(platform: SocialPlatform): Promise<SocialAuth[]>;
+  getAllByPlatform(platform: Platform): Promise<SocialAuth[]>;
 }

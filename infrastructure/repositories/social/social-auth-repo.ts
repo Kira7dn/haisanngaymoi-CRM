@@ -1,17 +1,17 @@
-import type { SocialAuth, SocialPlatform } from "@/core/domain/social/social-auth"
+import type { SocialAuth } from "@/core/domain/social/social-auth"
 import { calculateExpiresAt } from "@/core/domain/social/social-auth"
 import type {
-  SocialAuthService,
+  SocialAuthRepo,
   SocialAuthPayload,
   RefreshTokenPayload,
-} from "@/core/application/interfaces/social/social-auth-service"
+} from "@/core/application/interfaces/social/social-auth-repo"
 import { ObjectId } from "mongodb"
 import { BaseRepository } from "@/infrastructure/db/base-repository"
+import { Platform } from "@/core/domain/marketing/post"
 
 export class SocialAuthRepository
   extends BaseRepository<SocialAuth, ObjectId>
-  implements SocialAuthService
-{
+  implements SocialAuthRepo {
   protected collectionName = "social_auth"
 
   // Get social auth by ID
@@ -25,7 +25,7 @@ export class SocialAuthRepository
   // Get social auth by user and platform
   async getByUserAndPlatform(
     userId: ObjectId,
-    platform: SocialPlatform
+    platform: Platform
   ): Promise<SocialAuth | null> {
     const collection = await this.getCollection()
 
@@ -36,7 +36,7 @@ export class SocialAuthRepository
   // Get social auth by channel ID (openId) and platform
   async getByChannelAndPlatform(
     channelId: string,
-    platform: SocialPlatform
+    platform: Platform
   ): Promise<SocialAuth | null> {
     const collection = await this.getCollection()
 
@@ -106,7 +106,7 @@ export class SocialAuthRepository
   // Delete social auth by user and platform (for disconnect feature)
   async deleteByUserAndPlatform(
     userId: ObjectId,
-    platform: SocialPlatform
+    platform: Platform
   ): Promise<boolean> {
     const collection = await this.getCollection()
 
@@ -189,7 +189,7 @@ export class SocialAuthRepository
   }
 
   // Get all social auth records for a platform
-  async getAllByPlatform(platform: SocialPlatform): Promise<SocialAuth[]> {
+  async getAllByPlatform(platform: Platform): Promise<SocialAuth[]> {
     const collection = await this.getCollection()
 
     const docs = await collection

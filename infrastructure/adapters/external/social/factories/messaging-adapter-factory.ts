@@ -1,57 +1,53 @@
-import type { Platform } from "@/core/domain/messaging/message";
-import type { SocialPlatform } from "@/core/domain/social/social-auth";
 import type { MessagingService, MessagingAdapterFactory } from "@/core/application/interfaces/messaging/messaging-adapter";
-import type { PlatformOAuthService } from "@/core/application/interfaces/social/platform-oauth-adapter";
+import type { Platform } from "@/core/domain/marketing/post";
+import { isTokenExpired } from "@/core/domain/social/social-auth";
+import { SocialAuthRepository } from "@/infrastructure/repositories/social/social-auth-repo";
+import { OAuthAdapterFactory } from "./oauth-adapter-factory";
 
 /**
  * Platform Messaging Adapter Factory
- * Creates messaging adapters with shared authentication service
+ * Creates messaging adapters with automatic token validation and refresh
  */
 export class PlatformMessagingAdapterFactory implements MessagingAdapterFactory {
-  // Cache key: `${platform}-${channelId}`
-  private authServices: Map<string, PlatformOAuthService> = new Map();
   private messagingAdapters: Map<string, MessagingService> = new Map();
+  private socialAuthRepo: SocialAuthRepository;
+
+  constructor() {
+    this.socialAuthRepo = new SocialAuthRepository();
+  }
 
   async create(platform: Platform, channelId: string): Promise<MessagingService> {
+    // Validate platform
+    const socialPlatform = this.validateSocialPlatform(platform);
     const cacheKey = `${platform}-${channelId}`;
+
+    // Get auth data from database by channel ID
+    let auth = await this.socialAuthRepo.getByChannelAndPlatform(channelId, socialPlatform);
+
+    if (!auth) {
+      throw new Error(`${platform} channel not connected: ${channelId}`);
+    }
+
+    // Check if token is expired and refresh if needed
+    if (isTokenExpired(auth.expiresAt)) {
+      console.log(`Token expired for ${platform} (channel: ${channelId}), refreshing...`);
+      auth = await this.refreshTokenIfNeeded(socialPlatform, auth);
+
+      // Clear cache to force recreation with new token
+      this.messagingAdapters.delete(cacheKey);
+    }
 
     // Return cached adapter if exists
     if (this.messagingAdapters.has(cacheKey)) {
       return this.messagingAdapters.get(cacheKey)!;
     }
 
-    // Get or create auth service
-    const authService = await this.getOrCreateAuthService(platform, channelId);
+    // Extract token and create adapter
+    const token = auth.accessToken;
+    const pageId = auth.openId;
 
-    // Create messaging adapter with auth service
-    let adapter: MessagingService;
-
-    switch (platform) {
-      case "facebook": {
-        const { FacebookMessagingAdapter } = await import("../messaging/facebook-messaging-adapter");
-        adapter = new FacebookMessagingAdapter(authService as any);
-        break;
-      }
-
-      case "tiktok": {
-        const { TikTokMessagingAdapter } = await import("../messaging/tiktok-messaging-adapter");
-        adapter = new TikTokMessagingAdapter(authService as any);
-        break;
-      }
-
-      case "zalo": {
-        const { ZaloMessagingAdapter } = await import("../messaging/zalo-messaging-adapter");
-        adapter = new ZaloMessagingAdapter(authService as any);
-        break;
-      }
-
-      case "website":
-      case "telegram":
-        throw new Error(`${platform} messaging not yet implemented`);
-
-      default:
-        throw new Error(`Unsupported platform for messaging: ${platform}`);
-    }
+    // Create messaging adapter with simple token
+    const adapter = await this.createMessagingAdapter(socialPlatform, token, pageId);
 
     // Cache the adapter
     this.messagingAdapters.set(cacheKey, adapter);
@@ -59,101 +55,90 @@ export class PlatformMessagingAdapterFactory implements MessagingAdapterFactory 
   }
 
   /**
-   * Create messaging adapter using system credentials (for messaging without user context)
+   * Validate and convert platform to social platform
    */
-  // async createForMessaging(platform: Platform, channelId: string): Promise<MessagingService> {
-  //   return this.create(platform, userId);
-  // }
-
-  private async getOrCreateAuthService(
-    platform: Platform,
-    channelId: string
-  ): Promise<PlatformOAuthService> {
-    const cacheKey = `${platform}-${channelId}`;
-
-    if (this.authServices.has(cacheKey)) {
-      return this.authServices.get(cacheKey)!;
-    }
-
-    // Filter out non-social platforms
+  private validateSocialPlatform(platform: Platform): Platform {
     if (platform === "website" || platform === "telegram") {
       throw new Error(`Platform ${platform} does not support social auth messaging`);
     }
+    return platform as Platform;
+  }
 
-    // Get auth data from database by channel ID
-    const { SocialAuthRepository } = await import("@/infrastructure/repositories/social/social-auth-repo");
-
-    const repo = new SocialAuthRepository();
-    const auth = await repo.getByChannelAndPlatform(channelId, platform as SocialPlatform);
-
-    if (!auth) {
-      throw new Error(`${platform} channel not connected: ${channelId}`);
+  /**
+   * Refresh token if expired
+   */
+  private async refreshTokenIfNeeded(platform: Platform, auth: any) {
+    if (!auth.refreshToken && !auth.accessToken) {
+      throw new Error(`Cannot refresh token for ${platform}: No refresh token or access token available`);
     }
 
-    if (new Date() >= auth.expiresAt) {
-      throw new Error(`${platform} token has expired. Please reconnect your account.`);
+    try {
+      const oauthAdapter = await new OAuthAdapterFactory().getAdapter(platform);
+
+      // Use refreshToken if available, otherwise use accessToken (for Facebook)
+      const tokenToRefresh = auth.refreshToken || auth.accessToken;
+
+      if (!oauthAdapter.refreshToken) {
+        throw new Error(`Platform ${platform} does not support token refresh`);
+      }
+
+      const refreshResult = await oauthAdapter.refreshToken(tokenToRefresh);
+
+      // Update token in database
+      const updatedAuth = await this.socialAuthRepo.refreshToken({
+        userId: auth.userId,
+        platform: auth.platform,
+        newAccessToken: refreshResult.accessToken,
+        newRefreshToken: refreshResult.refreshToken || auth.refreshToken || auth.accessToken,
+        expiresInSeconds: refreshResult.expiresIn,
+      });
+
+      if (!updatedAuth) {
+        throw new Error(`Failed to update refreshed token in database for ${platform}`);
+      }
+
+      console.log(`Token refreshed successfully for ${platform} (channel: ${auth.openId})`);
+      return updatedAuth;
+
+    } catch (error) {
+      console.error(`Failed to refresh token for ${platform}:`, error);
+      throw new Error(`Token refresh failed for ${platform}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
 
-    let authService: PlatformOAuthService;
-
+  /**
+   * Create platform-specific messaging adapter
+   */
+  private async createMessagingAdapter(
+    platform: Platform,
+    token: string,
+    pageId: string
+  ): Promise<MessagingService> {
     switch (platform) {
       case "facebook": {
-        const { FacebookAuthService } = await import("../auth/facebook-auth-service");
-        authService = new FacebookAuthService({
-          appId: process.env.FACEBOOK_APP_ID || "",
-          appSecret: process.env.FACEBOOK_APP_SECRET || "",
-          pageId: auth.openId,
-          accessToken: auth.accessToken,
-          expiresAt: auth.expiresAt,
-        });
-        break;
+        const { FacebookMessagingAdapter } = await import("../messaging/facebook-messaging-adapter");
+        return new FacebookMessagingAdapter(token, pageId);
       }
 
       case "tiktok": {
-        const { TikTokAuthService } = await import("../auth/tiktok-auth-service");
-        authService = new TikTokAuthService({
-          clientKey: process.env.TIKTOK_CLIENT_KEY || "",
-          clientSecret: process.env.TIKTOK_CLIENT_SECRET || "",
-          accessToken: auth.accessToken,
-          refreshToken: auth.refreshToken,
-          expiresAt: auth.expiresAt,
-        });
-        break;
+        const { TikTokMessagingAdapter } = await import("../messaging/tiktok-messaging-adapter");
+        return new TikTokMessagingAdapter(token);
       }
 
       case "zalo": {
-        const { ZaloAuthService } = await import("../auth/zalo-auth-service");
-        authService = new ZaloAuthService({
-          appId: process.env.ZALO_APP_ID || "",
-          appSecret: process.env.ZALO_APP_SECRET || "",
-          pageId: auth.openId,
-          accessToken: auth.accessToken,
-          expiresAt: auth.expiresAt,
-          refreshToken: auth.refreshToken,
-        });
-        break;
+        const { ZaloMessagingAdapter } = await import("../messaging/zalo-messaging-adapter");
+        return new ZaloMessagingAdapter(token, pageId);
       }
 
       default:
-        throw new Error(`Unsupported platform: ${platform}`);
+        throw new Error(`Unsupported platform for messaging: ${platform}`);
     }
-
-    this.authServices.set(cacheKey, authService);
-    return authService;
   }
 
   clearCache(): void {
-    this.authServices.clear();
     this.messagingAdapters.clear();
   }
 
-  getSupportedPlatforms(): Platform[] {
-    return ["facebook", "tiktok", "zalo"];
-  }
-
-  isSupported(platform: Platform): boolean {
-    return this.getSupportedPlatforms().includes(platform);
-  }
 }
 
 /**

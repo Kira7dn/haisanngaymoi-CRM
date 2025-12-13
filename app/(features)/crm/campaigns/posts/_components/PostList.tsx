@@ -189,8 +189,8 @@ export default function PostList({ initialPosts }: { initialPosts: Post[] }) {
                     ) : (
                       <span>Created: {new Date(post.createdAt).toLocaleDateString()}</span>
                     )}
-                    {post.media.length > 0 && (
-                      <span>{post.media.length} media file{post.media.length > 1 ? 's' : ''}</span>
+                    {post.media && (
+                      <span>Media attached</span>
                     )}
                   </div>
                 </div>

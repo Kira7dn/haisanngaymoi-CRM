@@ -1,401 +1,271 @@
-import type { PostMetrics, PostMedia } from "@/core/domain/marketing/post";
-import type { WordPressAuthService } from "../auth/wordpress-auth-service";
-import { BasePostingAdapter } from "./base-posting-service";
-import type { PostingPublishRequest, PostingPublishResponse } from "@/core/application/interfaces/marketing/posting-adapter";
+import type { PostMetrics } from "@/core/domain/marketing/post";
+import type {
+    PostingAdapter,
+    PostingPublishRequest,
+    PostingPublishResponse,
+} from "@/core/application/interfaces/marketing/posting-adapter";
+
+/**
+ * WordPress site configuration
+ */
+interface WordPressSiteConfig {
+    siteId?: string;      // WordPress.com
+    siteUrl?: string;     // Self-hosted
+}
 
 interface WordPressPostResponse {
-    ID?: number; // WordPress.com uses uppercase ID
-    id?: number; // Self-hosted uses lowercase id
-    title: string;
-    content: string;
-    status: string;
-    URL?: string; // WordPress.com uses uppercase URL
-    link?: string; // Self-hosted uses lowercase link
-    date: string;
-    modified: string;
-    featured_media?: number;
-    categories?: number[];
-    tags?: number[];
+    ID?: number;          // wp.com
+    id?: number;          // self-hosted
+    link?: string;
+    URL?: string;
     comment_count?: number;
     error?: string;
     message?: string;
 }
 
+interface WordPressPostPayload {
+    title: string;
+    content: string;
+    status: "publish" | "draft";
+    excerpt?: string;
+}
+
 /**
  * WordPress Posting Adapter
- * Handles publishing content to WordPress sites (both WordPress.com and self-hosted)
+ * - Supports WordPress.com & self-hosted
+ * - No auth verification
+ * - No logging
  */
-export class WordPressPostingAdapter extends BasePostingAdapter {
+export class WordPressPostingAdapter implements PostingAdapter {
     platform = "wordpress" as const;
 
-    constructor(private auth: WordPressAuthService) {
-        super();
-    }
+    constructor(
+        private readonly token: string,
+        private readonly siteConfig: WordPressSiteConfig
+    ) { }
 
-    private getAuthData() {
-        // Determine token type based on available data
-        const authData = this.auth.getAuthData();
-        const isWpCom = !!authData.siteId && !authData.siteUrl?.includes('wp-json');
+    // ======================================================
+    // Publish
+    // ======================================================
 
-        return {
-            accessToken: this.auth.getAccessToken(),
-            tokenType: isWpCom ? "wpcom" as const : "self-host" as const,
-            siteUrl: authData.siteUrl,
-            siteId: authData.siteId,
-        };
-    }
-
-    private getEndpoint(path: string): string {
-        const auth = this.getAuthData();
-
-        this.log("Building WordPress endpoint", {
-            tokenType: auth.tokenType,
-            hasSiteId: !!auth.siteId,
-            hasSiteUrl: !!auth.siteUrl,
-            siteId: auth.siteId,
-            siteUrl: auth.siteUrl,
-            path,
-        });
-
-        if (auth.tokenType === "wpcom") {
-            if (!auth.siteId) {
-                throw new Error("Site ID is required for WordPress.com");
+    async publish(
+        request: PostingPublishRequest
+    ): Promise<PostingPublishResponse> {
+        try {
+            if (!request.title && !request.body) {
+                return this.fail("Title or body is required for WordPress post");
             }
 
-            // For WordPress.com, use /posts/new for creating new posts
-            const endpointPath = path === "posts" ? "posts/new" : path;
-            const endpoint = `https://public-api.wordpress.com/rest/v1.1/sites/${auth.siteId}/${endpointPath}`;
+            const payload = this.buildPayload(request);
+            // WordPress.com requires /posts/new endpoint for creating posts
+            const endpoint = this.endpoint(this.isWpCom() ? "posts/new" : "posts");
 
-            this.log("WordPress.com endpoint", {
+            console.log("[WordPress] Publishing post:", {
                 endpoint,
-                originalPath: path,
-                finalPath: endpointPath,
-                note: "Using /posts/new for creating posts on WordPress.com"
+                siteConfig: this.siteConfig,
+                payload: { ...payload, content: payload.content?.substring(0, 50) + "..." }
             });
 
-            return endpoint;
-        } else {
-            if (!auth.siteUrl) {
-                throw new Error("Site URL is required for self-hosted WordPress");
+            const data = await this.post<WordPressPostResponse>(
+                endpoint,
+                payload
+            );
+
+            console.log("[WordPress] Publish response:", data);
+
+            if (data.error) {
+                return this.fail(data.error || data.message);
             }
-            const endpoint = `${auth.siteUrl.replace(/\/$/, "")}/wp-json/wp/v2/${path}`;
-            this.log("Self-hosted WordPress endpoint", { endpoint });
-            return endpoint;
+
+            return this.success(data);
+        } catch (error) {
+            console.error("[WordPress] Publish error:", error);
+            return this.fail(error);
         }
     }
 
-    private getHeaders(): Record<string, string> {
-        const auth = this.getAuthData();
+    // ======================================================
+    // Update
+    // ======================================================
 
-        this.log("WordPress API headers", {
-            hasAuthorization: !!auth.accessToken,
-            contentType: "application/json",
-        });
+    async update(
+        postId: string,
+        request: PostingPublishRequest
+    ): Promise<PostingPublishResponse> {
+        try {
+            const payload = this.buildPayload(request);
+            const data = await this.post<WordPressPostResponse>(
+                this.endpoint(`posts/${postId}`),
+                payload
+            );
+
+            if (data.error) {
+                return this.fail(data.error || data.message);
+            }
+
+            return this.success(data);
+        } catch (error) {
+            return this.fail(error);
+        }
+    }
+
+    // ======================================================
+    // Delete
+    // ======================================================
+
+    async delete(postId: string): Promise<boolean> {
+        try {
+            // WordPress.com uses POST /delete
+            const path = this.isWpCom()
+                ? `posts/${postId}/delete`
+                : `posts/${postId}?force=true`;
+
+            const res = await fetch(this.endpoint(path), {
+                method: this.isWpCom() ? "POST" : "DELETE",
+                headers: this.headers(),
+            });
+
+            return res.ok;
+        } catch {
+            return false;
+        }
+    }
+
+    // ======================================================
+    // Metrics
+    // ======================================================
+
+    async getMetrics(postId: string): Promise<PostMetrics> {
+        try {
+            const data = await this.get<WordPressPostResponse>(
+                this.endpoint(`posts/${postId}`)
+            );
+
+            return {
+                views: 0,
+                likes: 0,
+                shares: 0,
+                reach: 0,
+                engagement: 0,
+                comments: data.comment_count ?? 0,
+                lastSyncedAt: new Date(),
+            };
+        } catch {
+            return {
+                views: 0,
+                likes: 0,
+                comments: 0,
+                shares: 0,
+                reach: 0,
+                engagement: 0,
+                lastSyncedAt: new Date(),
+            };
+        }
+    }
+
+    // ======================================================
+    // Helpers
+    // ======================================================
+
+    private buildPayload(
+        request: PostingPublishRequest
+    ): WordPressPostPayload {
+        const contentParts: string[] = [];
+
+        if (request.body) contentParts.push(request.body);
+
+        if (request.mentions?.length) {
+            contentParts.push(
+                request.mentions.map((m) => `@${m}`).join(" ")
+            );
+        }
+
+        if (request.hashtags?.length) {
+            contentParts.push(
+                request.hashtags
+                    .map((t) => (t.startsWith("#") ? t : `#${t}`))
+                    .join(" ")
+            );
+        }
 
         return {
-            Authorization: `Bearer ${auth.accessToken}`,
+            title: request.title ?? "Untitled",
+            content: contentParts.join("\n\n"),
+            excerpt: request.body?.slice(0, 160),
+            status: "publish",
+        };
+    }
+
+    private endpoint(path: string): string {
+        if (this.isWpCom()) {
+            if (!this.siteConfig.siteId) {
+                throw new Error("siteId is required for WordPress.com");
+            }
+            return `https://public-api.wordpress.com/rest/v1.1/sites/${this.siteConfig.siteId}/${path}`;
+        }
+
+        if (!this.siteConfig.siteUrl) {
+            throw new Error("siteUrl is required for self-hosted WordPress");
+        }
+
+        return `${this.siteConfig.siteUrl.replace(/\/$/, "")}/wp-json/wp/v2/${path}`;
+    }
+
+    private headers(): Record<string, string> {
+        return {
+            Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json",
         };
     }
 
-    async publish(request: PostingPublishRequest): Promise<PostingPublishResponse> {
-        try {
-            if (!request.title && !request.body) {
-                return {
-                    success: false,
-                    error: "Title or body is required for WordPress post",
-                };
-            }
-
-            const content = this.formatContent(request);
-            const postData = this.buildWordPressPostData(request, content);
-
-            let endpoint = this.getEndpoint("posts");
-            let response = await this.makeRequest(endpoint, postData);
-
-            // If 404 and using WordPress.com, try v2 API
-            if (!response.ok && response.status === 404) {
-                const auth = this.getAuthData();
-                if (auth.tokenType === "wpcom" && auth.siteId) {
-                    this.log("Trying WordPress.com v2 API as fallback");
-                    endpoint = `https://public-api.wordpress.com/rest/v2/sites/${auth.siteId}/posts`;
-                    response = await this.makeRequest(endpoint, postData);
-                }
-            }
-
-            const responseText = await response.text();
-            this.log("WordPress response", {
-                status: response.status,
-                responseText: responseText.substring(0, 200),
-                isJson: responseText.trim().startsWith('{') || responseText.trim().startsWith('[')
-            });
-
-            if (!response.ok) {
-                return {
-                    success: false,
-                    error: `HTTP ${response.status}: ${response.statusText} - ${responseText}`,
-                };
-            }
-
-            let data: WordPressPostResponse;
-            try {
-                data = JSON.parse(responseText);
-            } catch (parseError) {
-                return {
-                    success: false,
-                    error: `Invalid JSON response from WordPress: ${responseText.substring(0, 200)}`,
-                };
-            }
-
-            if (data.error) {
-                return {
-                    success: false,
-                    error: data.error || data.message || "Failed to publish WordPress post",
-                };
-            }
-
-            return {
-                success: true,
-                postId: (data.ID ?? data.id)?.toString() ?? "",
-                permalink: data.URL ?? data.link ?? "",
-            };
-        } catch (error) {
-            this.logError("Failed to publish WordPress post", error);
-            return {
-                success: false,
-                error: error instanceof Error ? error.message : "Unknown error",
-            };
-        }
+    private async get<T>(url: string): Promise<T> {
+        const res = await fetch(url, { headers: this.headers() });
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json() as Promise<T>;
     }
 
-    async update(postId: string, request: PostingPublishRequest): Promise<PostingPublishResponse> {
-        try {
-            const content = this.formatContent(request);
-            const postData = this.buildWordPressPostData(request, content);
-
-            const endpoint = this.getEndpoint(`posts/${postId}`);
-            const response = await this.makeRequest(endpoint, postData);
-
-            const data: WordPressPostResponse = await response.json();
-
-            if (!response.ok || data.error) {
-                return {
-                    success: false,
-                    error: data.error || data.message || "Failed to update WordPress post",
-                };
-            }
-
-            return {
-                success: true,
-                postId: (data.ID ?? data.id)?.toString() ?? "",
-                permalink: data.URL ?? data.link ?? "",
-            };
-        } catch (error) {
-            this.logError("Failed to update WordPress post", error);
-            return {
-                success: false,
-                error: error instanceof Error ? error.message : "Unknown error",
-            };
-        }
-    }
-
-    async verifyAuth(): Promise<boolean> {
-        try {
-            const endpoint = this.getEndpoint("users/me");
-            const response = await fetch(endpoint, {
-                method: "GET",
-                headers: this.getHeaders(),
-            });
-
-            return response.ok;
-        } catch (error) {
-            this.logError("Failed to verify WordPress authentication", error);
-            return false;
-        }
-    }
-
-    async delete(postId: string): Promise<boolean> {
-        try {
-            console.log(`[WordPressPostingAdapter] Deleting WordPress post:`, { postId });
-
-            // WordPress.com API uses POST to /delete/ endpoint instead of DELETE method
-            const endpoint = this.getEndpoint(`posts/${postId}/delete`);
-            console.log(`[WordPressPostingAdapter] Delete endpoint:`, endpoint);
-
-            const response = await fetch(endpoint, {
-                method: "POST", // Use POST method for WordPress.com delete endpoint
-                headers: this.getHeaders(),
-            });
-
-            console.log(`[WordPressPostingAdapter] Delete response:`, {
-                status: response.status,
-                ok: response.ok,
-                statusText: response.statusText
-            });
-
-            // WordPress.com delete endpoint returns 200 OK on successful deletion
-            if (response.ok) {
-                const data = await response.json();
-                console.log(`[WordPressPostingAdapter] Delete successful:`, data);
-                return true;
-            } else {
-                const errorText = await response.text();
-                console.error(`[WordPressPostingAdapter] Delete failed:`, {
-                    status: response.status,
-                    statusText: response.statusText,
-                    errorText
-                });
-                return false;
-            }
-        } catch (error) {
-            console.error(`[WordPressPostingAdapter] Delete error:`, error);
-            this.logError("Failed to delete WordPress post", error);
-            return false;
-        }
-    }
-
-    async getMetrics(postId: string): Promise<PostMetrics> {
-        try {
-            const endpoint = this.getEndpoint(`posts/${postId}`);
-            const response = await fetch(endpoint, {
-                method: "GET",
-                headers: this.getHeaders(),
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to fetch post data");
-            }
-
-            const data: WordPressPostResponse = await response.json();
-
-            const metrics: PostMetrics = {
-                views: 0,
-                likes: 0,
-                comments: 0,
-                shares: 0,
-                reach: 0,
-                engagement: 0,
-                lastSyncedAt: new Date(),
-            };
-
-            // Get comment count
-            if (data.comment_count !== undefined) {
-                metrics.comments = data.comment_count;
-            } else {
-                // Fallback: fetch comments separately
-                try {
-                    const commentsEndpoint = this.getEndpoint(`comments?post=${postId}`);
-                    const commentsResponse = await fetch(commentsEndpoint, {
-                        method: "GET",
-                        headers: this.getHeaders(),
-                    });
-
-                    if (commentsResponse.ok) {
-                        const commentsData = await commentsResponse.json();
-                        metrics.comments = Array.isArray(commentsData) ? commentsData.length : 0;
-                    }
-                } catch {
-                    // Ignore comment fetch errors, keep 0
-                }
-            }
-
-            return metrics;
-        } catch (error) {
-            this.logError("Failed to get WordPress metrics", error);
-            return {
-                views: 0,
-                likes: 0,
-                comments: 0,
-                shares: 0,
-                reach: 0,
-                engagement: 0,
-                lastSyncedAt: new Date(),
-            };
-        }
-    }
-
-    private async makeRequest(endpoint: string, postData: any): Promise<Response> {
-        this.log("Making WordPress request", {
-            endpoint,
-            hasTitle: !!postData.title,
-            hasBody: !!postData.content,
-        });
-
-        return await fetch(endpoint, {
+    private async post<T>(
+        url: string,
+        body: unknown
+    ): Promise<T> {
+        const res = await fetch(url, {
             method: "POST",
-            headers: this.getHeaders(),
-            body: JSON.stringify(postData),
+            headers: this.headers(),
+            body: JSON.stringify(body),
         });
+
+        if (!res.ok) {
+            throw new Error(res.statusText);
+        }
+
+        return res.json() as Promise<T>;
     }
 
-    private formatContent(request: PostingPublishRequest): string {
-        let content = "";
+    private success(
+        data: WordPressPostResponse
+    ): PostingPublishResponse {
+        const id = data.ID ?? data.id;
 
-        if (request.body) {
-            content = request.body;
-        }
-
-        if (request.mentions && request.mentions.length > 0) {
-            const mentionText = request.mentions
-                .map(mention => `@${mention}`)
-                .join(" ");
-            content += content ? `\n\n${mentionText}` : mentionText;
-        }
-
-        if (request.hashtags && request.hashtags.length > 0) {
-            const hashtagText = request.hashtags
-                .map(tag => tag.startsWith('#') ? tag : `#${tag}`)
-                .join(" ");
-            content += content ? `\n\n${hashtagText}` : hashtagText;
-        }
-
-        return content;
-    }
-
-    private buildWordPressPostData(request: PostingPublishRequest, content: string): any {
-        const postData: any = {
-            title: request.title || "Untitled",
-            content,
-            status: "publish",
-            excerpt: request.body ? request.body.substring(0, 160) : "",
+        return {
+            success: true,
+            postId: id?.toString() ?? "",
+            permalink: data.URL ?? data.link ?? "",
         };
-
-        if (request.media.length > 0) {
-            const firstMedia = request.media[0];
-            if (firstMedia.type === "image") {
-                postData.featured_media = 0; // Placeholder for media ID
-            }
-        }
-
-        return postData;
     }
 
-    protected formatMessage(request: PostingPublishRequest): string {
-        // WordPress HTML formatting with Gutenberg blocks
-        let content = "";
+    private fail(error?: unknown): PostingPublishResponse {
+        return {
+            success: false,
+            error:
+                error instanceof Error
+                    ? error.message
+                    : typeof error === "string"
+                        ? error
+                        : "WordPress error",
+        };
+    }
 
-        if (request.title) {
-            content += `<!-- wp:heading {"level":1} -->\n<h1>${request.title}</h1>\n<!-- /wp:heading -->\n\n`;
-        }
-
-        if (request.body) {
-            content += `<!-- wp:paragraph -->\n<p>${request.body.replace(/\n/g, "</p>\n\n<p>")}</p>\n<!-- /wp:paragraph -->`;
-        }
-
-        if (request.hashtags && request.hashtags.length > 0) {
-            const hashtags = request.hashtags
-                .map(tag => tag.startsWith('#') ? tag : `#${tag}`)
-                .join(" ");
-            content += `\n\n<!-- wp:paragraph -->\n<p><strong>Tags:</strong> ${hashtags}</p>\n<!-- /wp:paragraph -->`;
-        }
-
-        if (request.mentions && request.mentions.length > 0) {
-            const mentions = request.mentions
-                .map(mention => `@${mention}`)
-                .join(" ");
-            content += `\n\n<!-- wp:paragraph -->\n<p><strong>Mentions:</strong> ${mentions}</p>\n<!-- /wp:paragraph -->`;
-        }
-
-        return content;
+    private isWpCom(): boolean {
+        return !!this.siteConfig.siteId;
     }
 }

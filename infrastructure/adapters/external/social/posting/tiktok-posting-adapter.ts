@@ -1,7 +1,6 @@
 import type { PostMetrics, PostMedia } from "@/core/domain/marketing/post";
-import type { TikTokAuthService } from "../auth/tiktok-auth-service";
-import { BasePostingAdapter } from "./base-posting-service";
-import type { PostingPublishRequest, PostingPublishResponse } from "@/core/application/interfaces/marketing/posting-adapter";
+import type { PostingAdapter, PostingPublishRequest, PostingPublishResponse } from "@/core/application/interfaces/marketing/posting-adapter";
+import { emptyMetrics, sleep } from "./utils";
 
 /**
  * TikTok API Response Types
@@ -50,40 +49,28 @@ interface TikTokVideoInfoResponse {
   };
 }
 
-export class TikTokPostingAdapter extends BasePostingAdapter {
+/**
+ * TikTok Posting Adapter
+ * Handles publishing videos to TikTok
+ */
+export class TikTokPostingAdapter implements PostingAdapter {
   platform = "tiktok" as const;
   private baseUrl = "https://open.tiktokapis.com/v2";
 
-  constructor(private auth: TikTokAuthService) {
-    super();
-  }
-
-  async verifyAuth(): Promise<boolean> {
-    return await this.auth.verifyAuth();
-  }
+  constructor(private token: string) { }
 
   async publish(request: PostingPublishRequest): Promise<PostingPublishResponse> {
-    try {
-      // TikTok requires video media
-      const videoMedia = request.media.find((m) => m.type === "video");
-      if (!videoMedia) {
-        return {
-          success: false,
-          error: "TikTok requires video content",
-        };
-      }
-
-      // Use Direct Post flow to publish video
-      return await this.publishVideo(videoMedia, request);
-    } catch (error) {
+    if (!request.media || request.media.type !== "video") {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: "TikTok requires video content",
       };
     }
+
+    return this.publishVideo(request.media, request);
   }
 
-  async update(postId: string, request: PostingPublishRequest): Promise<PostingPublishResponse> {
+  async update(): Promise<PostingPublishResponse> {
     return {
       success: false,
       error: "TikTok does not support updating published videos",
@@ -92,274 +79,169 @@ export class TikTokPostingAdapter extends BasePostingAdapter {
 
   async delete(postId: string): Promise<boolean> {
     try {
-      const url = `${this.baseUrl}/post/video/delete/`;
-      const response = await fetch(url, {
+      const res = await fetch(`${this.baseUrl}/post/video/delete/`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.auth.getAccessToken()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          video_id: postId,
-        }),
+        headers: this.headers(),
+        body: JSON.stringify({ video_id: postId }),
       });
 
-      const data = await response.json();
+      const data = await res.json();
       return !data.error;
-    } catch (error) {
-      console.error("Failed to delete TikTok video:", error);
+    } catch {
       return false;
     }
   }
 
   async getMetrics(postId: string): Promise<PostMetrics> {
     try {
-      const url = `${this.baseUrl}/video/query/`;
-      const params = new URLSearchParams({
-        fields: "id,cover_image_url,share_url,statistics",
-      });
+      const res = await fetch(
+        `${this.baseUrl}/video/query/?fields=id,statistics`,
+        {
+          method: "POST",
+          headers: this.headers(),
+          body: JSON.stringify({
+            filters: { video_ids: [postId] },
+          }),
+        }
+      );
 
-      const response = await fetch(`${url}?${params.toString()}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.auth.getAccessToken()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          filters: {
-            video_ids: [postId],
-          },
-        }),
-      });
-
-      const data: TikTokVideoInfoResponse = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error.message);
-      }
-
-      const stats = data.data.statistics;
+      const data: TikTokVideoInfoResponse = await res.json();
+      const s = data.data.statistics;
 
       return {
-        views: stats?.view_count || 0,
-        likes: stats?.like_count || 0,
-        comments: stats?.comment_count || 0,
-        shares: stats?.share_count || 0,
-        reach: stats?.view_count || 0,
-        engagement: (stats?.like_count || 0) + (stats?.comment_count || 0) + (stats?.share_count || 0),
+        views: s?.view_count ?? 0,
+        likes: s?.like_count ?? 0,
+        comments: s?.comment_count ?? 0,
+        shares: s?.share_count ?? 0,
+        reach: s?.view_count ?? 0,
+        engagement:
+          (s?.like_count ?? 0) +
+          (s?.comment_count ?? 0) +
+          (s?.share_count ?? 0),
         lastSyncedAt: new Date(),
       };
-    } catch (error) {
-      console.error("Failed to get TikTok metrics:", error);
-      return {
-        views: 0,
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        reach: 0,
-        engagement: 0,
-        lastSyncedAt: new Date(),
-      };
+    } catch {
+      return emptyMetrics();
     }
   }
 
-  /**
-   * Publish video using Direct Post flow
-   */
-  private async publishVideo(media: PostMedia, request: PostingPublishRequest): Promise<PostingPublishResponse> {
-    try {
-      const url = `${this.baseUrl}/post/publish/video/init/`;
-      const caption = this.formatCaption(request);
+  // ================== PRIVATE ==================
 
-      const requestBody = {
-        post_info: {
-          title: request.title || "",
-          description: caption,
-          privacy_level: "SELF_ONLY", // PUBLIC_TO_EVERYONE, MUTUAL_FOLLOW_FRIENDS, SELF_ONLY
-          disable_duet: false,
-          disable_comment: false,
-          disable_stitch: false,
-          video_cover_timestamp_ms: 1000,
-        },
-        source_info: {
-          source: "PULL_FROM_URL",
-          video_url: media.url,
-        },
-        post_mode: "DIRECT_POST",
-        media_type: "VIDEO",
-      };
-
-      console.log("TikTok publish request:", JSON.stringify(requestBody, null, 2));
-
-      const response = await fetch(url, {
+  private async publishVideo(
+    media: PostMedia,
+    request: PostingPublishRequest
+  ): Promise<PostingPublishResponse> {
+    const res = await fetch(
+      `${this.baseUrl}/post/publish/video/init/`,
+      {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.auth.getAccessToken()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const data: TikTokPublishInitResponse = await response.json();
-      console.log("TikTok publish init response:", JSON.stringify(data, null, 2));
-
-      if (data.error.code !== "ok") {
-        return {
-          success: false,
-          error: `${data.error.message} (log_id: ${data.error.log_id})`,
-        };
+        headers: this.headers(),
+        body: JSON.stringify({
+          post_info: {
+            title: request.title ?? "",
+            description: this.formatCaption(request),
+            privacy_level: "SELF_ONLY",
+            disable_duet: false,
+            disable_comment: false,
+            disable_stitch: false,
+          },
+          source_info: {
+            source: "PULL_FROM_URL",
+            video_url: media.url,
+          },
+          post_mode: "DIRECT_POST",
+          media_type: "VIDEO",
+        }),
       }
+    );
 
-      const publishId = data.data.publish_id;
+    const data: TikTokPublishInitResponse = await res.json();
 
-      // Poll for completion and get permalink
-      const statusResult = await this.waitForPublishComplete(publishId);
-
-      if (!statusResult.success) {
-        return {
-          success: false,
-          error: statusResult.error || "Failed to complete publish",
-        };
-      }
-
-      return {
-        success: true,
-        postId: publishId,
-        permalink: statusResult.permalink,
-      };
-    } catch (error) {
+    if (data.error?.code !== "ok") {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: data.error?.message ?? "TikTok publish init failed",
       };
     }
+
+    const result = await this.waitForPublishComplete(
+      data.data.publish_id
+    );
+
+    return result.success
+      ? {
+        success: true,
+        postId: data.data.publish_id,
+        permalink: result.permalink,
+      }
+      : result;
   }
 
-  /**
-   * Wait for publish to complete and retrieve the permalink
-   */
   private async waitForPublishComplete(
     publishId: string,
     maxAttempts = 60,
     intervalMs = 3000
   ): Promise<{ success: boolean; permalink?: string; error?: string }> {
-    let completedWithoutPostId = false;
-
     for (let i = 0; i < maxAttempts; i++) {
-      const statusData = await this.getPublishStatus(publishId);
+      const status = await this.getPublishStatus(publishId);
+      if (!status) break;
 
-      if (!statusData) {
+      if (status.status === "PUBLISH_COMPLETE") {
+        const id = status.publicaly_available_post_id?.[0];
         return {
-          success: false,
-          error: "Failed to fetch publish status",
+          success: true,
+          permalink: id
+            ? `https://www.tiktok.com/@_/video/${id}`
+            : "https://www.tiktok.com/",
         };
       }
 
-      console.log(`TikTok publish status (attempt ${i + 1}/${maxAttempts}):`, {
-        status: statusData.status,
-        hasPostId: !!statusData.publicaly_available_post_id,
-        postIds: statusData.publicaly_available_post_id,
-        uploadedBytes: statusData.uploaded_bytes,
-      });
-
-      switch (statusData.status) {
-        case "PUBLISH_COMPLETE":
-          const postIds = statusData.publicaly_available_post_id;
-          if (postIds && postIds.length > 0) {
-            const postId = postIds[0];
-            const permalink = `https://www.tiktok.com/@_/video/${postId}`;
-            console.log(`TikTok publish complete with permalink: ${permalink}`);
-            return {
-              success: true,
-              permalink,
-            };
-          }
-
-          if (!completedWithoutPostId) {
-            console.log("TikTok publish complete but no post ID yet, continuing to poll...");
-            completedWithoutPostId = true;
-            await new Promise((resolve) => setTimeout(resolve, intervalMs));
-            break;
-          }
-
-          console.warn("TikTok publish complete but no publicaly_available_post_id returned.");
-          return {
-            success: true,
-            permalink: `https://www.tiktok.com/`,
-          };
-
-        case "FAILED":
-          console.error(`TikTok publish failed: ${statusData.fail_reason}`);
-          return {
-            success: false,
-            error: statusData.fail_reason || "Publish failed",
-          };
-
-        case "PROCESSING_UPLOAD":
-        case "PROCESSING_DOWNLOAD":
-          await new Promise((resolve) => setTimeout(resolve, intervalMs));
-          break;
-
-        case "SCHEDULED":
-          console.log("TikTok post scheduled successfully");
-          return {
-            success: true,
-            permalink: "https://www.tiktok.com/",
-          };
-
-        default:
-          console.log(`Unknown TikTok status: ${statusData.status}, continuing to poll...`);
-          await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      if (status.status === "FAILED") {
+        return {
+          success: false,
+          error: status.fail_reason ?? "Publish failed",
+        };
       }
+
+      await sleep(intervalMs);
     }
 
     return {
       success: false,
-      error: "Timeout waiting for publish to complete",
+      error: "Timeout waiting for TikTok publish",
     };
   }
 
-  /**
-   * Get publish status
-   */
-  private async getPublishStatus(publishId: string): Promise<TikTokPublishStatusResponse["data"] | null> {
+  private async getPublishStatus(
+    publishId: string
+  ): Promise<TikTokPublishStatusResponse["data"] | null> {
     try {
-      const url = `${this.baseUrl}/post/publish/status/fetch/`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.auth.getAccessToken()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          publish_id: publishId,
-        }),
-      });
+      const res = await fetch(
+        `${this.baseUrl}/post/publish/status/fetch/`,
+        {
+          method: "POST",
+          headers: this.headers(),
+          body: JSON.stringify({ publish_id: publishId }),
+        }
+      );
 
-      const data: TikTokPublishStatusResponse = await response.json();
-
-      if (data.error.code !== "ok") {
-        console.error("TikTok status fetch error:", data.error);
-        return null;
-      }
-
-      return data.data;
-    } catch (error) {
-      console.error("Failed to get TikTok publish status:", error);
+      const data: TikTokPublishStatusResponse = await res.json();
+      return data.error?.code === "ok" ? data.data : null;
+    } catch {
       return null;
     }
   }
 
-  /**
-   * Format caption with hashtags
-   */
   private formatCaption(request: PostingPublishRequest): string {
-    let caption = request.body || "";
+    const tags =
+      request.hashtags?.map((t) => `#${t}`).join(" ") ?? "";
+    return [request.body, tags].filter(Boolean).join(" ");
+  }
 
-    if (request.hashtags.length > 0) {
-      caption += " " + request.hashtags.map((tag) => `#${tag}`).join(" ");
-    }
-
-    return caption;
+  private headers(): HeadersInit {
+    return {
+      Authorization: `Bearer ${this.token}`,
+      "Content-Type": "application/json",
+    };
   }
 }

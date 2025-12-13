@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/ui/card"
 import { Button } from "@shared/ui/button"
 import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw, Settings, Webhook, Unplug } from "lucide-react"
-import type { SocialPlatform } from "@/core/domain/social/social-auth"
 import ConfigurationDialog from "./ConfigurationDialog"
+import { Platform } from "@/core/domain/marketing/post"
 
 interface Connection {
   id: string
-  platform: SocialPlatform
+  platform: Platform
   openId: string
   expiresAt: string
   createdAt: string
@@ -23,7 +23,7 @@ interface SocialConnectionsManagerProps {
 
 const PLATFORMS = [
   {
-    id: "zalo" as SocialPlatform,
+    id: "zalo" as Platform,
     name: "Zalo",
     description: "Connect with customers via Zalo OA",
     color: "bg-[#0068FF]",
@@ -34,7 +34,7 @@ const PLATFORMS = [
     ),
   },
   {
-    id: "tiktok" as SocialPlatform,
+    id: "tiktok" as Platform,
     name: "TikTok",
     description: "Publish videos and track analytics",
     color: "bg-black dark:bg-white",
@@ -45,7 +45,7 @@ const PLATFORMS = [
     ),
   },
   {
-    id: "facebook" as SocialPlatform,
+    id: "facebook" as Platform,
     name: "Facebook",
     description: "Share posts and engage with your audience",
     color: "bg-[#1877F2]",
@@ -56,7 +56,7 @@ const PLATFORMS = [
     ),
   },
   {
-    id: "instagram" as SocialPlatform,
+    id: "instagram" as Platform,
     name: "Instagram",
     description: "Share visual content and stories with your audience",
     color: "bg-[#E4405F]",
@@ -67,7 +67,7 @@ const PLATFORMS = [
     ),
   },
   {
-    id: "youtube" as SocialPlatform,
+    id: "youtube" as Platform,
     name: "YouTube",
     description: "Upload videos and manage your channel",
     color: "bg-[#FF0000]",
@@ -78,7 +78,7 @@ const PLATFORMS = [
     ),
   },
   {
-    id: "wordpress" as SocialPlatform,
+    id: "wordpress" as Platform,
     name: "WordPress",
     description: "Publish blog posts to your WordPress site",
     color: "bg-[#21759B]",
@@ -94,19 +94,19 @@ export default function SocialConnectionsManager({ connections: initialConnectio
   const router = useRouter()
   const searchParams = useSearchParams()
   const [connections, setConnections] = useState<Connection[]>(initialConnections)
-  const [loadingPlatform, setLoadingPlatform] = useState<SocialPlatform | null>(null)
+  const [loadingPlatform, setLoadingPlatform] = useState<Platform | null>(null)
   const [message, setMessage] = useState<{
     type: "success" | "error"
     text: string
   } | null>(null)
   const [showConfigDialog, setShowConfigDialog] = useState(false)
-  const [configPlatform, setConfigPlatform] = useState<SocialPlatform | null>(null)
+  const [configPlatform, setConfigPlatform] = useState<Platform | null>(null)
 
   // Handle OAuth callback status
   useEffect(() => {
     const success = searchParams.get("success")
     const error = searchParams.get("error")
-    const platform = searchParams.get("platform") as SocialPlatform | null
+    const platform = searchParams.get("platform") as Platform | null
 
     if (success === "true" && platform) {
       setMessage({
@@ -133,13 +133,13 @@ export default function SocialConnectionsManager({ connections: initialConnectio
     }
   }, [searchParams, router, connections])
 
-  const handleConnect = (platform: SocialPlatform) => {
+  const handleConnect = (platform: Platform) => {
     setLoadingPlatform(platform)
     // Redirect to OAuth start endpoint
     window.location.href = `/api/auth/${platform}/start`
   }
 
-  const handleDisconnect = async (platform: SocialPlatform) => {
+  const handleDisconnect = async (platform: Platform) => {
     if (!confirm(`Are you sure you want to disconnect your ${platform} account?`)) {
       return
     }
@@ -174,7 +174,7 @@ export default function SocialConnectionsManager({ connections: initialConnectio
     }
   }
 
-  const handleRefresh = async (platform: SocialPlatform) => {
+  const handleRefresh = async (platform: Platform) => {
     setLoadingPlatform(platform)
     try {
       const response = await fetch(`/api/auth/${platform}/refresh`, {
@@ -202,7 +202,7 @@ export default function SocialConnectionsManager({ connections: initialConnectio
     }
   }
 
-  const getConnectionForPlatform = (platform: SocialPlatform) => {
+  const getConnectionForPlatform = (platform: Platform) => {
     return connections.find(c => c.platform === platform)
   }
 

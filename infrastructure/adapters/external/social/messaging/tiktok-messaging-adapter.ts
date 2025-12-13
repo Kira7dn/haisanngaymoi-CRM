@@ -1,11 +1,10 @@
 import type { SendMessageResult } from "@/core/application/interfaces/messaging/messaging-adapter";
-import type { TikTokAuthService } from "../auth/tiktok-auth-service";
 import { BaseMessagingAdapter } from "./messaging-service";
 
 export class TikTokMessagingAdapter extends BaseMessagingAdapter {
   platform = "tiktok" as const;
 
-  constructor(private auth: TikTokAuthService) {
+  constructor(private token: string) {
     super();
   }
 
@@ -22,7 +21,7 @@ export class TikTokMessagingAdapter extends BaseMessagingAdapter {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.auth.getAccessToken()}`,
+          Authorization: `Bearer ${this.token}`,
         },
       });
 

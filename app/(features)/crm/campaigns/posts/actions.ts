@@ -13,43 +13,42 @@ import type { BrandMemoryPayload } from "@/core/application/interfaces/brand-mem
 export async function createPostAction(formData: FormData) {
   const useCase = await createPostUseCase()
 
-  // Get current user ID from cookies
   const cookieStore = await cookies()
   const userIdCookie = cookieStore.get("admin_user_id")
   if (!userIdCookie) {
-    throw new Error("Unauthorized - Please login first")
+    throw new Error("Unauthorized")
   }
 
-  const title = formData.get("title")?.toString() || ""
-  const body = formData.get("body")?.toString() || ""
-  const contentType = formData.get("contentType")?.toString() as ContentType || "post"
-  const platformsJson = formData.get("platforms")?.toString() || "[]"
-  const mediaJson = formData.get("media")?.toString() || "[]"
-  const hashtagsStr = formData.get("hashtags")?.toString() || ""
+  const title = formData.get("title")?.toString() ?? ""
+  const body = formData.get("body")?.toString() ?? ""
+  const contentType: ContentType = formData.get("contentType")?.toString() as ContentType
+  const platformsJson = formData.get("platforms")?.toString() ?? "[]"
+  const mediaJson = formData.get("media")?.toString()
+  const hashtagsStr = formData.get("hashtags")?.toString() ?? ""
   const scheduledAtStr = formData.get("scheduledAt")?.toString()
-  const saveAsDraft = formData.get("saveAsDraft")?.toString() === "true"
 
-  // Parse platforms from JSON
-  const selectedPlatforms: Platform[] = JSON.parse(platformsJson)
+  let selectedPlatforms: Platform[] = []
+  try {
+    selectedPlatforms = JSON.parse(platformsJson)
+  } catch { }
+
   const platforms: PlatformMetadata[] = selectedPlatforms.map(platform => ({
     platform,
-    status: "draft" as const, // Will be overridden by use case logic
+    status: "draft",
   }))
 
-  // Parse media from JSON
-  const media: PostMedia[] = JSON.parse(mediaJson)
+  const media: PostMedia | undefined = mediaJson
+    ? JSON.parse(mediaJson)
+    : undefined
 
-  // Parse hashtags
   const hashtags = hashtagsStr
     .split(/\s+/)
-    .filter(tag => tag.startsWith('#'))
+    .filter(tag => tag.startsWith("#"))
     .map(tag => tag.slice(1))
-    .filter(tag => tag.length > 0)
 
-  // Parse scheduled date (handle timezone properly)
-  const scheduledAt = scheduledAtStr ? parseDateTimeLocal(scheduledAtStr) : undefined
-
-  const now = new Date()
+  const scheduledAt = scheduledAtStr
+    ? parseDateTimeLocal(scheduledAtStr)
+    : undefined
 
   const result = await useCase.execute({
     userId: userIdCookie.value,
@@ -60,20 +59,17 @@ export async function createPostAction(formData: FormData) {
     media,
     hashtags,
     scheduledAt,
-    saveAsDraft,
-    createdAt: now,
-    updatedAt: now,
   })
 
   revalidatePath("/crm/posts")
 
-  // Return platform results for client-side toast notifications
   return {
     success: true,
+    postId: result.post.id.toString(),
     platformResults: result.platformResults,
-    postId: result.post.id
   }
 }
+
 
 export async function getPostsAction() {
   const useCase = await getPostsUseCase()
@@ -337,10 +333,8 @@ export async function saveScheduleToPostsAction(scheduleItems: Array<{
             platform,
             status: 'draft' as const,
           }],
-          media: [],
           hashtags: [],
           scheduledAt,
-          saveAsDraft: true, // Save as draft so user can edit before publishing
           createdAt: now,
           updatedAt: now,
         })

@@ -1,10 +1,13 @@
 import type { PostMetrics, PostMedia } from "@/core/domain/marketing/post";
-import type { FacebookAuthService } from "../auth/facebook-auth-service";
-import { BasePostingAdapter } from "./base-posting-service";
-import type { PostingPublishRequest, PostingPublishResponse } from "@/core/application/interfaces/marketing/posting-adapter";
+import type {
+  PostingAdapter,
+  PostingPublishRequest,
+  PostingPublishResponse,
+} from "@/core/application/interfaces/marketing/posting-adapter";
+import { formatMessage } from "./utils";
 
 interface FacebookPostResponse {
-  id: string;
+  id?: string;
   error?: {
     message: string;
     type: string;
@@ -13,86 +16,79 @@ interface FacebookPostResponse {
 }
 
 interface FacebookInsightsResponse {
-  data: Array<{
+  data?: Array<{
     name: string;
-    values: Array<{
-      value: number;
-    }>;
+    values: Array<{ value: number }>;
   }>;
 }
 
 /**
  * Facebook Posting Adapter
- * Handles publishing content to Facebook Pages
+ * Infrastructure-only: no auth validation, no business rules
  */
-export class FacebookPostingAdapter extends BasePostingAdapter {
+export class FacebookPostingAdapter implements PostingAdapter {
   platform = "facebook" as const;
-  private baseUrl = "https://graph.facebook.com/v19.0";
+  private readonly baseUrl = "https://graph.facebook.com/v19.0";
 
-  constructor(private auth: FacebookAuthService) {
-    super();
-  }
+  constructor(
+    private readonly token: string,
+    private readonly pageId: string
+  ) { }
 
-  /**
-   * Get valid access token (with auto-refresh if expired)
-   */
-  private getAccessToken(): string {
-    return this.auth.getAccessToken();
-  }
+  // -------- publish --------
 
-  /**
-   * Get page ID for posting
-   */
-  private getPageId(): string {
-    return this.auth.getPageId();
-  }
-
-  async publish(request: PostingPublishRequest): Promise<PostingPublishResponse> {
+  async publish(
+    request: PostingPublishRequest
+  ): Promise<PostingPublishResponse> {
     try {
       if (!request.title && !request.body) {
         return {
           success: false,
-          error: "Title or body is required for Facebook post",
+          error: "Facebook post requires title or body",
         };
       }
 
-      const message = this.formatMessage(request);
+      const message = formatMessage(request);
 
-      if (request.media.length > 0) {
-        return await this.publishWithMedia(message, request.media);
-      } else {
-        return await this.publishTextPost(message);
+      if (!request.media) {
+        return this.publishText(message);
       }
-    } catch (error) {
+
+      if (request.media.type === "image") {
+        return this.publishPhoto(message, request.media.url);
+      }
+
+      if (request.media.type === "video") {
+        return this.publishVideo(message, request.media.url);
+      }
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: "Unsupported media type",
       };
+    } catch (error) {
+      return this.fail(error);
     }
   }
 
-  async update(postId: string, request: PostingPublishRequest): Promise<PostingPublishResponse> {
+  // -------- update --------
+  /**
+   * Facebook only supports limited updates (mostly text).
+   * Media updates are NOT supported.
+   */
+  async update(
+    postId: string,
+    request: PostingPublishRequest
+  ): Promise<PostingPublishResponse> {
     try {
-      const message = this.formatMessage(request);
+      const message = formatMessage(request);
 
-      const url = `${this.baseUrl}/${postId}`;
-      const params = new URLSearchParams({
+      const response = await this.fbPost(`/${postId}`, {
         message,
-        access_token: this.getAccessToken(),
       });
 
-      const response = await fetch(url, {
-        method: "POST",
-        body: params,
-      });
-
-      const data = await response.json();
-
-      if (data.error) {
-        return {
-          success: false,
-          error: data.error.message,
-        };
+      if (response.error) {
+        return this.fail(response.error.message);
       }
 
       return {
@@ -100,87 +96,62 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
         postId,
       };
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+      return this.fail(error);
     }
   }
 
-  async verifyAuth(): Promise<boolean> {
-    return await this.auth.verifyAuth();
-  }
+  // -------- delete --------
 
   async delete(postId: string): Promise<boolean> {
     try {
-      const url = `${this.baseUrl}/${postId}`;
-      const params = new URLSearchParams({
-        access_token: this.getAccessToken(),
-      });
-
-      const response = await fetch(`${url}?${params.toString()}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${this.baseUrl}/${postId}?access_token=${this.token}`,
+        { method: "DELETE" }
+      );
 
       const data = await response.json();
-      return data.success === true;
-    } catch (error) {
-      this.logError("Failed to delete Facebook post", error);
+      return response.ok && (data === true || data?.success === true);
+    } catch {
       return false;
     }
   }
 
+  // -------- metrics --------
+
   async getMetrics(postId: string): Promise<PostMetrics> {
     try {
-      const url = `${this.baseUrl}/${postId}`;
-      const params = new URLSearchParams({
-        fields: "reactions.summary(true),shares,comments.summary(true)",
-        access_token: this.getAccessToken(),
+      const post = await this.fbGet<{
+        reactions?: { summary?: { total_count?: number } };
+        comments?: { summary?: { total_count?: number } };
+        shares?: { count?: number };
+      }>(`/${postId}`, {
+        fields: "reactions.summary(true),comments.summary(true),shares",
       });
 
-      const response = await fetch(`${url}?${params.toString()}`);
-      const data = await response.json();
-
-      // Get insights for views and reach
-      const insightsUrl = `${this.baseUrl}/${postId}/insights`;
-      const insightsParams = new URLSearchParams({
-        metric: "post_impressions,post_impressions_unique,post_engaged_users",
-        access_token: this.getAccessToken(),
+      const insights = await this.fbGet<FacebookInsightsResponse>(`/${postId}/insights`, {
+        metric:
+          "post_impressions,post_impressions_unique,post_engaged_users",
       });
-
-      const insightsResponse = await fetch(`${insightsUrl}?${insightsParams.toString()}`);
-      const insightsData: FacebookInsightsResponse = await insightsResponse.json();
 
       const metrics: PostMetrics = {
-        likes: data.reactions?.summary?.total_count || 0,
-        comments: data.comments?.summary?.total_count || 0,
-        shares: data.shares?.count || 0,
+        likes: post.reactions?.summary?.total_count ?? 0,
+        comments: post.comments?.summary?.total_count ?? 0,
+        shares: post.shares?.count ?? 0,
         views: 0,
         reach: 0,
         engagement: 0,
         lastSyncedAt: new Date(),
       };
 
-      if (insightsData.data) {
-        insightsData.data.forEach((metric) => {
-          const value = metric.values[0]?.value || 0;
-          switch (metric.name) {
-            case "post_impressions":
-              metrics.views = value;
-              break;
-            case "post_impressions_unique":
-              metrics.reach = value;
-              break;
-            case "post_engaged_users":
-              metrics.engagement = value;
-              break;
-          }
-        });
-      }
+      insights.data?.forEach((m) => {
+        const value = m.values.at(-1)?.value ?? 0;
+        if (m.name === "post_impressions") metrics.views = value;
+        if (m.name === "post_impressions_unique") metrics.reach = value;
+        if (m.name === "post_engaged_users") metrics.engagement = value;
+      });
 
       return metrics;
-    } catch (error) {
-      this.logError("Failed to get Facebook metrics", error);
+    } catch {
       return {
         views: 0,
         likes: 0,
@@ -193,194 +164,102 @@ export class FacebookPostingAdapter extends BasePostingAdapter {
     }
   }
 
-  private async publishTextPost(message: string): Promise<PostingPublishResponse> {
-    const url = `${this.baseUrl}/${this.getPageId()}/feed`;
-    const params = new URLSearchParams({
-      message,
-      access_token: this.getAccessToken(),
-    });
+  // ======================================================
+  // Internal helpers
+  // ======================================================
 
-    const response = await fetch(url, {
-      method: "POST",
-      body: params,
-    });
-
-    const data: FacebookPostResponse = await response.json();
+  private async publishText(
+    message: string
+  ): Promise<PostingPublishResponse> {
+    const data = await this.fbPost(`/${this.pageId}/feed`, { message });
 
     if (data.error) {
-      return {
-        success: false,
-        error: data.error.message,
-      };
+      return this.fail(data.error.message);
     }
 
-    return {
-      success: true,
-      postId: data.id,
-      permalink: `https://facebook.com/${data.id}`,
-    };
+    return this.success(data.id!);
   }
 
-  private async publishWithMedia(message: string, media: PostMedia[]): Promise<PostingPublishResponse> {
-    try {
-      const firstMedia = media[0];
-
-      if (media.length === 1 && firstMedia.type === "image") {
-        return await this.publishPhoto(message, firstMedia.url);
-      } else if (media.length === 1 && firstMedia.type === "video") {
-        return await this.publishVideo(message, firstMedia.url);
-      } else if (media.length > 1) {
-        return await this.publishCarousel(message, media);
-      }
-
-      return {
-        success: false,
-        error: "Unsupported media configuration",
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-    }
-  }
-
-  private async publishPhoto(message: string, photoUrl: string): Promise<PostingPublishResponse> {
-    const url = `${this.baseUrl}/${this.getPageId()}/photos`;
-    const params = new URLSearchParams({
-      url: photoUrl,
+  private async publishPhoto(
+    message: string,
+    url: string
+  ): Promise<PostingPublishResponse> {
+    const data = await this.fbPost(`/${this.pageId}/photos`, {
+      url,
       message,
-      access_token: this.getAccessToken(),
     });
-
-    const response = await fetch(url, {
-      method: "POST",
-      body: params,
-    });
-
-    const data: FacebookPostResponse = await response.json();
 
     if (data.error) {
-      return {
-        success: false,
-        error: data.error.message,
-      };
+      return this.fail(data.error.message);
     }
 
-    return {
-      success: true,
-      postId: data.id,
-      permalink: `https://facebook.com/${data.id}`,
-    };
+    return this.success(data.id!);
   }
 
-  private async publishVideo(message: string, videoUrl: string): Promise<PostingPublishResponse> {
-    const url = `${this.baseUrl}/${this.getPageId()}/videos`;
-    const params = new URLSearchParams({
-      file_url: videoUrl,
+  private async publishVideo(
+    message: string,
+    url: string
+  ): Promise<PostingPublishResponse> {
+    const data = await this.fbPost(`/${this.pageId}/videos`, {
+      file_url: url,
       description: message,
-      access_token: this.getAccessToken(),
     });
-
-    const response = await fetch(url, {
-      method: "POST",
-      body: params,
-    });
-
-    const data: FacebookPostResponse = await response.json();
 
     if (data.error) {
-      return {
-        success: false,
-        error: data.error.message,
-      };
+      return this.fail(data.error.message);
     }
 
+    return this.success(data.id!);
+  }
+
+  private async fbGet<T>(
+    path: string,
+    params: Record<string, string>
+  ): Promise<T> {
+    const query = new URLSearchParams({
+      ...params,
+      access_token: this.token,
+    });
+
+    const res = await fetch(`${this.baseUrl}${path}?${query}`);
+    return res.json() as Promise<T>;
+  }
+
+
+  private async fbPost(
+    path: string,
+    params: Record<string, string>
+  ): Promise<FacebookPostResponse> {
+    const body = new URLSearchParams({
+      ...params,
+      access_token: this.token,
+    });
+
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: "POST",
+      body,
+    });
+
+    return res.json();
+  }
+
+  private success(postId: string): PostingPublishResponse {
     return {
       success: true,
-      postId: data.id,
-      permalink: `https://facebook.com/${data.id}`,
+      postId,
+      permalink: `https://www.facebook.com/${this.pageId}/posts/${postId}`,
     };
   }
 
-  private async publishCarousel(message: string, media: PostMedia[]): Promise<PostingPublishResponse> {
-    try {
-      const uploadedPhotoIds: string[] = [];
-
-      for (const item of media) {
-        if (item.type === "image") {
-          const photoId = await this.uploadMedia(item);
-          uploadedPhotoIds.push(photoId);
-        }
-      }
-
-      const url = `${this.baseUrl}/${this.getPageId()}/feed`;
-      const params = new URLSearchParams({
-        message,
-        attached_media: JSON.stringify(uploadedPhotoIds.map((id) => ({ media_fbid: id }))),
-        access_token: this.getAccessToken(),
-      });
-
-      const response = await fetch(url, {
-        method: "POST",
-        body: params,
-      });
-
-      const data: FacebookPostResponse = await response.json();
-
-      if (data.error) {
-        return {
-          success: false,
-          error: data.error.message,
-        };
-      }
-
-      return {
-        success: true,
-        postId: data.id,
-        permalink: `https://facebook.com/${data.id}`,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-    }
-  }
-
-  private async uploadMedia(media: PostMedia): Promise<string> {
-    try {
-      const url = `${this.baseUrl}/${this.getPageId()}/photos`;
-      const params = new URLSearchParams({
-        url: media.url,
-        published: "false",
-        access_token: this.getAccessToken(),
-      });
-
-      const response = await fetch(url, {
-        method: "POST",
-        body: params,
-      });
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error.message);
-      }
-
-      return data.id;
-    } catch (error) {
-      throw new Error(`Failed to upload media: ${error instanceof Error ? error.message : "Unknown error"}`);
-    }
-  }
-
-  protected formatMessage(request: PostingPublishRequest): string {
-    let message = super.formatMessage(request);
-
-    if (request.mentions && request.mentions.length > 0) {
-      message += "\n" + request.mentions.map((mention) => `@${mention}`).join(" ");
-    }
-
-    return message;
+  private fail(error: unknown): PostingPublishResponse {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "Unknown Facebook error",
+    };
   }
 }

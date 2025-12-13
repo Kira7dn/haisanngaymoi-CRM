@@ -4,10 +4,10 @@ import { useState } from "react"
 import { Button } from "@shared/ui/button"
 import { Alert, AlertDescription } from "@shared/ui/alert"
 import { CheckCircle2, Copy, ExternalLink } from "lucide-react"
-import type { SocialPlatform } from "@/core/domain/social/social-auth"
+import { Platform } from "@/core/domain/marketing/post"
 
 interface WebhookGuidePanelProps {
-  platform: SocialPlatform
+  platform: Platform
 }
 
 export default function WebhookGuidePanel({ platform }: WebhookGuidePanelProps) {

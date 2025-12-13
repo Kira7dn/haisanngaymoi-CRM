@@ -1,6 +1,5 @@
 import type { Message } from "@/core/domain/messaging/message";
 import type { SendMessageResult } from "@/core/application/interfaces/messaging/messaging-adapter";
-import type { FacebookAuthService } from "../auth/facebook-auth-service";
 import { BaseMessagingAdapter } from "./messaging-service";
 
 /**
@@ -11,7 +10,10 @@ export class FacebookMessagingAdapter extends BaseMessagingAdapter {
   platform = "facebook" as const;
   private baseUrl = "https://graph.facebook.com/v19.0";
 
-  constructor(private auth: FacebookAuthService) {
+  constructor(
+    private token: string,
+    private pageId: string
+  ) {
     super();
   }
 
@@ -21,7 +23,7 @@ export class FacebookMessagingAdapter extends BaseMessagingAdapter {
     try {
       this.log("Getting customer info from Facebook Messenger", platformUserId);
 
-      const url = `${this.baseUrl}/${platformUserId}?access_token=${this.auth.getAccessToken()}`;
+      const url = `${this.baseUrl}/${platformUserId}?access_token=${this.token}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -149,7 +151,7 @@ export class FacebookMessagingAdapter extends BaseMessagingAdapter {
     try {
       this.log("Sending message to Facebook Messenger", payload);
 
-      const url = `${this.baseUrl}/me/messages?access_token=${this.auth.getAccessToken()}`;
+      const url = `${this.baseUrl}/me/messages?access_token=${this.token}`;
 
       const response = await fetch(url, {
         method: "POST",

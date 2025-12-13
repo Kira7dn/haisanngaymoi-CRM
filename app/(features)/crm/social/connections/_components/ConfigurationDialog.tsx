@@ -2,13 +2,13 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@shared/ui/dialog"
 import { Button } from "@shared/ui/button"
-import type { SocialPlatform } from "@/core/domain/social/social-auth"
 import WebhookGuidePanel from "./WebhookGuidePanel"
+import { Platform } from "@/core/domain/marketing/post"
 
 interface ConfigurationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  platform: SocialPlatform
+  platform: Platform
 }
 
 export default function ConfigurationDialog({

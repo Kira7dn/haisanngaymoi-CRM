@@ -1,15 +1,15 @@
 import type { Post } from "@/core/domain/marketing/post"
-import type { PostService } from "@/core/application/interfaces/marketing/post-service"
+import type { PostRepo } from "@/core/application/interfaces/marketing/post-repo"
 
 export interface GetPostsResponse {
   posts: Post[]
 }
 
 export class GetPostsUseCase {
-  constructor(private postService: PostService) { }
+  constructor(private postRepo: PostRepo) { }
 
   async execute(): Promise<GetPostsResponse> {
-    const posts = await this.postService.getAll()
+    const posts = await this.postRepo.getAll()
     return { posts }
   }
 }

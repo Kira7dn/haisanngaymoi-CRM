@@ -1,8 +1,8 @@
-import type { SocialPlatform } from "@/core/domain/social/social-auth";
-import type { OAuthAdapterResolver } from "@/core/application/interfaces/social/oauth-adapter-resolver";
+import { Platform } from "@/core/domain/marketing/post";
+import { OAuthAdapterResolver } from "../../interfaces/social/platform-oauth-adapter";
 
 export interface GetAuthorizationUrlRequest {
-    platform: SocialPlatform;
+    platform: Platform;
     userId?: string; // optional but FE thường gửi vào để gắn state
     state?: string;  // FE có thể tự truyền hoặc không
 }

@@ -9,7 +9,7 @@ WordPress Social Integration đã được triển khai hoàn tất theo đúng 
 ## 📁 Files Created
 
 ### Domain Layer
-- ✅ [core/domain/social/social-auth.ts](core/domain/social/social-auth.ts) - Updated `SocialPlatform` type to include "wordpress"
+- ✅ [core/domain/social/social-auth.ts](core/domain/social/social-auth.ts) - Updated `Platform` type to include "wordpress"
 
 ### Infrastructure Layer - OAuth & Auth
 - ✅ [infrastructure/adapters/external/social/auth/wordpress-oauth-gateway.ts](infrastructure/adapters/external/social/auth/wordpress-oauth-gateway.ts) - OAuth 2.0 flow handler

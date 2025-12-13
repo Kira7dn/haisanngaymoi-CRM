@@ -171,12 +171,5 @@ export class SendMessageUseCase {
         throw new Error('Message must have either content or attachments');
       }
     }
-
-    // Validate platform is supported
-    if (!this.messagingFactory.isSupported(request.platform)) {
-      throw new Error(
-        `Unsupported platform: ${request.platform}. Supported platforms: ${this.messagingFactory.getSupportedPlatforms().join(', ')}`
-      );
-    }
   }
 }

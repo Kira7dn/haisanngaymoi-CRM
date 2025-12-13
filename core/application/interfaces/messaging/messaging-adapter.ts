@@ -62,6 +62,4 @@ export interface MessagingService {
 export interface MessagingAdapterFactory {
   create(platform: Platform, channelId: string): Promise<MessagingService>;
   clearCache(): void;
-  getSupportedPlatforms(): Platform[];
-  isSupported(platform: Platform): boolean;
 }

@@ -1,10 +1,9 @@
-import type { SocialPlatform } from "@/core/domain/social/social-auth";
-import type { PlatformOAuthAdapter } from "@/core/application/interfaces/social/platform-oauth-adapter";
-import { OAuthAdapterResolver } from "@/core/application/interfaces/social/oauth-adapter-resolver";
+import type { OAuthAdapterResolver, PlatformOAuthAdapter } from "@/core/application/interfaces/social/platform-oauth-adapter";
+import { Platform } from "@/core/domain/marketing/post";
 
 export class OAuthAdapterFactory implements OAuthAdapterResolver {
 
-    async getAdapter(platform: SocialPlatform): Promise<PlatformOAuthAdapter> {
+    async getAdapter(platform: Platform): Promise<PlatformOAuthAdapter> {
 
         switch (platform) {
 

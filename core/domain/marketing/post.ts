@@ -4,33 +4,34 @@
  * Note: "wordpress" for blog post publishing
  * Note: "instagram" for Instagram Business Account posts
  */
-export type Platform = "facebook" | "youtube" | "tiktok" | "zalo" | "website" | "telegram" | "wordpress" | "instagram";
+export const PLATFORM = ["facebook", "youtube", "tiktok", "zalo", "website", "telegram", "wordpress", "instagram"] as const
+export type Platform = typeof PLATFORM[number]
 
 /**
  * Content types based on platform capabilities
  */
-export type ContentType =
-  | "reel"        // Facebook Reels, YouTube Shorts, TikTok Video
-  | "short"       // Alias cho reel
-  | "post"        // Photo post / feed / broadcast photo
-  | "video"       // Long video (>60s)
-  | "article"     // Article / long text post
-  | "story";      // Story post
+export const CONTENT_TYPES = [
+  "short", // Facebook Reels, YouTube Shorts, TikTok Video
+  "post", // Photo post / feed / broadcast photo
+  "video", // Long video (>60s)
+  "story" // Story post
+] as const;
+export type ContentType = typeof CONTENT_TYPES[number];
 
 /**
  * Post status for scheduling and publishing
  */
-export type PostStatus = "draft" | "scheduled" | "published" | "failed" | "archived";
+export const POST_STATUS = ["draft", "scheduled", "published", "failed", "archived"] as const;
+export type PostStatus = typeof POST_STATUS[number];
 
 /**
  * Media attachment for posts
  */
 export interface PostMedia {
-  type: "image" | "video" | "carousel";
+  type: "image" | "video";
   url: string;
   thumbnailUrl?: string;
   duration?: number; // For videos, in seconds
-  order?: number;    // For carousel/multiple images
 }
 
 /**
@@ -69,11 +70,11 @@ export class Post {
     public body: string | undefined,
     public contentType: ContentType,
     public platforms: PlatformMetadata[],
-    public media: PostMedia[],
+    public media: PostMedia,
     public scheduledAt: Date | undefined,
     public hashtags: string[],
     public mentions: string[],
-    public campaignId: string | undefined,
+    public userId: string | undefined,
     public metrics: PostMetrics,
     public readonly createdAt: Date,
     public updatedAt: Date
@@ -98,14 +99,7 @@ export function validatePost(data: Partial<Post>): string[] {
     errors.push("Content type is required")
   }
 
-  const validContentTypes: ContentType[] = [
-    "reel",
-    "short",
-    "post",
-    "video",
-    "article",
-    "story",
-  ]
+  const validContentTypes = [...CONTENT_TYPES]
   if (data.contentType && !validContentTypes.includes(data.contentType)) {
     errors.push(`Invalid content type. Must be one of: ${validContentTypes.join(", ")}`)
   }

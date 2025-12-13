@@ -1,13 +1,12 @@
 // Domain entity for Social Media Authentication (OAuth tokens)
 
 import { ObjectId } from "mongodb"
-
-export type SocialPlatform = "tiktok" | "facebook" | "youtube" | "zalo" | "wordpress" | "instagram"
+import { Platform } from "@/core/domain/marketing/post"
 
 export class SocialAuth {
   constructor(
     public readonly id: ObjectId = new ObjectId(),
-    public platform: SocialPlatform,
+    public platform: Platform,
     public openId: string,
     public pageName: string,
     public accessToken: string,
@@ -15,6 +14,7 @@ export class SocialAuth {
     public userId: ObjectId, // Reference to AdminUser
     public refreshToken?: string,
     public scope?: string, // OAuth scopes granted
+    public metadata?: Record<string, unknown>, // Platform-specific metadata (e.g., siteUrl for WordPress)
     public readonly createdAt: Date = new Date(),
     public updatedAt: Date = new Date()
   ) { }

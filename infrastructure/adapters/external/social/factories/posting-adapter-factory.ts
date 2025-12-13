@@ -1,227 +1,234 @@
+// infrastructure/adapters/external/social/factories/posting-adapter-factory.ts
+
+import type { SocialAuth } from "@/core/domain/social/social-auth";
+import { isTokenExpired } from "@/core/domain/social/social-auth";
+import type { PostingAdapter, PostingAdapterFactory } from "@/core/application/interfaces/marketing/posting-adapter";
+import { OAuthAdapterFactory } from "./oauth-adapter-factory";
+import { SocialAuthRepository } from "@/infrastructure/repositories/social/social-auth-repo";
+import { ObjectId } from "mongodb";
 import type { Platform } from "@/core/domain/marketing/post";
-import type { SocialPlatform } from "@/core/domain/social/social-auth";
-import type { PostingService, PostingAdapterFactory } from "@/core/application/interfaces/marketing/posting-adapter";
-import type { PlatformOAuthService } from "@/core/application/interfaces/social/platform-oauth-adapter";
 
 /**
- * Platform Posting Adapter Factory
- * Creates posting adapters with shared authentication service
+ * Auth service wrapper interface
  */
-export class PlatformPostingAdapterFactory implements PostingAdapterFactory {
-  // Cache key: `${platform}-${userId}`
-  private authServices: Map<string, PlatformOAuthService> = new Map();
-  private postingAdapters: Map<string, PostingService> = new Map();
-
-  async create(platform: Platform, userId: string): Promise<PostingService> {
-    if (!userId) {
-      throw new Error(`User ID is required for ${platform} posting`);
-    }
-
-    const cacheKey = `${platform}-${userId}`;
-
-    // Return cached adapter if exists
-    if (this.postingAdapters.has(cacheKey)) {
-      return this.postingAdapters.get(cacheKey)!;
-    }
-
-    // Get or create auth service
-    const authService = await this.getOrCreateAuthService(platform, userId);
-
-    // Create posting adapter with auth service
-    let adapter: PostingService;
-
-    switch (platform) {
-      case "facebook": {
-        const { FacebookPostingAdapter } = await import("../posting/facebook-posting-adapter");
-        adapter = new FacebookPostingAdapter(authService as any);
-        break;
-      }
-
-      case "instagram": {
-        const { InstagramPostingAdapter } = await import("../posting/instagram-posting-adapter");
-        adapter = new InstagramPostingAdapter(authService as any);
-        break;
-      }
-
-      case "tiktok": {
-        const { TikTokPostingAdapter } = await import("../posting/tiktok-posting-adapter");
-        adapter = new TikTokPostingAdapter(authService as any);
-        break;
-      }
-
-      case "zalo": {
-        const { ZaloPostingAdapter } = await import("../posting/zalo-posting-adapter");
-        adapter = new ZaloPostingAdapter(authService as any);
-        break;
-      }
-
-      case "youtube": {
-        const { YouTubePostingAdapter } = await import("../posting/youtube-posting-adapter");
-        adapter = new YouTubePostingAdapter(authService as any);
-        break;
-      }
-
-      case "wordpress": {
-        const { WordPressPostingAdapter } = await import("../posting/wordpress-posting-adapter");
-        adapter = new WordPressPostingAdapter(authService as any);
-        break;
-      }
-
-      default:
-        throw new Error(`Unsupported platform for posting: ${platform}`);
-    }
-
-    // Cache the adapter
-    this.postingAdapters.set(cacheKey, adapter);
-    return adapter;
-  }
-
-  private async getOrCreateAuthService(
-    platform: Platform,
-    userId: string
-  ): Promise<PlatformOAuthService> {
-    const cacheKey = `${platform}-${userId}`;
-
-    if (this.authServices.has(cacheKey)) {
-      return this.authServices.get(cacheKey)!;
-    }
-
-    // Filter out non-social platforms
-    if (platform === "website" || platform === "telegram") {
-      throw new Error(`Platform ${platform} does not support social auth posting`);
-    }
-
-    // Get auth data from database
-    const { SocialAuthRepository } = await import("@/infrastructure/repositories/social/social-auth-repo");
-    const { ObjectId } = await import("mongodb");
-
-    const repo = new SocialAuthRepository();
-    const auth = await repo.getByUserAndPlatform(new ObjectId(userId), platform as SocialPlatform);
-
-    if (!auth) {
-      throw new Error(`${platform} account not connected for user ${userId}`);
-    }
-
-    if (new Date() >= auth.expiresAt) {
-      throw new Error(`${platform} token has expired. Please reconnect your account.`);
-    }
-
-    let authService: PlatformOAuthService;
-
-    switch (platform) {
-      case "facebook": {
-        const { FacebookAuthService } = await import("../auth/facebook-auth-service");
-        authService = new FacebookAuthService({
-          appId: process.env.FACEBOOK_APP_ID || "",
-          appSecret: process.env.FACEBOOK_APP_SECRET || "",
-          pageId: auth.openId,
-          accessToken: auth.accessToken,
-          expiresAt: auth.expiresAt,
-        });
-        break;
-      }
-
-      case "instagram": {
-        const { InstagramAuthService } = await import("../auth/instagram-auth-service");
-        authService = new InstagramAuthService({
-          appId: process.env.INSTAGRAM_APP_ID || process.env.FACEBOOK_APP_ID || "",
-          appSecret: process.env.INSTAGRAM_APP_SECRET || process.env.FACEBOOK_APP_SECRET || "",
-          pageId: auth.openId,
-          instagramBusinessAccountId: auth.openId,
-          accessToken: auth.accessToken,
-          expiresAt: auth.expiresAt,
-        });
-        break;
-      }
-
-      case "tiktok": {
-        const { TikTokAuthService } = await import("../auth/tiktok-auth-service");
-        authService = new TikTokAuthService({
-          clientKey: process.env.TIKTOK_CLIENT_KEY || "",
-          clientSecret: process.env.TIKTOK_CLIENT_SECRET || "",
-          accessToken: auth.accessToken,
-          refreshToken: auth.refreshToken,
-          expiresAt: auth.expiresAt,
-        });
-        break;
-      }
-
-      case "zalo": {
-        const { ZaloAuthService } = await import("../auth/zalo-auth-service");
-        authService = new ZaloAuthService({
-          appId: process.env.ZALO_APP_ID || "",
-          appSecret: process.env.ZALO_APP_SECRET || "",
-          pageId: auth.openId,
-          accessToken: auth.accessToken,
-          expiresAt: auth.expiresAt,
-          refreshToken: auth.refreshToken,
-        });
-        break;
-      }
-
-      case "youtube": {
-        const { YouTubeAuthService } = await import("../auth/youtube-auth-service");
-        authService = new YouTubeAuthService({
-          apiKey: process.env.YOUTUBE_API_KEY || "",
-          clientId: process.env.YOUTUBE_CLIENT_ID || "",
-          clientSecret: process.env.YOUTUBE_CLIENT_SECRET || "",
-          refreshToken: auth.refreshToken,
-          accessToken: auth.accessToken,
-          expiresAt: auth.expiresAt,
-        });
-        break;
-      }
-
-      case "wordpress": {
-        const { WordPressAuthService } = await import("../auth/wordpress-auth-service");
-        authService = new WordPressAuthService({
-          siteUrl: auth.pageName,
-          blogId: auth.openId,
-          accessToken: auth.accessToken,
-          expiresAt: auth.expiresAt,
-        });
-        break;
-      }
-
-      default:
-        throw new Error(`Unsupported platform: ${platform}`);
-    }
-
-    this.authServices.set(cacheKey, authService);
-    return authService;
-  }
-
-  clearCache(): void {
-    this.authServices.clear();
-    this.postingAdapters.clear();
-  }
-
-  clearUserCache(platform: Platform, userId: string): void {
-    const cacheKey = `${platform}-${userId}`;
-    this.authServices.delete(cacheKey);
-    this.postingAdapters.delete(cacheKey);
-  }
-
-  getSupportedPlatforms(): Platform[] {
-    return ["facebook", "instagram", "tiktok", "zalo", "youtube", "wordpress"];
-  }
-
-  isSupported(platform: Platform): boolean {
-    return this.getSupportedPlatforms().includes(platform);
-  }
+interface AuthServiceWrapper {
+    getAccessToken: () => string;
+    getPageId: () => string;
+    verifyAuth: () => Promise<boolean>;
+    auth: SocialAuth;
 }
 
 /**
- * Singleton instance
+ * Platform Posting Adapter Factory
+ * Creates posting adapters with automatic token validation and refresh
  */
-let postingAdapterFactory: PlatformPostingAdapterFactory | null = null;
+export class PlatformPostingAdapterFactory implements PostingAdapterFactory {
+    private authServiceCache: Map<string, AuthServiceWrapper> = new Map();
+    private postingAdapterCache: Map<string, PostingAdapter> = new Map();
+    private socialAuthRepo: SocialAuthRepository;
 
-/**
- * Get posting adapter factory instance (singleton)
- */
+    constructor() {
+        this.socialAuthRepo = new SocialAuthRepository();
+    }
+
+    /**
+     * Create Posting Adapter with automatic token management
+     * @param platform - Social media platform
+     * @param userIdOrAuth - User ID (ObjectId or string) or SocialAuth object (for backwards compatibility)
+     */
+    async create(platform: Platform, userIdOrAuth: ObjectId | string | SocialAuth): Promise<PostingAdapter> {
+        // Validate platform is a social platform
+
+        let auth: SocialAuth | null;
+        let userId: ObjectId;
+
+        // Handle different input types
+        if (typeof userIdOrAuth === 'object' && 'platform' in userIdOrAuth) {
+            // Legacy mode: SocialAuth object provided
+            auth = userIdOrAuth as SocialAuth;
+            userId = auth.userId;
+        } else {
+            // New mode: userId provided, fetch auth from DB
+            userId = typeof userIdOrAuth === 'string' ? new ObjectId(userIdOrAuth) : userIdOrAuth;
+            auth = await this.socialAuthRepo.getByUserAndPlatform(userId, platform);
+
+            if (!auth) {
+                throw new Error(`No social auth found for user ${userId.toString()} on ${platform}`);
+            }
+        }
+
+        const cacheKey = `${platform}-${userId.toString()}`;
+
+        // Check if token is expired and refresh if needed
+        if (isTokenExpired(auth.expiresAt)) {
+            console.log(`Token expired for ${platform} (user: ${userId.toString()}), refreshing...`);
+            auth = await this.refreshTokenIfNeeded(platform, auth);
+
+            // Clear cache to force recreation with new token
+            this.clearUserCache(platform, userId.toString());
+        }
+
+        /** Return cached adapter if available and token is still valid */
+        if (this.postingAdapterCache.has(cacheKey)) {
+            return this.postingAdapterCache.get(cacheKey)!;
+        }
+
+        /** Create or reuse AuthService (stateful API runtime client) */
+        const authService = await this.getOrCreateAuthService(platform, auth);
+
+        /** Create posting adapter */
+        const postingAdapter = await this.createPostingAdapter(platform, authService);
+
+        /** Cache the adapter */
+        this.postingAdapterCache.set(cacheKey, postingAdapter);
+
+        return postingAdapter;
+    }
+
+    /**
+     * Refresh token if expired
+     */
+    private async refreshTokenIfNeeded(platform: Platform, auth: SocialAuth): Promise<SocialAuth> {
+        if (!auth.refreshToken && !auth.accessToken) {
+            throw new Error(`Cannot refresh token for ${platform}: No refresh token or access token available`);
+        }
+
+        try {
+            const oauthAdapter = await new OAuthAdapterFactory().getAdapter(platform);
+
+            // Use refreshToken if available, otherwise use accessToken (for Facebook/Instagram)
+            const tokenToRefresh = auth.refreshToken || auth.accessToken;
+
+            if (!oauthAdapter.refreshToken) {
+                throw new Error(`Platform ${platform} does not support token refresh`);
+            }
+
+            const refreshResult = await oauthAdapter.refreshToken(tokenToRefresh);
+
+            // Update token in database
+            const updatedAuth = await this.socialAuthRepo.refreshToken({
+                userId: auth.userId,
+                platform: auth.platform,
+                newAccessToken: refreshResult.accessToken,
+                newRefreshToken: refreshResult.refreshToken || auth.refreshToken || auth.accessToken,
+                expiresInSeconds: refreshResult.expiresIn,
+            });
+
+            if (!updatedAuth) {
+                throw new Error(`Failed to update refreshed token in database for ${platform}`);
+            }
+
+            console.log(`Token refreshed successfully for ${platform} (user: ${auth.userId.toString()})`);
+            return updatedAuth;
+
+        } catch (error) {
+            console.error(`Failed to refresh token for ${platform}:`, error);
+            throw new Error(`Token refresh failed for ${platform}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
+     * Create a simple auth service wrapper for posting adapters
+     * Provides getAccessToken() and getPageId() methods
+     */
+    private createAuthServiceWrapper(auth: SocialAuth): AuthServiceWrapper {
+        return {
+            getAccessToken: () => auth.accessToken,
+            getPageId: () => auth.openId, // openId stores pageId/channelId
+            verifyAuth: async () => {
+                const oauthAdapter = await new OAuthAdapterFactory().getAdapter(auth.platform);
+                return await oauthAdapter.verifyAccessToken(auth.accessToken);
+            },
+            // For backwards compatibility
+            auth: auth,
+        };
+    }
+
+    /**
+     * Create or reuse auth service wrapper (stateful)
+     */
+    private async getOrCreateAuthService(platform: Platform, auth: SocialAuth): Promise<AuthServiceWrapper> {
+        const cacheKey = `${platform}-${auth.userId.toString()}`;
+
+        const cached = this.authServiceCache.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
+        // Create auth service wrapper with current credentials
+        const authService = this.createAuthServiceWrapper(auth);
+
+        this.authServiceCache.set(cacheKey, authService);
+
+        return authService;
+    }
+
+    /**
+     * Build platform-specific Posting Adapter
+     */
+    private async createPostingAdapter(platform: Platform, authService: AuthServiceWrapper): Promise<PostingAdapter> {
+        // Extract token and platform-specific data from authService
+        const token = authService.getAccessToken();
+        const pageId = authService.getPageId();
+        const auth = authService.auth;
+
+        switch (platform) {
+            case "facebook": {
+                const { FacebookPostingAdapter } = await import("../posting/facebook-posting-adapter");
+                return new FacebookPostingAdapter(token, pageId);
+            }
+
+            case "instagram": {
+                const { InstagramPostingAdapter } = await import("../posting/instagram-posting-adapter");
+                return new InstagramPostingAdapter(token, pageId);
+            }
+
+            case "tiktok": {
+                const { TikTokPostingAdapter } = await import("../posting/tiktok-posting-adapter");
+                return new TikTokPostingAdapter(token);
+            }
+
+            case "youtube": {
+                const { YouTubePostingAdapter } = await import("../posting/youtube-posting-adapter");
+                return new YouTubePostingAdapter(token);
+            }
+
+            case "wordpress": {
+                const { WordPressPostingAdapter } = await import("../posting/wordpress-posting-adapter");
+                // WordPress needs siteId and siteUrl from auth metadata
+                return new WordPressPostingAdapter(token, {
+                    siteId: auth.openId,
+                    siteUrl: auth.metadata?.siteUrl as string | undefined
+                });
+            }
+
+            case "zalo": {
+                const { ZaloPostingAdapter } = await import("../posting/zalo-posting-adapter");
+                return new ZaloPostingAdapter(token);
+            }
+
+            default:
+                throw new Error(`Unsupported posting platform: ${platform}`);
+        }
+    }
+
+    /** Clear all (optional for logout or user revoke) */
+    clearCache(): void {
+        this.authServiceCache.clear();
+        this.postingAdapterCache.clear();
+    }
+
+    clearUserCache(platform: Platform, userId: string): void {
+        const key = `${platform}-${userId}`;
+        this.authServiceCache.delete(key);
+        this.postingAdapterCache.delete(key);
+    }
+}
+
+/** Singleton accessor */
+let instance: PlatformPostingAdapterFactory | null = null;
+
 export function getPostingAdapterFactory(): PlatformPostingAdapterFactory {
-  if (!postingAdapterFactory) {
-    postingAdapterFactory = new PlatformPostingAdapterFactory();
-  }
-  return postingAdapterFactory;
+    if (!instance) instance = new PlatformPostingAdapterFactory();
+    return instance;
 }

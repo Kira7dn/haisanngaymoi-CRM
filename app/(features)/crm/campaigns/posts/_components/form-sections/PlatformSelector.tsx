@@ -16,25 +16,14 @@ const PLATFORMS: { value: Platform; label: string; color: string }[] = [
 
 // Content types
 const CONTENT_TYPES: { value: ContentType; label: string }[] = [
-  { value: 'reel', label: 'Reel / Shorts' },
+  { value: 'short', label: 'Reel / Shorts' },
   { value: 'post', label: 'Photo Post' },
   { value: 'video', label: 'Video dài (>60s)' },
-  { value: 'article', label: 'Article / Bài viết dài' },
   { value: 'story', label: 'Story' },
 ]
 
 // Compatibility mapping
 const CONTENT_PLATFORM_MAP: Record<ContentType, Record<Platform, "supported" | "warning" | "unsupported">> = {
-  reel: {
-    facebook: "supported",
-    youtube: "supported",
-    tiktok: "supported",
-    zalo: "unsupported",
-    website: "unsupported",
-    telegram: "unsupported",
-    wordpress: "unsupported",
-    instagram: "supported"
-  },
   short: {
     facebook: "supported",
     youtube: "supported",
@@ -64,16 +53,6 @@ const CONTENT_PLATFORM_MAP: Record<ContentType, Record<Platform, "supported" | "
     telegram: "unsupported",
     wordpress: "warning",
     instagram: "supported"
-  },
-  article: {
-    facebook: "warning",
-    youtube: "supported",
-    tiktok: "unsupported",
-    zalo: "supported",
-    website: "supported",
-    telegram: "supported",
-    wordpress: "supported",
-    instagram: "unsupported"
   },
   story: {
     facebook: "supported",

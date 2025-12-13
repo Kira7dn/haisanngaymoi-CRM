@@ -1,7 +1,6 @@
 import type { PostMetrics, PostMedia } from "@/core/domain/marketing/post";
-import type { YouTubeAuthService } from "../auth/youtube-auth-service";
-import { BasePostingAdapter } from "./base-posting-service";
-import type { PostingPublishRequest, PostingPublishResponse } from "@/core/application/interfaces/marketing/posting-adapter";
+import type { PostingAdapter, PostingPublishRequest, PostingPublishResponse } from "@/core/application/interfaces/marketing/posting-adapter";
+import { emptyMetrics, sleep } from "./utils";
 
 /**
  * YouTube API Response Types
@@ -55,85 +54,65 @@ interface YouTubeErrorResponse {
   };
 }
 
-export class YouTubePostingAdapter extends BasePostingAdapter {
+export class YouTubePostingAdapter implements PostingAdapter {
   platform = "youtube" as const;
   private baseUrl = "https://www.googleapis.com/youtube/v3";
   private uploadUrl = "https://www.googleapis.com/upload/youtube/v3";
 
-  constructor(private auth: YouTubeAuthService) {
-    super();
-  }
-
-  async verifyAuth(): Promise<boolean> {
-    return await this.auth.verifyAuth();
-  }
+  constructor(private token: string) { }
 
   async publish(request: PostingPublishRequest): Promise<PostingPublishResponse> {
-    try {
-      // YouTube requires video media
-      const videoMedia = request.media.find((m) => m.type === "video");
-      if (!videoMedia) {
-        return {
-          success: false,
-          error: "YouTube requires video content",
-        };
-      }
-
-      // Upload video
-      const videoId = await this.uploadVideo(videoMedia, request.title, this.formatDescription(request));
-
-      // Wait for processing
-      const status = await this.waitForProcessing(videoId);
-      if (status !== "ready") {
-        return {
-          success: false,
-          error: `Video processing failed with status: ${status}`,
-        };
-      }
-
-      return {
-        success: true,
-        postId: videoId,
-        permalink: `https://www.youtube.com/watch?v=${videoId}`,
-      };
-    } catch (error) {
+    if (!request.media || request.media.type !== "video") {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: "YouTube requires video content",
       };
     }
+
+    const videoId = await this.uploadVideo(
+      request.media,
+      request.title ?? "",
+      this.formatDescription(request)
+    );
+
+    const status = await this.waitForProcessing(videoId);
+    if (status !== "ready") {
+      return {
+        success: false,
+        error: `Video processing failed with status: ${status}`,
+      };
+    }
+
+    return {
+      success: true,
+      postId: videoId,
+      permalink: `https://www.youtube.com/watch?v=${videoId}`,
+    };
   }
 
   async update(postId: string, request: PostingPublishRequest): Promise<PostingPublishResponse> {
     try {
-      const token = this.auth.getAccessToken();
-      const url = `${this.baseUrl}/videos`;
-      const params = new URLSearchParams({
-        part: "snippet,status",
-      });
+      const res = await fetch(
+        `${this.baseUrl}/videos?part=snippet,status`,
+        {
+          method: "PUT",
+          headers: this.jsonHeaders(),
+          body: JSON.stringify({
+            id: postId,
+            snippet: {
+              title: request.title,
+              description: this.formatDescription(request),
+              categoryId: "22",
+              tags: request.hashtags,
+            },
+            status: {
+              privacyStatus: "public",
+            },
+          }),
+        }
+      );
 
-      const response = await fetch(`${url}?${params.toString()}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: postId,
-          snippet: {
-            title: request.title,
-            description: this.formatDescription(request),
-            categoryId: "22", // People & Blogs
-            tags: request.hashtags,
-          },
-          status: {
-            privacyStatus: "public",
-          },
-        }),
-      });
-
-      const data = await response.json();
-
+      const data = await res.json();
       if (data.error) {
         return {
           success: false,
@@ -156,313 +135,173 @@ export class YouTubePostingAdapter extends BasePostingAdapter {
 
   async delete(postId: string): Promise<boolean> {
     try {
-      const token = this.auth.getAccessToken();
-      const url = `${this.baseUrl}/videos`;
-      const params = new URLSearchParams({
-        id: postId,
-      });
+      const res = await fetch(
+        `${this.baseUrl}/videos?id=${postId}`,
+        {
+          method: "DELETE",
+          headers: this.authHeaders(),
+        }
+      );
 
-      const response = await fetch(`${url}?${params.toString()}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      return response.status === 204;
-    } catch (error) {
-      console.error("Failed to delete YouTube video:", error);
+      return res.status === 204;
+    } catch {
       return false;
     }
   }
 
   async getMetrics(postId: string): Promise<PostMetrics> {
     try {
-      const token = this.auth.getAccessToken();
-      const url = `${this.baseUrl}/videos`;
-      const params = new URLSearchParams({
-        part: "statistics,snippet",
-        id: postId,
-      });
+      const res = await fetch(
+        `${this.baseUrl}/videos?part=statistics&id=${postId}`,
+        { headers: this.authHeaders() }
+      );
 
-      const response = await fetch(`${url}?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data: YouTubeVideoResponse = await response.json();
-
-      if (!data.items || data.items.length === 0) {
-        throw new Error("Video not found");
-      }
-
-      const video = data.items[0];
-      const stats = video.statistics;
+      const data: YouTubeVideoResponse = await res.json();
+      const video = data.items?.[0];
+      const s = video?.statistics;
 
       return {
-        views: parseInt(stats.viewCount) || 0,
-        likes: parseInt(stats.likeCount) || 0,
-        comments: parseInt(stats.commentCount) || 0,
-        shares: 0, // YouTube doesn't provide share count via API
-        reach: parseInt(stats.viewCount) || 0,
-        engagement: parseInt(stats.likeCount) + parseInt(stats.commentCount),
-        lastSyncedAt: new Date(),
-      };
-    } catch (error) {
-      console.error("Failed to get YouTube metrics:", error);
-      return {
-        views: 0,
-        likes: 0,
-        comments: 0,
+        views: Number(s?.viewCount ?? 0),
+        likes: Number(s?.likeCount ?? 0),
+        comments: Number(s?.commentCount ?? 0),
         shares: 0,
-        reach: 0,
-        engagement: 0,
+        reach: Number(s?.viewCount ?? 0),
+        engagement:
+          Number(s?.likeCount ?? 0) +
+          Number(s?.commentCount ?? 0),
         lastSyncedAt: new Date(),
       };
+    } catch {
+      return emptyMetrics();
     }
   }
 
-  /**
-   * Upload video to YouTube using resumable upload protocol
-   */
-  private async uploadVideo(media: PostMedia, title: string, description?: string): Promise<string> {
-    try {
-      const token = this.auth.getAccessToken();
+  // ================== PRIVATE ==================
 
-      // Step 1: Get video size from HEAD request
-      console.log(`Checking video size from URL: ${media.url}`);
-      const headResponse = await fetch(media.url, { method: "HEAD" });
+  private async uploadVideo(
+    media: PostMedia,
+    title: string,
+    description: string
+  ): Promise<string> {
+    const head = await fetch(media.url, { method: "HEAD" });
+    const size = Number(head.headers.get("Content-Length"));
 
-      if (!headResponse.ok) {
-        throw new Error(`Failed to access video URL: ${headResponse.status} ${headResponse.statusText}`);
-      }
+    if (!size) {
+      throw new Error("Video URL missing Content-Length");
+    }
 
-      const contentLength = headResponse.headers.get("Content-Length");
-      if (!contentLength) {
-        throw new Error("Video URL does not provide Content-Length header");
-      }
-
-      const videoSize = parseInt(contentLength, 10);
-      console.log(`Video size: ${videoSize} bytes (${(videoSize / 1024 / 1024).toFixed(2)} MB)`);
-
-      // Step 2: Initialize resumable upload session
-      const initUrl = `${this.uploadUrl}/videos`;
-      const params = new URLSearchParams({
-        part: "snippet,status",
-        uploadType: "resumable",
-      });
-
-      const metadata = {
-        snippet: {
-          title,
-          description: description || "",
-          categoryId: "22", // People & Blogs
-          defaultLanguage: "vi",
-        },
-        status: {
-          privacyStatus: "public",
-          selfDeclaredMadeForKids: false,
-        },
-      };
-
-      console.log("Initializing resumable upload session...");
-      const initResponse = await fetch(`${initUrl}?${params.toString()}`, {
+    const init = await fetch(
+      `${this.uploadUrl}/videos?part=snippet,status&uploadType=resumable`,
+      {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json; charset=UTF-8",
-          "X-Upload-Content-Length": videoSize.toString(),
+          ...this.jsonHeaders(),
+          "X-Upload-Content-Length": size.toString(),
           "X-Upload-Content-Type": "video/*",
         },
-        body: JSON.stringify(metadata),
-      });
-
-      if (!initResponse.ok) {
-        const errorText = await initResponse.text();
-        throw new Error(`Failed to initialize upload: ${initResponse.status} - ${errorText}`);
+        body: JSON.stringify({
+          snippet: {
+            title,
+            description,
+            categoryId: "22",
+            defaultLanguage: "vi",
+          },
+          status: {
+            privacyStatus: "public",
+            selfDeclaredMadeForKids: false,
+          },
+        }),
       }
+    );
 
-      // Step 3: Get the resumable session URI
-      const uploadSessionUri = initResponse.headers.get("Location");
-      if (!uploadSessionUri) {
-        throw new Error("Failed to get upload session URI from Location header");
-      }
-
-      console.log(`Upload session initialized. Session URI obtained.`);
-
-      // Step 4: Stream video directly from URL to YouTube
-      const videoId = await this.uploadVideoStream(uploadSessionUri, media.url, videoSize);
-
-      console.log(`Video uploaded successfully. Video ID: ${videoId}`);
-      return videoId;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error("YouTube upload error:", errorMessage);
-      throw new Error(`Failed to upload video to YouTube: ${errorMessage}`);
+    const sessionUri = init.headers.get("Location");
+    if (!sessionUri) {
+      throw new Error("Missing resumable upload session URI");
     }
+
+    return this.uploadVideoStream(sessionUri, media.url, size);
   }
 
-  /**
-   * Stream video directly from URL to YouTube without buffering entire file
-   */
   private async uploadVideoStream(
     sessionUri: string,
     videoUrl: string,
     videoSize: number,
-    maxRetries = 3
+    retries = 3
   ): Promise<string> {
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        console.log(`Upload attempt ${attempt + 1}/${maxRetries}...`);
-
-        // Fetch video and stream it directly
-        const videoResponse = await fetch(videoUrl);
-
-        if (!videoResponse.ok) {
-          throw new Error(`Failed to fetch video: ${videoResponse.status}`);
-        }
-
-        if (!videoResponse.body) {
-          throw new Error("Video response has no body stream");
-        }
-
-        // Upload with streaming body
-        const uploadResponse = await fetch(sessionUri, {
-          method: "PUT",
-          headers: {
-            "Content-Length": videoSize.toString(),
-            "Content-Type": "video/*",
-          },
-          body: videoResponse.body,
-          // @ts-ignore - duplex is needed for streaming in Node.js fetch
-          duplex: "half",
-        });
-
-        // HTTP 200 or 201 - Upload successful
-        if (uploadResponse.status === 200 || uploadResponse.status === 201) {
-          const data: YouTubeVideoUploadResponse = await uploadResponse.json();
-          if (!data.id) {
-            throw new Error("Upload completed but no video ID in response");
-          }
-          console.log(`Upload successful! Video ID: ${data.id}, Status: ${data.status?.uploadStatus}`);
-          return data.id;
-        }
-
-        // HTTP 308 - Resume incomplete
-        if (uploadResponse.status === 308) {
-          console.log("Upload incomplete (308). Retrying...");
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          continue;
-        }
-
-        // HTTP 5xx - Server error
-        if (uploadResponse.status >= 500) {
-          const waitTime = Math.min(1000 * Math.pow(2, attempt), 16000);
-          console.warn(`Server error ${uploadResponse.status}. Retrying in ${waitTime}ms...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-
-        // HTTP 4xx - Client error (permanent failure)
-        if (uploadResponse.status >= 400 && uploadResponse.status < 500) {
-          const errorText = await uploadResponse.text();
-          throw new Error(`Upload failed: ${uploadResponse.status} - ${errorText}`);
-        }
-
-        // Unexpected status
-        const errorText = await uploadResponse.text();
-        throw new Error(`Unexpected response ${uploadResponse.status}: ${errorText}`);
-
-      } catch (error) {
-        if (attempt === maxRetries - 1) {
-          throw error; // Max retries exceeded
-        }
-
-        // Retry network errors
-        if (error instanceof TypeError) {
-          const waitTime = Math.min(1000 * Math.pow(2, attempt), 16000);
-          console.warn(`Network error. Retrying in ${waitTime}ms...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-
-        throw error; // Non-retryable error
-      }
-    }
-
-    throw new Error("Upload failed after maximum retries");
-  }
-
-  /**
-   * Get video processing status
-   */
-  private async getVideoStatus(videoId: string): Promise<"processing" | "ready" | "failed"> {
-    try {
-      const token = this.auth.getAccessToken();
-      const url = `${this.baseUrl}/videos`;
-      const params = new URLSearchParams({
-        part: "status,processingDetails",
-        id: videoId,
-      });
-
-      const response = await fetch(`${url}?${params.toString()}`, {
+    for (let i = 0; i < retries; i++) {
+      const stream = await fetch(videoUrl);
+      const res = await fetch(sessionUri, {
+        method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
+          "Content-Length": videoSize.toString(),
+          "Content-Type": "video/*",
         },
+        body: stream.body,
+        // @ts-ignore
+        duplex: "half",
       });
 
-      const data: YouTubeVideoResponse = await response.json();
-
-      if (!data.items || data.items.length === 0) {
-        return "failed";
+      if (res.status === 200 || res.status === 201) {
+        const data: YouTubeVideoUploadResponse = await res.json();
+        return data.id;
       }
 
-      const status = data.items[0].status.uploadStatus;
-
-      switch (status) {
-        case "processed":
-          return "ready";
-        case "uploaded":
-          return "processing";
-        case "failed":
-          return "failed";
-        default:
-          return "processing";
+      if (res.status === 308) {
+        await sleep(2000);
+        continue;
       }
-    } catch (error) {
-      return "failed";
+
+      if (res.status >= 500) {
+        await sleep(1000 * Math.pow(2, i));
+        continue;
+      }
+
+      throw new Error(await res.text());
     }
+
+    throw new Error("Upload failed after retries");
   }
 
-  /**
-   * Wait for video processing to complete
-   */
-  private async waitForProcessing(videoId: string, maxAttempts = 60): Promise<"processing" | "ready" | "failed"> {
+  private async getVideoStatus(videoId: string): Promise<"processing" | "ready" | "failed"> {
+    const res = await fetch(
+      `${this.baseUrl}/videos?part=status&id=${videoId}`,
+      { headers: this.authHeaders() }
+    );
+
+    const data: YouTubeVideoResponse = await res.json();
+    const status = data.items?.[0]?.status.uploadStatus;
+
+    if (status === "processed") return "ready";
+    if (status === "failed") return "failed";
+    return "processing";
+  }
+
+  private async waitForProcessing(
+    videoId: string,
+    maxAttempts = 60
+  ): Promise<"processing" | "ready" | "failed"> {
     for (let i = 0; i < maxAttempts; i++) {
       const status = await this.getVideoStatus(videoId);
-
-      if (status === "ready" || status === "failed") {
-        return status;
-      }
-
-      // Wait 5 seconds before next check
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      if (status !== "processing") return status;
+      await sleep(5000);
     }
-
     return "failed";
   }
 
-  /**
-   * Format description with body and hashtags
-   */
   private formatDescription(request: PostingPublishRequest): string {
-    let description = request.body || "";
+    const tags =
+      request.hashtags?.map((t) => `#${t}`).join(" ") ?? "";
+    return [request.body, tags].filter(Boolean).join("\n\n");
+  }
 
-    if (request.hashtags.length > 0) {
-      description += "\n\n" + request.hashtags.map((tag) => `#${tag}`).join(" ");
-    }
+  private authHeaders(): HeadersInit {
+    return { Authorization: `Bearer ${this.token}` };
+  }
 
-    return description;
+  private jsonHeaders(): HeadersInit {
+    return {
+      ...this.authHeaders(),
+      "Content-Type": "application/json",
+    };
   }
 }

@@ -1,7 +1,6 @@
 import type { PostMetrics, PostMedia } from "@/core/domain/marketing/post";
-import type { ZaloAuthService } from "../auth/zalo-auth-service";
-import { BasePostingAdapter } from "./base-posting-service";
-import type { PostingPublishRequest, PostingPublishResponse } from "@/core/application/interfaces/marketing/posting-adapter";
+import type { PostingAdapter, PostingPublishRequest, PostingPublishResponse } from "@/core/application/interfaces/marketing/posting-adapter";
+import { emptyMetrics } from "./utils";
 
 /**
  * Zalo API Response Types
@@ -9,7 +8,7 @@ import type { PostingPublishRequest, PostingPublishResponse } from "@/core/appli
 interface ZaloResponse {
   error: number;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 interface ZaloMessageResponse extends ZaloResponse {
@@ -25,329 +24,188 @@ interface ZaloUploadResponse extends ZaloResponse {
   };
 }
 
-export class ZaloPostingAdapter extends BasePostingAdapter {
+/**
+ * Zalo Posting Adapter
+ * Handles broadcasting messages to Zalo OA followers
+ */
+export class ZaloPostingAdapter implements PostingAdapter {
   platform = "zalo" as const;
   private baseUrl = "https://openapi.zalo.me/v2.0";
 
-  constructor(private auth: ZaloAuthService) {
-    super();
-  }
-
-  async verifyAuth(): Promise<boolean> {
-    return await this.auth.verifyAuth();
-  }
+  constructor(private token: string) { }
 
   async publish(request: PostingPublishRequest): Promise<PostingPublishResponse> {
-    try {
-      if (!request.title && !request.body) {
-        return {
-          success: false,
-          error: "Title or body is required for Zalo post",
-        };
-      }
-
-      const message = this.formatMessage(request);
-
-      // Zalo OA broadcasts to followers
-      if (request.media.length > 0) {
-        return await this.publishWithMedia(message, request.media);
-      } else {
-        return await this.publishTextPost(message);
-      }
-    } catch (error) {
+    if (!request.title && !request.body) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: "Title or body is required for Zalo message",
       };
     }
+
+    const message = this.formatMessage(request);
+
+    return request.media
+      ? this.publishWithMedia(message, request.media)
+      : this.publishText(message);
   }
 
-  async update(postId: string, request: PostingPublishRequest): Promise<PostingPublishResponse> {
+  async update(): Promise<PostingPublishResponse> {
     return {
       success: false,
-      error: "Zalo does not support updating sent messages",
+      error: "Zalo does not support updating messages",
     };
   }
 
-  async delete(postId: string): Promise<boolean> {
-    // Zalo OA doesn't support deleting messages
+  async delete(): Promise<boolean> {
     return false;
   }
 
-  async getMetrics(postId: string): Promise<PostMetrics> {
-    try {
-      const url = `${this.baseUrl}/message/status`;
-      const params = new URLSearchParams({
-        access_token: this.auth.getAccessToken(),
-        message_id: postId,
-      });
-
-      const response = await fetch(`${url}?${params.toString()}`);
-      const data: ZaloResponse = await response.json();
-
-      if (data.error !== 0) {
-        throw new Error(data.message);
-      }
-
-      // Zalo OA analytics are limited
-      return {
-        views: 0,
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        reach: 0,
-        engagement: 0,
-        lastSyncedAt: new Date(),
-      };
-    } catch (error) {
-      console.error("Failed to get Zalo metrics:", error);
-      return {
-        views: 0,
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        reach: 0,
-        engagement: 0,
-        lastSyncedAt: new Date(),
-      };
-    }
+  async getMetrics(): Promise<PostMetrics> {
+    return emptyMetrics();
   }
 
-  /**
-   * Publish text-only message to Zalo OA followers
-   */
-  private async publishTextPost(message: string): Promise<PostingPublishResponse> {
-    try {
-      // Get follower list to broadcast
-      const followers = await this.getFollowers();
+  // ================= PRIVATE =================
 
-      if (followers.length === 0) {
-        return {
-          success: false,
-          error: "No followers to send message to",
-        };
-      }
+  private async publishText(message: string): Promise<PostingPublishResponse> {
+    const followers = await this.getFollowers();
+    if (followers.length === 0) {
+      return { success: false, error: "No followers available" };
+    }
 
-      // Broadcast to all followers
-      const url = `${this.baseUrl}/oa/message`;
-      const params = new URLSearchParams({
-        access_token: this.auth.getAccessToken(),
-      });
+    const messageIds = await this.broadcast(
+      followers,
+      (userId) => ({
+        recipient: { user_id: userId },
+        message: { text: message },
+      })
+    );
 
-      const messageIds: string[] = [];
+    if (!messageIds.length) {
+      return { success: false, error: "Failed to send message" };
+    }
 
-      // Send to each follower (Zalo has rate limits)
-      for (const followerId of followers.slice(0, 50)) { // Limit to 50 for demo
-        const response = await fetch(`${url}?${params.toString()}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            recipient: {
-              user_id: followerId,
-            },
-            message: {
-              text: message,
-            },
-          }),
-        });
+    return this.success(messageIds[0]);
+  }
 
-        const data: ZaloMessageResponse = await response.json();
-
-        if (data.error === 0 && data.data?.message_id) {
-          messageIds.push(data.data.message_id);
-        }
-      }
-
-      if (messageIds.length === 0) {
-        return {
-          success: false,
-          error: "Failed to send message to any followers",
-        };
-      }
-
-      return {
-        success: true,
-        postId: messageIds[0], // Return first message ID
-        permalink: `https://oa.zalo.me/`, // Zalo OA doesn't provide permalinks
-      };
-    } catch (error) {
+  private async publishWithMedia(
+    message: string,
+    media: PostMedia
+  ): Promise<PostingPublishResponse> {
+    if (media.type !== "image") {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: "Zalo OA only supports image attachments",
       };
     }
-  }
 
-  /**
-   * Publish message with media attachments
-   */
-  private async publishWithMedia(message: string, media: PostMedia[]): Promise<PostingPublishResponse> {
-    try {
-      const firstMedia = media[0];
+    const attachmentId = await this.uploadImage(media.url);
+    const followers = await this.getFollowers();
 
-      // Upload media first
-      const attachmentId = await this.uploadMedia(firstMedia);
-
-      // Get followers
-      const followers = await this.getFollowers();
-
-      if (followers.length === 0) {
-        return {
-          success: false,
-          error: "No followers to send message to",
-        };
-      }
-
-      // Send message with attachment
-      const url = `${this.baseUrl}/oa/message`;
-      const params = new URLSearchParams({
-        access_token: this.auth.getAccessToken(),
-      });
-
-      const messageIds: string[] = [];
-
-      for (const followerId of followers.slice(0, 50)) {
-        let messageBody: any;
-
-        if (firstMedia.type === "image") {
-          messageBody = {
-            recipient: {
-              user_id: followerId,
-            },
-            message: {
-              attachment: {
-                type: "template",
-                payload: {
-                  template_type: "media",
-                  elements: [{
-                    media_type: "image",
-                    attachment_id: attachmentId,
-                  }],
+    const messageIds = await this.broadcast(
+      followers,
+      (userId) => ({
+        recipient: { user_id: userId },
+        message: {
+          attachment: {
+            type: "template",
+            payload: {
+              template_type: "media",
+              elements: [
+                {
+                  media_type: "image",
+                  attachment_id: attachmentId,
                 },
-              },
+              ],
             },
-          };
-        } else {
-          messageBody = {
-            recipient: {
-              user_id: followerId,
-            },
-            message: {
-              text: message,
-            },
-          };
-        }
-
-        const response = await fetch(`${url}?${params.toString()}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
           },
-          body: JSON.stringify(messageBody),
-        });
+        },
+      })
+    );
 
-        const data: ZaloMessageResponse = await response.json();
-
-        if (data.error === 0 && data.data?.message_id) {
-          messageIds.push(data.data.message_id);
-        }
-      }
-
-      if (messageIds.length === 0) {
-        return {
-          success: false,
-          error: "Failed to send message to any followers",
-        };
-      }
-
-      return {
-        success: true,
-        postId: messageIds[0],
-        permalink: `https://oa.zalo.me/`,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+    if (!messageIds.length) {
+      return { success: false, error: "Failed to send message" };
     }
+
+    return this.success(messageIds[0]);
   }
 
-  /**
-   * Upload media to Zalo
-   */
-  private async uploadMedia(media: PostMedia): Promise<string> {
-    try {
-      const url = `${this.baseUrl}/oa/upload/${media.type}`;
-      const params = new URLSearchParams({
-        access_token: this.auth.getAccessToken(),
-      });
+  private async broadcast(
+    followers: string[],
+    buildBody: (userId: string) => unknown
+  ): Promise<string[]> {
+    const url = `${this.baseUrl}/oa/message`;
+    const params = new URLSearchParams({ access_token: this.token });
 
-      const formData = new FormData();
+    const sent: string[] = [];
 
-      // Fetch media from URL and upload
-      const mediaResponse = await fetch(media.url);
-      const mediaBlob = await mediaResponse.blob();
-      formData.append("file", mediaBlob);
-
-      const response = await fetch(`${url}?${params.toString()}`, {
+    for (const userId of followers.slice(0, 50)) {
+      const res = await fetch(`${url}?${params}`, {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildBody(userId)),
       });
 
-      const data: ZaloUploadResponse = await response.json();
-
-      if (data.error !== 0 || !data.data?.attachment_id) {
-        throw new Error(data.message || "Failed to upload media");
+      const data: ZaloMessageResponse = await res.json();
+      if (data.error === 0 && data.data?.message_id) {
+        sent.push(data.data.message_id);
       }
-
-      return data.data.attachment_id;
-    } catch (error) {
-      throw new Error(`Failed to upload media: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
+
+    return sent;
   }
 
-  /**
-   * Get list of OA followers
-   */
+  private async uploadImage(imageUrl: string): Promise<string> {
+    const res = await fetch(imageUrl);
+    const blob = await res.blob();
+
+    const form = new FormData();
+    form.append("file", blob);
+
+    const upload = await fetch(
+      `${this.baseUrl}/oa/upload/image?access_token=${this.token}`,
+      { method: "POST", body: form }
+    );
+
+    const data: ZaloUploadResponse = await upload.json();
+
+    if (data.error !== 0 || !data.data?.attachment_id) {
+      throw new Error(data.message || "Upload failed");
+    }
+
+    return data.data.attachment_id;
+  }
+
   private async getFollowers(): Promise<string[]> {
-    try {
-      const url = `${this.baseUrl}/oa/getfollowers`;
-      const params = new URLSearchParams({
-        access_token: this.auth.getAccessToken(),
-        offset: "0",
-        count: "50",
-      });
+    const res = await fetch(
+      `${this.baseUrl}/oa/getfollowers?access_token=${this.token}&offset=0&count=50`
+    );
 
-      const response = await fetch(`${url}?${params.toString()}`);
-      const data: any = await response.json();
+    const data: {
+      error: number;
+      data?: { followers: { user_id: string }[] };
+    } = await res.json();
 
-      if (data.error !== 0 || !data.data?.followers) {
-        return [];
-      }
-
-      return data.data.followers.map((f: any) => f.user_id);
-    } catch (error) {
-      console.error("Failed to get Zalo followers:", error);
-      return [];
-    }
+    return data.error === 0
+      ? data.data?.followers.map((f) => f.user_id) ?? []
+      : [];
   }
 
-  /**
-   * Format message with title, body and hashtags
-   */
-  protected formatMessage(request: PostingPublishRequest): string {
-    let message = request.title;
-    if (request.body) {
-      message += `\n\n${request.body}`;
-    }
+  private formatMessage(req: PostingPublishRequest): string {
+    const parts = [
+      req.title,
+      req.body,
+      req.hashtags?.map((t) => `#${t}`).join(" "),
+    ];
 
-    if (request.hashtags.length > 0) {
-      message += "\n\n" + request.hashtags.map((tag) => `#${tag}`).join(" ");
-    }
+    return parts.filter(Boolean).join("\n\n");
+  }
 
-    return message;
+  private success(messageId: string): PostingPublishResponse {
+    return {
+      success: true,
+      postId: messageId,
+      permalink: "https://oa.zalo.me/",
+    };
   }
 }
+

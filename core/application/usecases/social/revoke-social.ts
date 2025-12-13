@@ -1,11 +1,11 @@
-import type { SocialPlatform } from "@/core/domain/social/social-auth";
-import type { SocialAuthService } from "@/core/application/interfaces/social/social-auth-service";
-import { OAuthAdapterResolver } from "@/core/application/interfaces/social/oauth-adapter-resolver";
+import type { SocialAuthRepo } from "@/core/application/interfaces/social/social-auth-repo";
 import { ObjectId } from "mongodb";
+import { Platform } from "@/core/domain/marketing/post";
+import { OAuthAdapterResolver } from "../../interfaces/social/platform-oauth-adapter";
 
 export interface RevokeSocialAccountRequest {
     userId: ObjectId;
-    platform: SocialPlatform;
+    platform: Platform;
 }
 
 export interface RevokeSocialAccountResponse {
@@ -17,7 +17,7 @@ export class RevokeSocialAccountUseCase {
 
     constructor(
         private resolver: OAuthAdapterResolver,
-        private repo: SocialAuthService
+        private repo: SocialAuthRepo
     ) { }
 
     async execute(
