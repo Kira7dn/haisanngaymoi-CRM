@@ -37,9 +37,12 @@ export async function createPostAction(formData: FormData) {
     status: "draft",
   }))
 
-  const media: PostMedia | undefined = mediaJson
-    ? JSON.parse(mediaJson)
-    : undefined
+  // Parse media - handle both array and single object formats
+  let media: PostMedia | undefined = undefined
+  if (mediaJson) {
+    const parsed = JSON.parse(mediaJson)
+    media = Array.isArray(parsed) ? parsed[0] : parsed
+  }
 
   const hashtags = hashtagsStr
     .split(/\s+/)
@@ -133,7 +136,8 @@ export async function updatePostAction(id: string, formData: FormData) {
   }
 
   if (mediaJson) {
-    updateData.media = JSON.parse(mediaJson)
+    const parsed = JSON.parse(mediaJson)
+    updateData.media = Array.isArray(parsed) ? parsed[0] : parsed
   }
 
   if (hashtagsStr !== undefined) {

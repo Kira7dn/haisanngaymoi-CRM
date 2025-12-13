@@ -103,6 +103,14 @@ export class ConnectSocialAccountUseCase {
                         updatedAt: new Date(),
                     };
 
+                    console.log("[ConnectSocial] Saving page auth:", {
+                        platform,
+                        pageName: page.name,
+                        openId: pagePayload.openId,
+                        tokenLength: page.access_token?.length,
+                        tokenPrefix: page.access_token?.substring(0, 20) + '...'
+                    });
+
                     // Check if this specific page already exists
                     // Get all auth records for this user+platform, then filter by openId
                     const allAuths = await this.repo.getAllByUser(userId);

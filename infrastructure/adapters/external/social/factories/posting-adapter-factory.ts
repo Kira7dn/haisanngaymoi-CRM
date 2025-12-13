@@ -62,10 +62,19 @@ export class PlatformPostingAdapterFactory implements PostingAdapterFactory {
         // Check if token is expired and refresh if needed
         if (isTokenExpired(auth.expiresAt)) {
             console.log(`Token expired for ${platform} (user: ${userId.toString()}), refreshing...`);
-            auth = await this.refreshTokenIfNeeded(platform, auth);
 
-            // Clear cache to force recreation with new token
-            this.clearUserCache(platform, userId.toString());
+            try {
+                auth = await this.refreshTokenIfNeeded(platform, auth);
+                // Clear cache to force recreation with new token
+                this.clearUserCache(platform, userId.toString());
+            } catch (error) {
+                console.error(`Token refresh failed for ${platform}:`, error);
+                // Throw error with helpful message asking user to re-authenticate
+                throw new Error(
+                    `${platform} access token expired and could not be refreshed. ` +
+                    `Please re-connect your ${platform} account in Settings > Social Connections.`
+                );
+            }
         }
 
         /** Return cached adapter if available and token is still valid */
@@ -75,6 +84,14 @@ export class PlatformPostingAdapterFactory implements PostingAdapterFactory {
 
         /** Create or reuse AuthService (stateful API runtime client) */
         const authService = await this.getOrCreateAuthService(platform, auth);
+
+        // Debug: Check openId type and value
+        console.log("[Factory] Auth openId debug:", {
+            platform,
+            openId: auth.openId,
+            openIdType: typeof auth.openId,
+            openIdLength: auth.openId?.toString().length
+        });
 
         /** Create posting adapter */
         const postingAdapter = await this.createPostingAdapter(platform, authService);
@@ -180,6 +197,14 @@ export class PlatformPostingAdapterFactory implements PostingAdapterFactory {
 
             case "instagram": {
                 const { InstagramPostingAdapter } = await import("../posting/instagram-posting-adapter");
+                console.log("[Factory] Creating Instagram adapter:", {
+                    platform,
+                    igAccountId: pageId,
+                    tokenPrefix: token.substring(0, 20) + '...',
+                    tokenLength: token.length,
+                    authExpiresAt: auth.expiresAt,
+                    authScope: auth.scope
+                });
                 return new InstagramPostingAdapter(token, pageId);
             }
 

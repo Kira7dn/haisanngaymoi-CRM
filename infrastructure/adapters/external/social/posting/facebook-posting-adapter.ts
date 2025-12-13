@@ -50,6 +50,12 @@ export class FacebookPostingAdapter implements PostingAdapter {
 
       const message = formatMessage(request);
 
+      console.log("[Facebook] Publishing post:", {
+        hasMedia: !!request.media,
+        media: request.media,
+        message: message.substring(0, 50) + "..."
+      });
+
       if (!request.media) {
         return this.publishText(message);
       }
@@ -62,9 +68,10 @@ export class FacebookPostingAdapter implements PostingAdapter {
         return this.publishVideo(message, request.media.url);
       }
 
+      console.error("[Facebook] Unsupported media type:", request.media);
       return {
         success: false,
-        error: "Unsupported media type",
+        error: `Unsupported media type: ${request.media.type || 'undefined'}`,
       };
     } catch (error) {
       return this.fail(error);

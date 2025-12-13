@@ -34,7 +34,7 @@ type MediaStatus = "IN_PROGRESS" | "PENDING" | "FINISHED" | "ERROR" | "UNKNOWN";
  */
 export class InstagramPostingAdapter implements PostingAdapter {
   platform = "instagram" as const;
-  private readonly baseUrl = "https://graph.facebook.com/v19.0";
+  private readonly baseUrl = "https://graph.instagram.com/v23.0";
 
   constructor(
     private readonly token: string,
@@ -49,6 +49,14 @@ export class InstagramPostingAdapter implements PostingAdapter {
     request: PostingPublishRequest
   ): Promise<PostingPublishResponse> {
     try {
+      console.log("[Instagram] Publishing post:", {
+        hasMedia: !!request.media,
+        media: request.media,
+        igAccountId: this.igAccountId,
+        tokenPrefix: this.token.substring(0, 20) + '...',
+        tokenLength: this.token.length
+      });
+
       if (!request.media) {
         return this.fail(
           "Instagram requires at least one image or video"
@@ -65,7 +73,8 @@ export class InstagramPostingAdapter implements PostingAdapter {
         return this.publishVideo(caption, request.media.url);
       }
 
-      return this.fail("Unsupported media type");
+      console.error("[Instagram] Unsupported media type:", request.media);
+      return this.fail(`Unsupported media type: ${request.media.type || 'undefined'}`);
     } catch (error) {
       return this.fail(error);
     }
@@ -176,7 +185,19 @@ export class InstagramPostingAdapter implements PostingAdapter {
     );
 
     if (res.error || !res.id) {
-      throw new Error(res.error?.message ?? "Failed to create media");
+      const errorMsg = res.error?.message ?? "Failed to create media";
+      console.error("[Instagram] Create container error:", res.error);
+
+      // Handle OAuth errors specifically
+      if (res.error?.code === 190 || res.error?.type === 'OAuthException') {
+        throw new Error(
+          `Instagram access token is invalid or expired. ` +
+          `Please re-connect your Instagram account in Settings > Social Connections. ` +
+          `(${errorMsg})`
+        );
+      }
+
+      throw new Error(errorMsg);
     }
 
     return res.id;
@@ -267,12 +288,27 @@ export class InstagramPostingAdapter implements PostingAdapter {
       access_token: this.token,
     });
 
-    const res = await fetch(`${this.baseUrl}${path}`, {
+    const url = `${this.baseUrl}${path}`;
+    console.log("[Instagram] API Request:", {
+      method: 'POST',
+      url,
+      params: Object.keys(params),
+      bodySize: body.toString().length
+    });
+
+    const res = await fetch(url, {
       method: "POST",
       body,
     });
 
-    return res.json() as Promise<T>;
+    const json = await res.json() as T;
+    console.log("[Instagram] API Response:", {
+      status: res.status,
+      ok: res.ok,
+      hasError: !!(json as any).error
+    });
+
+    return json;
   }
 
   private sleep(ms: number): Promise<void> {

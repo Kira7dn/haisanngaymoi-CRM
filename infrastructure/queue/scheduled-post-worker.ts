@@ -79,10 +79,15 @@ export const initializeScheduledPostWorker = (): Worker => {
           try {
             const adapter = await platformFactory.create(platformMeta.platform as Platform, userId)
 
+            // Handle media: DB stores array, but adapter expects single object
+            const media = Array.isArray(post.media)
+              ? post.media[0]  // Take first item if array
+              : post.media;    // Use as-is if already single object
+
             const result = await adapter.publish({
               title: post.title ?? '',
               body: post.body,
-              media: post.media, // media is single object or undefined
+              media: media,
               hashtags: post.hashtags ?? [],
               mentions: post.mentions ?? [],
             })

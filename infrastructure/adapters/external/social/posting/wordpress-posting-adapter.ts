@@ -28,6 +28,7 @@ interface WordPressPostPayload {
     content: string;
     status: "publish" | "draft";
     excerpt?: string;
+    featured_image?: string; // URL to featured image
 }
 
 /**
@@ -188,12 +189,19 @@ export class WordPressPostingAdapter implements PostingAdapter {
             );
         }
 
-        return {
+        const payload: WordPressPostPayload = {
             title: request.title ?? "Untitled",
             content: contentParts.join("\n\n"),
             excerpt: request.body?.slice(0, 160),
             status: "publish",
         };
+
+        // Add featured image if media is provided
+        if (request.media?.url) {
+            payload.featured_image = request.media.url;
+        }
+
+        return payload;
     }
 
     private endpoint(path: string): string {
