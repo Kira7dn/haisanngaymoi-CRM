@@ -8,7 +8,7 @@ import type { EventClickArg, EventContentArg } from '@fullcalendar/core/index.js
 import type { Post, Platform } from '@/core/domain/marketing/post'
 import { usePostStore } from '../_store/usePostStore'
 import { Card } from '@shared/ui/card'
-import PostFormModal from './PostFormModal'
+import PostFormModal from './post-form/PostFormModal'
 import PostDetailModal from './PostDetailModal'
 import { CheckCircle, Clock, XCircle } from 'lucide-react'
 

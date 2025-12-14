@@ -8,7 +8,7 @@ import { Button } from '@shared/ui/button'
 import { Trash2, Edit, Eye, Clock, CheckCircle, XCircle, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
 import PostDetailModal from './PostDetailModal'
-import PostForm from './PostForm'
+import PostForm from './post-form/PostForm'
 
 const PLATFORM_COLORS: Record<Platform, string> = {
   facebook: 'bg-blue-600 text-white',

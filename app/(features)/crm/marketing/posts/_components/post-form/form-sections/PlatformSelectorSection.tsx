@@ -3,6 +3,8 @@
 import { Label } from '@shared/ui/label'
 import { AlertTriangle } from 'lucide-react'
 import type { Platform, ContentType } from '@/core/domain/marketing/post'
+import type { PlatformSelectorViewModel } from '../postForm.selectors'
+import type { PlatformSelectorEvents } from '../_hook/usePostFormMachine'
 
 // Platform options
 const PLATFORMS: { value: Platform; label: string; color: string }[] = [
@@ -66,31 +68,42 @@ const CONTENT_PLATFORM_MAP: Record<ContentType, Record<Platform, "supported" | "
   },
 }
 
-interface PlatformSelectorProps {
-  contentType: ContentType
-  setContentType: (type: ContentType) => void
-  selectedPlatforms: Platform[]
-  setSelectedPlatforms: (platforms: Platform[]) => void
-  errors?: Record<string, string>
+/**
+ * PlatformSelectorSection Props
+ *
+ * Standard ViewModel + Events pattern
+ */
+export interface PlatformSelectorSectionProps {
+  viewModel: PlatformSelectorViewModel
+  events: PlatformSelectorEvents
 }
 
-export default function PlatformSelector({
-  contentType,
-  setContentType,
-  selectedPlatforms,
-  setSelectedPlatforms,
-  errors = {},
-}: PlatformSelectorProps) {
-  const getPlatformSupport = (platform: Platform) =>
-    CONTENT_PLATFORM_MAP[contentType]?.[platform] || 'unsupported'
+/**
+ * PlatformSelectorSection - Pure UI Component
+ *
+ * Responsibilities:
+ * - Render content type selector
+ * - Render platform selector with compatibility
+ * - Show validation errors
+ *
+ * Does NOT:
+ * - Manage state
+ * - Know about workflow
+ * - Handle complex business logic
+ */
+export default function PlatformSelectorSection({
+  viewModel,
+  events
+}: PlatformSelectorSectionProps) {
+  const { contentType, selectedPlatforms, isDisabled, hasError, errorMessage } = viewModel
+  const { onChangeContentType, onTogglePlatform } = events
 
-  const togglePlatform = (platform: Platform) => {
+  const getPlatformSupport = (platform: Platform) =>
+    CONTENT_PLATFORM_MAP[contentType as ContentType]?.[platform] || 'unsupported'
+
+  const handleTogglePlatform = (platform: Platform) => {
     if (getPlatformSupport(platform) !== "supported") return
-    setSelectedPlatforms(
-      selectedPlatforms.includes(platform)
-        ? selectedPlatforms.filter(p => p !== platform)
-        : [...selectedPlatforms, platform]
-    )
+    onTogglePlatform(platform)
   }
 
   return (
@@ -103,9 +116,15 @@ export default function PlatformSelector({
             <button
               key={ct.value}
               type="button"
-              onClick={() => setContentType(ct.value)}
-              className={`px-4 py-2 rounded-md border
-                ${contentType === ct.value ? 'bg-primary text-white' : 'bg-gray-200'}`}
+              disabled={isDisabled}
+              onClick={() => onChangeContentType(ct.value)}
+              className={`px-4 py-2 rounded-md border transition-colors
+                ${contentType === ct.value
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-gray-100 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:border-gray-600'
+                }
+                ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+              `}
             >
               {ct.label}
             </button>
@@ -119,24 +138,36 @@ export default function PlatformSelector({
         <div className="flex flex-wrap gap-2">
           {PLATFORMS.map(p => {
             const support = getPlatformSupport(p.value)
+            const isUnsupported = support === "unsupported"
+            const isSelected = selectedPlatforms.includes(p.value)
+            const hasWarning = support === "warning"
+
             return (
               <button
                 key={p.value}
                 type="button"
-                disabled={support === "unsupported"}
-                onClick={() => togglePlatform(p.value)}
-                className={`px-4 py-2 rounded-md text-white flex items-center gap-1
-                  ${support === "unsupported" ? 'bg-gray-300 opacity-50 cursor-not-allowed' :
-                    selectedPlatforms.includes(p.value) ? p.color : 'bg-gray-500'}
-                  ${support === "warning" ? 'border-yellow-400 border' : ''}`}
+                disabled={isUnsupported || isDisabled}
+                onClick={() => handleTogglePlatform(p.value)}
+                className={`px-4 py-2 rounded-md text-white flex items-center gap-1 transition-opacity
+                  ${isUnsupported
+                    ? 'bg-gray-300 opacity-50 cursor-not-allowed'
+                    : isSelected
+                      ? p.color
+                      : 'bg-gray-500 hover:opacity-80'
+                  }
+                  ${hasWarning ? 'border-2 border-yellow-400' : ''}
+                  ${isDisabled && !isUnsupported ? 'opacity-50 cursor-not-allowed' : ''}
+                `}
               >
                 {p.label}
-                {support === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-300" />}
+                {hasWarning && <AlertTriangle className="h-4 w-4 text-yellow-300" />}
               </button>
             )
           })}
         </div>
-        {errors.platforms && <p className="text-red-500 text-sm">{errors.platforms}</p>}
+        {hasError && errorMessage && (
+          <p className="text-red-500 text-sm mt-2">{errorMessage}</p>
+        )}
       </div>
     </>
   )

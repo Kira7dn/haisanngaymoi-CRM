@@ -2,35 +2,61 @@
 
 import { Button } from '@shared/ui/button'
 import { Sparkles, Zap, Settings, Info, Loader2, AlertTriangle } from 'lucide-react'
-import PostContentSettings from '../PostContentSettings'
+import PostContentSettings from '../../PostContentSettings'
+import type { AIGenerationViewModel } from '../postForm.selectors'
+import type { AIGenerationEvents } from '../_hook/usePostFormMachine'
 
-interface AIGenerationSectionProps {
-  showSettings: boolean
-  setShowSettings: (show: boolean) => void
-  hasBrandMemory: boolean
-  generationMode: 'simple' | 'multi-pass'
-  setGenerationMode: (mode: 'simple' | 'multi-pass') => void
-  generationProgress: string[]
-  similarityWarning: string | null
-  handleGenerateAI: () => Promise<void>
-  isGenerating: boolean
-  disabled?: boolean
+/**
+ * AIGenerationSection Props
+ *
+ * Standard ViewModel + Events pattern:
+ * - viewModel: All data needed for rendering
+ * - events: All user interactions
+ * - No workflow logic
+ * - No machine coupling
+ */
+export interface AIGenerationSectionProps {
+  viewModel: AIGenerationViewModel
+  events: AIGenerationEvents
 }
 
+/**
+ * AIGenerationSection - Pure UI Component
+ *
+ * Responsibilities:
+ * - Render AI generation controls
+ * - Display generation progress
+ * - Show similarity warnings
+ * - Toggle settings dialog
+ *
+ * Does NOT:
+ * - Know about XState
+ * - Handle async operations
+ * - Manage workflow state
+ */
 export default function AIGenerationSection({
-  showSettings,
-  setShowSettings,
-  hasBrandMemory,
-  generationMode,
-  setGenerationMode,
-  generationProgress,
-  similarityWarning,
-  handleGenerateAI,
-  isGenerating,
-  disabled = false,
+  viewModel,
+  events
 }: AIGenerationSectionProps) {
+  const {
+    mode,
+    isGenerating,
+    isDisabled,
+    progress,
+    similarityWarning,
+    hasBrandMemory,
+    showSettings
+  } = viewModel
+
+  const {
+    onGenerate,
+    onToggleSettings,
+    onChangeMode
+  } = events
+
   return (
     <div className="border rounded-lg p-4 bg-linear-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 space-y-3">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-purple-600" />
@@ -40,7 +66,7 @@ export default function AIGenerationSection({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={onToggleSettings}
           className="gap-2"
         >
           <Settings className="h-4 w-4" />
@@ -51,16 +77,16 @@ export default function AIGenerationSection({
       {/* Brand Settings Dialog */}
       <PostContentSettings
         open={showSettings}
-        onClose={() => setShowSettings(false)}
+        onClose={onToggleSettings}
       />
 
       {/* Generation Mode Toggle */}
       <div className="flex gap-2">
         <Button
           type="button"
-          variant={generationMode === 'simple' ? 'default' : 'outline'}
+          variant={mode === 'simple' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setGenerationMode('simple')}
+          onClick={() => onChangeMode('simple')}
           className="flex-1 gap-2"
         >
           <Sparkles className="h-4 w-4" />
@@ -68,9 +94,9 @@ export default function AIGenerationSection({
         </Button>
         <Button
           type="button"
-          variant={generationMode === 'multi-pass' ? 'default' : 'outline'}
+          variant={mode === 'multi-pass' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setGenerationMode('multi-pass')}
+          onClick={() => onChangeMode('multi-pass')}
           className="flex-1 gap-2"
         >
           <Zap className="h-4 w-4" />
@@ -79,10 +105,10 @@ export default function AIGenerationSection({
       </div>
 
       {/* Generation Progress */}
-      {generationProgress.length > 0 && (
+      {progress.length > 0 && (
         <div className="text-xs space-y-1 text-gray-600 dark:text-gray-400">
-          {generationProgress.map((progress, idx) => (
-            <div key={idx}>{progress}</div>
+          {progress.map((progressItem, idx) => (
+            <div key={idx}>{progressItem}</div>
           ))}
         </div>
       )}
@@ -101,18 +127,18 @@ export default function AIGenerationSection({
       <Button
         type="button"
         variant="default"
-        onClick={handleGenerateAI}
-        disabled={isGenerating || disabled}
+        onClick={onGenerate}
+        disabled={isGenerating || isDisabled}
         className="w-full gap-2"
       >
         {isGenerating ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Generating{generationMode === 'multi-pass' ? ' (Multi-pass)' : ''}...
+            Generating{mode === 'multi-pass' ? ' (Multi-pass)' : ''}...
           </>
         ) : (
           <>
-            {generationMode === 'multi-pass' ? (
+            {mode === 'multi-pass' ? (
               <Zap className="h-4 w-4" />
             ) : (
               <Sparkles className="h-4 w-4" />
@@ -123,7 +149,7 @@ export default function AIGenerationSection({
       </Button>
 
       {/* Disabled Hint */}
-      {disabled && !isGenerating && (
+      {isDisabled && !isGenerating && (
         <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400">
           <AlertTriangle className="h-3 w-3 mt-0.5" />
           <div>Please select at least one platform before generating content</div>
@@ -134,7 +160,7 @@ export default function AIGenerationSection({
       <div className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
         <Info className="h-3 w-3 mt-0.5" />
         <div>
-          {generationMode === 'multi-pass'
+          {mode === 'multi-pass'
             ? 'Multi-pass uses 5 stages (Idea → Angle → Outline → Draft → Enhance) for higher quality.'
             : 'Simple mode generates content quickly in one pass.'}
         </div>

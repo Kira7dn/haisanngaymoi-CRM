@@ -4,6 +4,7 @@ import { Label } from '@shared/ui/label'
 import { Input } from '@shared/ui/input'
 import { Button } from '@shared/ui/button'
 import { Sparkles } from 'lucide-react'
+import type { Product } from '@/core/domain/catalog/product'
 
 interface ContentInputFieldsProps {
   title: string
@@ -16,9 +17,9 @@ interface ContentInputFieldsProps {
   setIdea?: (idea: string) => void
   contentInstruction?: string
   setContentInstruction?: (instruction: string) => void
-  selectedProduct?: { id: number; name: string; url?: string } | null
-  setSelectedProduct?: (product: { id: number; name: string; url?: string } | null) => void
-  products?: Array<{ id: number; name: string; url?: string }>
+  selectedProduct?: Product | null
+  setSelectedProduct?: (product: Product | null) => void
+  products?: Product[]
 }
 
 export default function ContentInputFields({

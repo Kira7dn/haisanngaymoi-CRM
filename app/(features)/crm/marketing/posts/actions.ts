@@ -7,72 +7,8 @@ import { getPostsUseCase, createPostUseCase, updatePostUseCase, deletePostUseCas
 import { createGeneratePostContentUseCase, createGeneratePostMultiPassUseCase } from "@/app/api/content-generation/depends"
 import { createGetBrandMemoryUseCase, createSaveBrandMemoryUseCase } from "@/app/api/brand-memory/depends"
 import { createCheckContentSimilarityUseCase, createStoreContentEmbeddingUseCase } from "@/app/api/content-memory/depends"
-import type { Platform, ContentType, PostMedia, PlatformMetadata } from "@/core/domain/marketing/post"
+import type { Platform, ContentType } from "@/core/domain/marketing/post"
 import type { BrandMemoryPayload } from "@/core/application/interfaces/brand-memory-service"
-
-export async function createPostAction(formData: FormData) {
-  const useCase = await createPostUseCase()
-
-  const cookieStore = await cookies()
-  const userIdCookie = cookieStore.get("admin_user_id")
-  if (!userIdCookie) {
-    throw new Error("Unauthorized")
-  }
-
-  const title = formData.get("title")?.toString() ?? ""
-  const body = formData.get("body")?.toString() ?? ""
-  const contentType: ContentType = formData.get("contentType")?.toString() as ContentType
-  const platformsJson = formData.get("platforms")?.toString() ?? "[]"
-  const mediaJson = formData.get("media")?.toString()
-  const hashtagsStr = formData.get("hashtags")?.toString() ?? ""
-  const scheduledAtStr = formData.get("scheduledAt")?.toString()
-
-  let selectedPlatforms: Platform[] = []
-  try {
-    selectedPlatforms = JSON.parse(platformsJson)
-  } catch { }
-
-  const platforms: PlatformMetadata[] = selectedPlatforms.map(platform => ({
-    platform,
-    status: "draft",
-  }))
-
-  // Parse media - handle both array and single object formats
-  let media: PostMedia | undefined = undefined
-  if (mediaJson) {
-    const parsed = JSON.parse(mediaJson)
-    media = parsed
-  }
-
-  const hashtags = hashtagsStr
-    .split(/\s+/)
-    .filter(tag => tag.startsWith("#"))
-    .map(tag => tag.slice(1))
-
-  const scheduledAt = scheduledAtStr
-    ? parseDateTimeLocal(scheduledAtStr)
-    : undefined
-
-  const result = await useCase.execute({
-    userId: userIdCookie.value,
-    title,
-    body,
-    contentType,
-    platforms,
-    media,
-    hashtags,
-    scheduledAt,
-  })
-
-  revalidatePath("/crm/posts")
-
-  return {
-    success: true,
-    postId: result.post.id.toString(),
-    platformResults: result.platformResults,
-  }
-}
-
 
 export async function getPostsAction() {
   const useCase = await getPostsUseCase()
@@ -97,61 +33,6 @@ export async function deletePostAction(id: string) {
 
   revalidatePath("/crm/posts")
   return result
-}
-
-export async function updatePostAction(id: string, formData: FormData) {
-  const useCase = await updatePostUseCase()
-
-  // Get current user ID from cookies
-  const cookieStore = await cookies()
-  const userIdCookie = cookieStore.get("admin_user_id")
-  if (!userIdCookie) {
-    throw new Error("Unauthorized - Please login first")
-  }
-
-  const title = formData.get("title")?.toString() || ""
-  const body = formData.get("body")?.toString()
-  const contentType = (formData.get("contentType")?.toString() as ContentType) || "post"
-  const platformsJson = formData.get("platforms")?.toString() || ""
-  const mediaJson = formData.get("media")?.toString() || ""
-  const hashtagsStr = formData.get("hashtags")?.toString() || ""
-  const scheduledAtStr = formData.get("scheduledAt")?.toString() || ""
-
-  const updateData: any = {
-    id,
-    userId: userIdCookie.value,
-    updatedAt: new Date(),
-  }
-
-  if (title) updateData.title = title
-  if (body !== undefined) updateData.body = body
-  if (contentType) updateData.contentType = contentType
-
-  if (platformsJson) {
-    const selectedPlatforms: Platform[] = JSON.parse(platformsJson)
-    updateData.platforms = selectedPlatforms.map(platform => ({
-      platform,
-      status: "draft" as const,
-    }))
-  }
-
-  if (mediaJson) updateData.media = JSON.parse(mediaJson)
-
-
-  if (hashtagsStr !== undefined) {
-    updateData.hashtags = hashtagsStr
-      .split(/\s+/)
-      .filter(tag => tag.startsWith('#'))
-      .map(tag => tag.slice(1))
-      .filter(tag => tag.length > 0)
-  }
-
-  if (scheduledAtStr) {
-    updateData.scheduledAt = parseDateTimeLocal(scheduledAtStr)
-  }
-
-  await useCase.execute(updateData)
-  revalidatePath("/crm/posts")
 }
 
 export async function generatePostContentAction(params: {
