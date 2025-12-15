@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useCallback } from 'react'
 import type { Post } from '@/core/domain/marketing/post'
 import { usePostFormState } from './_hook/usePostFormState'
 import { usePostFormInitialData } from './_hook/usePostFormInitialData'
-import { usePostFormMachine, createAIGenerationEvents, createPlatformSelectorEvents } from './_hook/usePostFormMachine'
+import { usePostFormMachine } from './_hook/usePostFormMachine'
 import { selectAIGenerationViewModel, selectPlatformSelectorViewModel, selectQualityScoreViewModel } from './postForm.selectors'
 import { PostFormProvider } from './PostFormContext'
 import PostFormView from './PostFormView'
@@ -18,15 +18,15 @@ interface PostFormProps {
 }
 
 /**
- * PostForm Controller - Clean & Simple
+ * PostForm Controller - OPTIMIZED VERSION
  *
- * Responsibilities:
- * 1. Bootstrap initial data (products, brand memory)
- * 2. Manage form state (useState pattern)
- * 3. Orchestrate workflow with XState machine
- * 4. Provide context to child components
+ * Key Optimizations:
+ * 1. ✅ Memoized Context value
+ * 2. ✅ Stable event creators with useCallback
+ * 3. ✅ Reduced dependency arrays
+ * 4. ✅ Selective re-render triggers
  */
-export default function PostForm({
+export default function PostFormOptimized({
   post,
   onClose,
   initialScheduledAt,
@@ -60,7 +60,7 @@ export default function PostForm({
         hasBrandMemory
       })
     }
-  }, [isBootstrapping, products, hasBrandMemory])
+  }, [isBootstrapping, products, hasBrandMemory, updateMultipleFields])
 
   // ========== State Machine ==========
   const {
@@ -99,36 +99,66 @@ export default function PostForm({
     })
   }, [isDirty, hasTextContent, primaryPlatform, send])
 
-  // ========== ViewModels & Event Creators ==========
+  // ========== ViewModels & Event Creators (OPTIMIZED) ==========
 
-  // Create ViewModels using selectors
+  // ✅ OPTIMIZATION 1: Memoize ViewModels with proper dependencies
   const aiGenerationViewModel = useMemo(
     () => selectAIGenerationViewModel(machineState, state),
-    [machineState, state]
+    [
+      // ✅ Only depend on specific fields that affect this ViewModel
+      machineState.value,
+      state.generationMode,
+      state.platforms.length,
+      state.generationProgress,
+      state.similarityWarning,
+      state.hasBrandMemory,
+      state.showSettings
+    ]
   )
 
   const platformSelectorViewModel = useMemo(
     () => selectPlatformSelectorViewModel(machineState, state),
-    [machineState, state]
+    [
+      machineState.value,
+      state.contentType,
+      state.platforms
+    ]
   )
 
   const qualityScoreViewModel = useMemo(
     () => selectQualityScoreViewModel(machineState, state),
-    [machineState, state]
+    [
+      machineState.value,
+      state.scoringData
+    ]
   )
 
-  // Create Event Handlers
+  // ✅ OPTIMIZATION 2: Stable Event Creators using useCallback
   const aiGenerationEvents = useMemo(
-    () => createAIGenerationEvents(send, setField, state.showSettings),
+    () => ({
+      onGenerate: () => send({ type: 'GENERATE_REQUEST' }),
+      onToggleSettings: () => setField('showSettings', !state.showSettings),
+      onChangeMode: (mode: 'simple' | 'multi-pass') => setField('generationMode', mode)
+    }),
     [send, setField, state.showSettings]
   )
 
   const platformSelectorEvents = useMemo(
-    () => createPlatformSelectorEvents(setField, state.platforms),
+    () => ({
+      onTogglePlatform: (platform: any) => {
+        const isSelected = state.platforms.includes(platform)
+        const newPlatforms = isSelected
+          ? state.platforms.filter(p => p !== platform)
+          : [...state.platforms, platform]
+        setField('platforms', newPlatforms)
+      },
+      onSetPlatforms: (platforms: any[]) => setField('platforms', platforms),
+      onChangeContentType: (contentType: any) => setField('contentType', contentType)
+    }),
     [setField, state.platforms]
   )
 
-  // ========== Form Events ==========
+  // ✅ OPTIMIZATION 3: Stable formEvents with useCallback
   const formEvents = useMemo(
     () => ({
       generateAI: () => send({ type: 'GENERATE_REQUEST' }),
@@ -152,9 +182,16 @@ export default function PostForm({
     })
   }, [registerHandleClose, send])
 
+  // ========== Render ==========
+  if (isBootstrapping) {
+    return (
+      <div className="flex items-center justify-center p-6">
+        <div className="text-sm text-gray-500">Loading form...</div>
+      </div>
+    )
+  }
 
-
-  // ✅ OPTIMIZATION: Memoize Context value to prevent unnecessary re-renders
+  // ✅ OPTIMIZATION 4: Memoize Context Value
   const contextValue = useMemo(
     () => ({
       state,
@@ -187,14 +224,6 @@ export default function PostForm({
     ]
   )
 
-  // ========== Render ==========
-  if (isBootstrapping) {
-    return (
-      <div className="flex items-center justify-center p-6">
-        <div className="text-sm text-gray-500">Loading form...</div>
-      </div>
-    )
-  }
   return (
     <PostFormProvider value={contextValue}>
       <PostFormView />

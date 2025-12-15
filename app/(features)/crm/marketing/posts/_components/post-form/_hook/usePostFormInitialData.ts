@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
-import { getBrandMemoryAction } from "../../../actions"
 import { Product } from "@/core/domain/catalog/product"
+import { getBrandMemoryAction } from "../../../_actions/brand-memory-action"
 
 /**
  * Hook for loading initial data needed by PostForm
@@ -29,7 +29,7 @@ export function usePostFormInitialData() {
         // Load products
         const res = await fetch('/api/products')
         const data = await res.json()
-        const productsList: Product[] = data.map((p: any) => ({
+        const productsList: Product[] = data.map((p:Product) => ({
           id: p.id,
           name: p.name,
           url: p.url

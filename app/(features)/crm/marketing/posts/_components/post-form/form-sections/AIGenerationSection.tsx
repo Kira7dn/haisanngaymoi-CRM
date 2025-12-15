@@ -77,7 +77,10 @@ export default function AIGenerationSection({
       {/* Brand Settings Dialog */}
       <PostContentSettings
         open={showSettings}
-        onClose={onToggleSettings}
+        onClose={() => {
+          // Close settings by calling onToggleSettings
+          onToggleSettings()
+        }}
       />
 
       {/* Generation Mode Toggle */}

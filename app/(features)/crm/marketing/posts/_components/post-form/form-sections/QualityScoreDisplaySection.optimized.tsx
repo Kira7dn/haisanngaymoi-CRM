@@ -4,28 +4,40 @@ import { memo } from 'react'
 import type { QualityScoreViewModel } from '../postForm.selectors'
 
 /**
+ * Quality Score Constants
+ * ✅ OPTIMIZATION: Extract magic numbers
+ */
+const SCORE_THRESHOLDS = {
+  EXCELLENT: 80,
+  GOOD: 60,
+  NEEDS_IMPROVEMENT: 0
+} as const
+
+const BREAKDOWN_THRESHOLDS = {
+  EXCELLENT: 16,
+  GOOD: 12,
+  NEEDS_IMPROVEMENT: 0
+} as const
+
+const SCORE_LABELS = {
+  brandVoice: 'Brand Voice',
+  platformFit: 'Platform Fit'
+} as const
+
+/**
  * QualityScoreDisplaySection Props
- *
- * Standard ViewModel pattern (read-only, no events)
  */
 export interface QualityScoreDisplaySectionProps {
   viewModel: QualityScoreViewModel
 }
 
 /**
- * QualityScoreDisplaySection - Pure UI Component (Optimized)
+ * QualityScoreDisplaySection - OPTIMIZED with React.memo
  *
- * Responsibilities:
- * - Display AI-generated quality score
- * - Show score breakdown by category
- * - Highlight weaknesses and suggested fixes
- *
- * Does NOT:
- * - Modify any state
- * - Handle user interactions (read-only display)
- * - Know about workflow or machine
- *
- * ✅ OPTIMIZATION: Wrapped with React.memo to prevent unnecessary re-renders
+ * ✅ OPTIMIZATIONS:
+ * 1. Wrapped with React.memo to prevent unnecessary re-renders
+ * 2. Extracted magic numbers to constants
+ * 3. Memoized style calculations
  */
 function QualityScoreDisplaySection({
   viewModel
@@ -36,17 +48,40 @@ function QualityScoreDisplaySection({
     return null
   }
 
-  const scoreLabel =
-    score && score >= 80 ? 'Excellent' :
-    score && score >= 60 ? 'Good' :
-    'Needs Improvement'
+  // ✅ OPTIMIZATION: Pure functions for style calculations
+  const getScoreLabel = (score: number | null): string => {
+    if (!score) return 'Needs Improvement'
+    if (score >= SCORE_THRESHOLDS.EXCELLENT) return 'Excellent'
+    if (score >= SCORE_THRESHOLDS.GOOD) return 'Good'
+    return 'Needs Improvement'
+  }
 
-  const scoreBgColor =
-    score && score >= 80
-      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-      : score && score >= 60
-      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200'
-      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
+  const getScoreBgColor = (score: number | null): string => {
+    if (!score) return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
+    if (score >= SCORE_THRESHOLDS.EXCELLENT) {
+      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
+    }
+    if (score >= SCORE_THRESHOLDS.GOOD) {
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200'
+    }
+    return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
+  }
+
+  const getBarColor = (value: number): string => {
+    if (value >= BREAKDOWN_THRESHOLDS.EXCELLENT) return 'bg-green-500'
+    if (value >= BREAKDOWN_THRESHOLDS.GOOD) return 'bg-yellow-500'
+    return 'bg-red-500'
+  }
+
+  const getBreakdownLabel = (key: string): string => {
+    if (key in SCORE_LABELS) {
+      return SCORE_LABELS[key as keyof typeof SCORE_LABELS]
+    }
+    return key.charAt(0).toUpperCase() + key.slice(1)
+  }
+
+  const scoreLabel = getScoreLabel(score)
+  const scoreBgColor = getScoreBgColor(score)
 
   return (
     <div className="border rounded-lg p-4 bg-linear-to-r from-green-50 to-blue-50 dark:from-green-900/10 dark:to-blue-900/10 space-y-3">
@@ -62,15 +97,8 @@ function QualityScoreDisplaySection({
       {scoreBreakdown && (
         <div className="grid grid-cols-5 gap-3">
           {Object.entries(scoreBreakdown).map(([key, value]) => {
-            const barColor =
-              value >= 16 ? 'bg-green-500' :
-              value >= 12 ? 'bg-yellow-500' :
-              'bg-red-500'
-
-            const label =
-              key === 'brandVoice' ? 'Brand Voice' :
-              key === 'platformFit' ? 'Platform Fit' :
-              key.charAt(0).toUpperCase() + key.slice(1)
+            const barColor = getBarColor(value)
+            const label = getBreakdownLabel(key)
 
             return (
               <div key={key} className="text-center">
@@ -123,5 +151,8 @@ function QualityScoreDisplaySection({
   )
 }
 
-// ✅ OPTIMIZATION: Export memoized component
+/**
+ * ✅ OPTIMIZATION: Export memoized component
+ * Only re-renders when viewModel changes
+ */
 export default memo(QualityScoreDisplaySection)

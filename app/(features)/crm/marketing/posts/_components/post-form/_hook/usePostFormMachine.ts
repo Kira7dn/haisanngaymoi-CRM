@@ -280,11 +280,12 @@ export interface MediaScheduleEvents {
  */
 export function createAIGenerationEvents(
   send: (event: any) => void,
-  setField: SetFieldFunction
+  setField: SetFieldFunction,
+  currentShowSettings: boolean
 ): AIGenerationEvents {
   return {
     onGenerate: () => send({ type: 'GENERATE_REQUEST' }),
-    onToggleSettings: () => setField('showSettings', true), // Toggle via form state
+    onToggleSettings: () => setField('showSettings', !currentShowSettings), // Toggle via form state
     onChangeMode: (mode) => setField('generationMode', mode)
   }
 }
@@ -293,11 +294,16 @@ export function createAIGenerationEvents(
  * Create event handlers for Platform Selector section
  */
 export function createPlatformSelectorEvents(
-  setField: SetFieldFunction
+  setField: SetFieldFunction,
+  currentPlatforms: Platform[]
 ): PlatformSelectorEvents {
   return {
-    onTogglePlatform: (_platform: Platform) => {
-      // TODO: Implement platform toggle logic in component
+    onTogglePlatform: (platform: Platform) => {
+      const isSelected = currentPlatforms.includes(platform)
+      const newPlatforms = isSelected
+        ? currentPlatforms.filter(p => p !== platform)
+        : [...currentPlatforms, platform]
+      setField('platforms', newPlatforms)
     },
     onSetPlatforms: (platforms) => setField('platforms', platforms),
     onChangeContentType: (contentType) => setField('contentType', contentType)

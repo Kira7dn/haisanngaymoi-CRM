@@ -5,7 +5,8 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { GeneratePostScheduleUseCase } from "@/core/application/usecases/marketing/post/generate-post-schedule"
-import { getBrandMemoryAction } from "@/app/(features)/crm/marketing/posts/actions"
+import { getBrandMemoryAction } from "@/app/(features)/crm/marketing/posts/_actions/brand-memory-action"
+import { Product } from "@/core/domain/catalog/product"
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,12 +24,12 @@ export async function POST(request: NextRequest) {
     const brandMemory = brandResult.brandMemory
 
     // Get selected products
-    let selectedProducts: any[] = []
+    let selectedProducts: Product[] = []
     if (brandMemory.selectedProductIds && brandMemory.selectedProductIds.length > 0) {
       try {
         const productsRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/products`)
         const allProducts = await productsRes.json()
-        selectedProducts = allProducts.filter((p: any) =>
+        selectedProducts = allProducts.filter((p: Product) =>
           brandMemory.selectedProductIds?.includes(p.id)
         )
       } catch (error) {

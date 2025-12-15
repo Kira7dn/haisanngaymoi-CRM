@@ -1,76 +1,108 @@
-import { PostRepository } from "@/infrastructure/repositories/marketing/post-repo";
-import type { PostRepo } from "@/core/application/interfaces/marketing/post-repo";
+import { PostRepository } from "@/infrastructure/repositories/marketing/post-repo"
+import type { PostRepo } from "@/core/application/interfaces/marketing/post-repo"
 
-import { GetPostsUseCase } from "@/core/application/usecases/marketing/post/get-posts";
-import { CreatePostUseCase } from "@/core/application/usecases/marketing/post/create-post";
-import { UpdatePostUseCase } from "@/core/application/usecases/marketing/post/update-post";
-import { DeletePostUseCase } from "@/core/application/usecases/marketing/post/delete-post";
+import { GetPostsUseCase } from "@/core/application/usecases/marketing/post/get-posts"
+import { CreatePostUseCase } from "@/core/application/usecases/marketing/post/create-post"
+import { UpdatePostUseCase } from "@/core/application/usecases/marketing/post/update-post"
+import { DeletePostUseCase } from "@/core/application/usecases/marketing/post/delete-post"
+import { PublishPostUseCase } from "@/core/application/usecases/marketing/post/publish-post"
 
-import type { PostingAdapterFactory } from "@/core/application/interfaces/marketing/posting-adapter";
-import { getPostingAdapterFactory } from "@/infrastructure/adapters/external/social/factories/posting-adapter-factory";
-import { BullMQAdapter } from "@/infrastructure/queue/bullmq-adapter";
-import type { QueueService } from "@/core/application/interfaces/shared/queue-service";
+import type { PostingAdapterFactory } from "@/core/application/interfaces/marketing/posting-adapter"
+import { getPostingAdapterFactory } from "@/infrastructure/adapters/external/social/factories/posting-adapter-factory"
 
-/**
- * Dependencies Initialization (Singleton Pattern)
- *
- * 📌 PlatformPostingAdapterFactory - Auto Token Management
- * ✅ Auto-fetches SocialAuth from DB using platform + userId
- * ✅ Auto-checks token expiration (isTokenExpired)
- * ✅ Auto-refreshes token when needed (OAuthAdapter.refreshToken)
- * ✅ Auto-updates refreshed token in DB (SocialAuthRepository.refreshToken)
- * ✅ Caches adapters for performance optimization
- *
- * Usage in use cases:
- *   const adapter = await factory.create(platform, userId);
- *   // No need to manually handle token refresh!
- */
-let postServiceInstance: PostRepo | null = null;
-let queueServiceInstance: QueueService | null = null;
-const platformFactoryInstance: PostingAdapterFactory = getPostingAdapterFactory();
+import type { QueueService } from "@/core/application/interfaces/shared/queue-service"
+import { QStashAdapter } from "@/infrastructure/queue/qstash-adapter"
 
 /**
- * Lấy hoặc tạo mới instance của PostService
+ * ======================================================
+ * Singleton Instances
+ * ======================================================
  */
-const getPostService = async (): Promise<PostRepo> => {
-  if (!postServiceInstance) {
-    postServiceInstance = new PostRepository();
+let postRepoInstance: PostRepo | null = null
+let queueServiceInstance: QueueService | null = null
+let publishPostUseCaseInstance: PublishPostUseCase | null = null
+
+const platformFactoryInstance: PostingAdapterFactory =
+  getPostingAdapterFactory()
+
+/**
+ * ======================================================
+ * Repositories
+ * ======================================================
+ */
+const getPostRepo = async (): Promise<PostRepo> => {
+  if (!postRepoInstance) {
+    postRepoInstance = new PostRepository()
   }
-  return postServiceInstance;
-};
+  return postRepoInstance
+}
 
 /**
- * Lấy hoặc tạo mới instance của QueueService
+ * ======================================================
+ * Queue Service
+ * ======================================================
  */
 const getQueueService = (): QueueService => {
   if (!queueServiceInstance) {
-    queueServiceInstance = new BullMQAdapter();
+    queueServiceInstance = new QStashAdapter()
   }
-  return queueServiceInstance;
-};
+  return queueServiceInstance
+}
 
-// 🔹 UseCase: Get Posts (không cần platform integration)
+/**
+ * ======================================================
+ * UseCases
+ * ======================================================
+ */
+
+// 🔹 Get Posts (read-only)
 export const getPostsUseCase = async (): Promise<GetPostsUseCase> => {
-  const postService = await getPostService();
-  return new GetPostsUseCase(postService);
-};
+  const postRepo = await getPostRepo()
+  return new GetPostsUseCase(postRepo)
+}
 
-// 🔹 UseCase: Create Post (có publish external platform + queue scheduling)
+// 🔹 Publish Post (IMMEDIATE or SCHEDULED EXECUTION CORE)
+export const publishPostUseCase = async (): Promise<PublishPostUseCase> => {
+  if (!publishPostUseCaseInstance) {
+    const postRepo = await getPostRepo()
+    publishPostUseCaseInstance = new PublishPostUseCase(
+      postRepo,
+      platformFactoryInstance
+    )
+  }
+  return publishPostUseCaseInstance
+}
+
+// 🔹 Create Post (CREATE + SCHEDULE OR IMMEDIATE PUBLISH)
 export const createPostUseCase = async (): Promise<CreatePostUseCase> => {
-  const postService = await getPostService();
-  const queueService = getQueueService();
-  return new CreatePostUseCase(postService, platformFactoryInstance, queueService);
-};
+  const postRepo = await getPostRepo()
+  const queueService = getQueueService()
+  const publishUseCase = await publishPostUseCase()
 
-// 🔹 UseCase: Update Post (có update external platform)
+  return new CreatePostUseCase(
+    postRepo,
+    queueService,
+    publishUseCase
+  )
+}
+
+// 🔹 Update Post (update DB + optional reschedule / republish)
 export const updatePostUseCase = async (): Promise<UpdatePostUseCase> => {
-  const postService = await getPostService();
-  const queueService = getQueueService();
-  return new UpdatePostUseCase(postService, platformFactoryInstance, queueService);
-};
+  const postRepo = await getPostRepo()
+  const queueService = getQueueService()
 
-// 🔹 UseCase: Delete Post (có delete external platform)
+  return new UpdatePostUseCase(
+    postRepo,
+    platformFactoryInstance,
+    queueService
+  )
+}
+
+// 🔹 Delete Post (delete DB + revoke external posts)
 export const deletePostUseCase = async (): Promise<DeletePostUseCase> => {
-  const postService = await getPostService();
-  return new DeletePostUseCase(postService, platformFactoryInstance);
-};
+  const postRepo = await getPostRepo()
+  return new DeletePostUseCase(
+    postRepo,
+    platformFactoryInstance
+  )
+}

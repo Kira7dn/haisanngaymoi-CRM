@@ -18,10 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@shared/ui/select'
-import { getBrandMemoryAction, saveBrandMemoryAction } from '../actions'
 import type { BrandMemory } from '@/core/domain/brand-memory'
 import { DEFAULT_BRAND_MEMORY } from '@/core/domain/brand-memory'
 import { toast } from 'sonner'
+import { getBrandMemoryAction, saveBrandMemoryAction } from '../_actions/brand-memory-action'
+import { Product } from '@/core/domain/catalog/product'
 
 interface PostContentSettingsProps {
   open: boolean
@@ -32,7 +33,7 @@ export default function PostContentSettings({ open, onClose }: PostContentSettin
   const [settings, setSettings] = useState<Omit<BrandMemory, 'id' | 'createdAt' | 'updatedAt'>>(DEFAULT_BRAND_MEMORY)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [products, setProducts] = useState<Array<{id: number, name: string}>>([])
+  const [products, setProducts] = useState<Array<{ id: number, name: string }>>([])
 
   useEffect(() => {
     if (open) {
@@ -64,7 +65,7 @@ export default function PostContentSettings({ open, onClose }: PostContentSettin
     try {
       const res = await fetch('/api/products')
       const data = await res.json()
-      setProducts(data.map((p: any) => ({ id: p.id, name: p.name })))
+      setProducts(data.map((p: Product) => ({ id: p.id, name: p.name })))
     } catch (error) {
       console.error('Failed to load products:', error)
     }
@@ -275,7 +276,7 @@ export default function PostContentSettings({ open, onClose }: PostContentSettin
             <Label htmlFor="brandVoiceTone">
               Brand Voice - Tone
               <span className="text-xs text-gray-500 ml-2">
-                Overall tone and personality (e.g., "warm, expert, trustworthy")
+                {`Overall tone and personality (e.g., "warm, expert, trustworthy")`}
               </span>
             </Label>
             <Input

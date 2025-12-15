@@ -1,6 +1,7 @@
 import type { ActorRefFrom } from 'xstate'
 import type { postFormMachine } from './postForm.machine'
 import type { PostFormState } from './_hook/usePostFormState'
+import { PostMedia } from '@/core/domain/marketing/post'
 
 /**
  * PostForm Selectors
@@ -81,7 +82,7 @@ export interface QualityScoreViewModel {
  * ViewModel for Media & Schedule Section
  */
 export interface MediaScheduleViewModel {
-  media: any | null
+  media?: PostMedia
   scheduledAt: string | undefined
   hashtags: string
   isDisabled: boolean
@@ -190,7 +191,7 @@ export function selectMediaScheduleViewModel(
   const isVideoContent = ['video', 'reel', 'short'].includes(formState.contentType)
 
   return {
-    media: formState.media,
+    media: formState.media || undefined,
     scheduledAt: formState.scheduledAt,
     hashtags: formState.hashtags,
     isDisabled,

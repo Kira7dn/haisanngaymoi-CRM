@@ -5,10 +5,14 @@ export interface QueueService {
     data: any,
     options?: {
       delay?: number;
+      jobId?: string;
       priority?: number;
     }
   ): Promise<string>; // Return job ID
-  removeJob(queueName: string, jobId: string): Promise<boolean>;
+  removeJob(
+    queueName: string,
+    jobId: string
+  ): Promise<boolean>;
 }
 
 export interface QueueJobData {

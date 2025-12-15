@@ -11,18 +11,18 @@ import {
 } from '../PostFormContext'
 
 /**
- * ContentInputSection - Optimized with React.memo & useCallback
+ * ContentInputSection - OPTIMIZED with React.memo & useCallback
  *
  * ✅ OPTIMIZATIONS:
- * 1. Wrapped with React.memo to prevent unnecessary re-renders
- * 2. useCallback for all inline event handlers
- * 3. VariationButton extracted as separate memoized component
+ * 1. Wrapped with React.memo
+ * 2. useCallback for inline event handlers
+ * 3. Stable event references
  */
 function ContentInputSection() {
   const state = usePostFormState()
   const events = usePostFormEvents()
 
-  // ✅ OPTIMIZATION: Memoize event handlers to prevent recreation on every render
+  // ✅ OPTIMIZATION: Memoize event handlers
   const handleIdeaChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
     events.setField('idea', e.target.value)
   }, [events])
@@ -194,5 +194,7 @@ const VariationButton = memo(function VariationButton({
   )
 })
 
-// ✅ OPTIMIZATION: Export memoized component
+/**
+ * ✅ OPTIMIZATION: Export memoized component
+ */
 export default memo(ContentInputSection)

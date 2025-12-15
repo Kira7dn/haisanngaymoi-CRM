@@ -1,75 +1,39 @@
 import { Button } from '@shared/ui/button'
 import { Loader2, Trash2 } from 'lucide-react'
-import type { Post } from '@/core/domain/marketing/post'
-import type { PostFormState } from './_hook/usePostFormState'
-import type { AIGenerationViewModel, PlatformSelectorViewModel, QualityScoreViewModel } from './postForm.selectors'
-import type { AIGenerationEvents, PlatformSelectorEvents } from './_hook/usePostFormMachine'
-
-// Form events interface
-export interface PostFormEvents {
-  generateAI: () => void
-  submit: () => void
-  saveDraft: () => void
-  delete: () => void
-  close: () => void
-  setField: <K extends keyof PostFormState>(key: K, value: PostFormState[K]) => void
-}
+import {
+  usePostFormData,
+  usePostFormEvents,
+  usePostFormLoadingStates,
+  usePostFormViewModels
+} from './PostFormContext'
 
 // Extracted sections
 import AIGenerationSection from './form-sections/AIGenerationSection'
 import QualityScoreDisplay from './form-sections/QualityScoreDisplaySection'
-import ContentInputFields from './form-sections/ContentInputSection'
+import ContentInputSection from './form-sections/ContentInputSection'
 import PlatformSelector from './form-sections/PlatformSelectorSection'
-import MediaHashtagSchedule from './form-sections/MediaHashtagScheduleSection'
-
-interface PostFormViewProps {
-  // Data
-  state: PostFormState
-  post?: Post
-  isVideoContent: boolean
-  hasTextContent: boolean
-  isDirty: boolean
-
-  // State setters (for non-migrated sections)
-  setField: <K extends keyof PostFormState>(key: K, value: PostFormState[K]) => void
-
-  // Form events (NEW - unified event interface)
-  events: PostFormEvents
-
-  // Loading states (for non-migrated sections)
-  isSubmitting: boolean
-
-  // ViewModels (for migrated sections)
-  aiGenerationViewModel: AIGenerationViewModel
-  aiGenerationEvents: AIGenerationEvents
-  platformSelectorViewModel: PlatformSelectorViewModel
-  platformSelectorEvents: PlatformSelectorEvents
-  qualityScoreViewModel: QualityScoreViewModel
-}
+import MediaHashtagScheduleSection from './form-sections/MediaHashtagScheduleSection'
 
 /**
  * Pure presentational component for Post Form
  *
  * Responsibilities:
- * - Render UI based on props
- * - Forward user interactions to parent via callbacks
+ * - Render UI based on context data (zero props!)
+ * - Forward user interactions to parent via event callbacks
  * - No async logic, no side effects, no data fetching
  */
-export default function PostFormView({
-  state,
-  post,
-  isVideoContent,
-  hasTextContent,
-  isDirty,
-  setField,
-  events,
-  isSubmitting,
-  aiGenerationViewModel,
-  aiGenerationEvents,
-  platformSelectorViewModel,
-  platformSelectorEvents,
-  qualityScoreViewModel
-}: PostFormViewProps) {
+export default function PostFormView() {
+  // Get data from context - no props needed!
+  const { state, post, isDirty } = usePostFormData()
+  const events = usePostFormEvents()
+  const { isSubmitting } = usePostFormLoadingStates()
+  const {
+    aiGenerationViewModel,
+    aiGenerationEvents,
+    platformSelectorViewModel,
+    platformSelectorEvents,
+    qualityScoreViewModel
+  } = usePostFormViewModels()
 
   const errors: Record<string, string> = {}
   if (state.platforms.length === 0) {
@@ -103,22 +67,8 @@ export default function PostFormView({
       {/* Quality Score Display */}
       <QualityScoreDisplay viewModel={qualityScoreViewModel} />
 
-      {/* Content Input Fields */}
-      <ContentInputFields
-        title={state.title}
-        setTitle={(value: string) => setField('title', value)}
-        body={state.body}
-        setBody={(value: string) => setField('body', value)}
-        variations={state.variations}
-        setVariations={(value: Array<{ title: string; content: string; style: string }>) => setField('variations', value)}
-        idea={state.idea}
-        setIdea={(value: string) => setField('idea', value)}
-        contentInstruction={state.contentInstruction}
-        setContentInstruction={(value: string) => setField('contentInstruction', value)}
-        selectedProduct={state.product}
-        setSelectedProduct={(value: any) => setField('product', value)}
-        products={state.products}
-      />
+      {/* Content Input Fields - Now uses Context! */}
+      <ContentInputSection />
 
       {/* Platform Selector */}
       <PlatformSelector
@@ -126,16 +76,8 @@ export default function PostFormView({
         events={platformSelectorEvents}
       />
 
-      {/* Media, Hashtags, Schedule */}
-      <MediaHashtagSchedule
-        media={state.media}
-        setMedia={(value) => setField('media', value)}
-        isVideoContent={isVideoContent}
-        hashtags={state.hashtags}
-        setHashtags={(value) => setField('hashtags', value)}
-        scheduledAt={state.scheduledAt || ''}
-        setScheduledAt={(value) => setField('scheduledAt', value)}
-      />
+      {/* Media, Hashtags, Schedule - Now uses Context! */}
+      <MediaHashtagScheduleSection />
 
       {/* Actions */}
       <div className="flex justify-between items-center gap-2">

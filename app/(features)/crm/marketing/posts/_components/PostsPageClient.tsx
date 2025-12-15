@@ -10,7 +10,7 @@ import PostContentSettings from './PostContentSettings'
 import ResourceManager from './ResourceManager'
 import type { Post } from '@/core/domain/marketing/post'
 import { toast } from 'sonner'
-import { saveScheduleToPostsAction } from '../actions'
+import { createPostScheduleAction } from '../_actions/create-post-schedule-action'
 
 interface PostsPageClientProps {
   initialPosts: Post[]
@@ -72,7 +72,7 @@ export default function PostsPageClient({ initialPosts }: PostsPageClientProps) 
 
     setSaving(true)
     try {
-      const result = await saveScheduleToPostsAction(generatedSchedule)
+      const result = await createPostScheduleAction(generatedSchedule)
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to save schedule')

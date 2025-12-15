@@ -1,5 +1,5 @@
 import { ContentType, Platform, Post, PostMedia } from "@/core/domain/marketing/post"
-import { useRef, useState } from "react"
+import { useRef, useState, useCallback } from "react"
 import { formatDateForInput } from "@/lib/date-utils"
 import { Product } from "@/core/domain/catalog/product"
 
@@ -122,9 +122,9 @@ export function usePostFormState({
         setState(prev => ({ ...prev, [key]: value }))
     }
 
-    const updateMultipleFields = (updates: Partial<PostFormState>) => {
+    const updateMultipleFields = useCallback((updates: Partial<PostFormState>) => {
         setState(prev => ({ ...prev, ...updates }))
-    }
+    }, [])
 
     // ---------- derived ----------
     const primaryPlatform = state.platforms.at(0)
