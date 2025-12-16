@@ -2,55 +2,28 @@
 
 import { createContext, useContext, ReactNode } from 'react'
 import type { Post } from '@/core/domain/marketing/post'
-import type { PostFormState } from './_hook/usePostFormState'
-import type {
-  AIGenerationViewModel,
-  PlatformSelectorViewModel,
-  QualityScoreViewModel
-} from './postForm.selectors'
-import type {
-  AIGenerationEvents,
-  PlatformSelectorEvents
-} from './_hook/usePostFormMachine'
+import type { PostFormState } from './state/usePostFormState'
+import { PostFormActions } from './actions/post-form-actions'
+import { Product } from '@/core/domain/catalog/product'
 
-// ========== Context Types ==========
-
-export interface PostFormEvents {
-  generateAI: () => void
-  submit: () => void
-  saveDraft: () => void
-  delete: () => void
-  close: () => void
-  setField: <K extends keyof PostFormState>(key: K, value: PostFormState[K]) => void
-}
+// ---------- types ----------
 
 interface PostFormContextValue {
-  // Data
   state: PostFormState
+  setField: (key: keyof PostFormState, value: any) => void
+  updateMultipleFields: (updates: Partial<PostFormState>) => void
   post?: Post
-  isVideoContent: boolean
-  hasTextContent: boolean
-  isDirty: boolean
-
-  // Events
-  events: PostFormEvents
-
-  // Loading states
+  actions: PostFormActions
   isSubmitting: boolean
-
-  // ViewModels
-  aiGenerationViewModel: AIGenerationViewModel
-  aiGenerationEvents: AIGenerationEvents
-  platformSelectorViewModel: PlatformSelectorViewModel
-  platformSelectorEvents: PlatformSelectorEvents
-  qualityScoreViewModel: QualityScoreViewModel
+  isDirty: boolean
+  products?: Product[]
 }
 
-// ========== Context ==========
+// ---------- context ----------
 
 const PostFormContext = createContext<PostFormContextValue | null>(null)
 
-// ========== Provider ==========
+// ---------- provider ----------
 
 interface PostFormProviderProps {
   children: ReactNode
@@ -65,7 +38,7 @@ export function PostFormProvider({ children, value }: PostFormProviderProps) {
   )
 }
 
-// ========== Hooks ==========
+// ---------- hooks ----------
 
 export function usePostFormContext() {
   const context = useContext(PostFormContext)
@@ -73,43 +46,4 @@ export function usePostFormContext() {
     throw new Error('usePostFormContext must be used within PostFormProvider')
   }
   return context
-}
-
-// Granular hooks for specific data
-export function usePostFormState() {
-  const { state } = usePostFormContext()
-  return state
-}
-
-export function usePostFormEvents() {
-  const { events } = usePostFormContext()
-  return events
-}
-
-export function usePostFormData() {
-  const { state, post, isVideoContent, hasTextContent, isDirty } = usePostFormContext()
-  return { state, post, isVideoContent, hasTextContent, isDirty }
-}
-
-export function usePostFormLoadingStates() {
-  const { isSubmitting } = usePostFormContext()
-  return { isSubmitting }
-}
-
-export function usePostFormViewModels() {
-  const {
-    aiGenerationViewModel,
-    aiGenerationEvents,
-    platformSelectorViewModel,
-    platformSelectorEvents,
-    qualityScoreViewModel
-  } = usePostFormContext()
-
-  return {
-    aiGenerationViewModel,
-    aiGenerationEvents,
-    platformSelectorViewModel,
-    platformSelectorEvents,
-    qualityScoreViewModel
-  }
 }

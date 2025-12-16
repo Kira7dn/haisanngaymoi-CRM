@@ -16,7 +16,7 @@ import { usePostFormContext } from '../PostFormContext'
  * 3. Stable event references
  */
 function ContentInputSection() {
-  const { state, setField } = usePostFormContext()
+  const { state, setField, products } = usePostFormContext()
 
   const onIdeaChange = useCallback(
     (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -28,10 +28,10 @@ function ContentInputSection() {
   const onProductChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       const productId = e.target.value
-      const selectedProduct = state.products?.find(p => String(p.id) === productId)
+      const selectedProduct = products?.find(p => String(p.id) === productId)
       setField('product', selectedProduct || null)
     },
-    [setField, state.products]
+    [setField, products]
   )
 
   const onInstructionChange = useCallback(
@@ -86,7 +86,7 @@ function ContentInputSection() {
       </div>
 
       {/* Product Selection */}
-      {state.products && state.products.length > 0 && (
+      {products && products.length > 0 && (
         <div>
           <Label htmlFor="product">Product (optional)</Label>
           <select
@@ -96,7 +96,7 @@ function ContentInputSection() {
             className="w-full border rounded-md p-2"
           >
             <option value="">None (no specific product)</option>
-            {state.products.map((product: any) => (
+            {products.map((product: any) => (
               <option key={String(product.id)} value={String(product.id)}>
                 {product.name}
               </option>

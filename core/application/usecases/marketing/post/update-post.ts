@@ -1,4 +1,4 @@
-import type { Post, Platform, PostStatus, PlatformMetadata, PostMedia } from "@/core/domain/marketing/post"
+import type { Post, PlatformMetadata, PostMedia } from "@/core/domain/marketing/post"
 import type { PostRepo, PostPayload } from "@/core/application/interfaces/marketing/post-repo"
 import type { PostingAdapterFactory } from "@/core/application/interfaces/marketing/posting-adapter"
 import type { QueueService } from "@/core/application/interfaces/shared/queue-service"
@@ -18,125 +18,123 @@ export class UpdatePostUseCase {
 
   async execute(request: PostPayload): Promise<UpdatePostResponse> {
     if (!request.id) {
-      return { post: null, error: "Post ID is required" };
-    }
-    // 1️⃣ Lấy post hiện tại để kiểm tra trạng thái scheduling
-    const existingPost = await this.postRepo.getById(request.id);
-    if (!existingPost) {
-      return { post: null, error: "Post not found" };
+      return { post: null, error: "Post ID is required" }
     }
 
-    // 2️⃣ Xử lý cập nhật scheduled job nếu có thay đổi scheduleAt
-    let platforms = existingPost.platforms;
-    const hasScheduleChange = request.scheduledAt !== undefined &&
-      request.scheduledAt !== existingPost.scheduledAt;
+    const before = await this.postRepo.getById(request.id)
+    if (!before) {
+      return { post: null, error: "Post not found" }
+    }
 
-    if (hasScheduleChange) {
-      console.log(`[UpdatePostUseCase] Schedule changed from ${existingPost.scheduledAt} to ${request.scheduledAt}`);
-      const currentJobId =
-        existingPost.platforms.find(p => p.scheduledJobId)?.scheduledJobId
-      if (currentJobId) {
-        await this.queueService.removeJob("scheduled-posts", currentJobId)
-      }
+    // ---------- 1️⃣ Scheduling ----------
+    const nextScheduledAt =
+      request.scheduledAt === undefined
+        ? before.scheduledAt
+        : request.scheduledAt
 
-      // Nếu có scheduleAt mới và là trong tương lai, tạo job mới
-      if (request.scheduledAt && new Date(request.scheduledAt) > new Date()) {
-        const delay = new Date(request.scheduledAt).getTime() - Date.now();
-        const newJobId = await this.queueService.addJob(
+    const scheduleChanged =
+      String(nextScheduledAt ?? "") !== String(before.scheduledAt ?? "")
+
+    let platforms = before.platforms
+
+    if (scheduleChanged) {
+      // luôn remove theo postId (chuẩn với CreatePostUseCase)
+      await this.queueService.removeJob("scheduled-posts", before.id)
+
+      const isScheduled =
+        !!nextScheduledAt && new Date(nextScheduledAt) > new Date()
+
+      platforms = platforms.map(p => ({
+        ...p,
+        status: isScheduled ? "scheduled" : "draft",
+      }))
+
+      if (isScheduled) {
+        const delay =
+          new Date(nextScheduledAt).getTime() - Date.now()
+
+        await this.queueService.addJob(
           "scheduled-posts",
           "publish-scheduled-post",
-          { postId: existingPost.id },
-          { delay }
+          {
+            postId: before.id,
+            userId: before.userId,
+          },
+          {
+            delay,
+            jobId: before.id, // ✅ invariant
+          } as any
         )
-        platforms = existingPost.platforms.map(p => ({
-          ...p,
-          status: "scheduled",
-          scheduledJobId: newJobId,
-        }))
-        console.log(`[UpdatePostUseCase] ✓ Created new job ${newJobId} with delay ${delay}ms`);
-      } else {
-        platforms = existingPost.platforms.map(p => ({
-          ...p,
-          status: "draft",
-          scheduledJobId: undefined,
-        }))
       }
     }
 
-    // 3️⃣ Update trong database với platforms đã được cập nhật
-    const updatedPost = await this.postRepo.update({
-      id: existingPost.id,
-      title: request.title ?? existingPost.title,
-      body: request.body ?? existingPost.body,
-      media: request.media ?? existingPost.media,
-      hashtags: request.hashtags ?? existingPost.hashtags,
-      mentions: request.mentions ?? existingPost.mentions,
-      scheduledAt: request.scheduledAt ?? existingPost.scheduledAt,
+    // ---------- 2️⃣ Update DB ----------
+    const after = await this.postRepo.update({
+      id: before.id,
+      title: request.title ?? before.title,
+      body: request.body ?? before.body,
+      media: request.media ?? before.media,
+      hashtags: request.hashtags ?? before.hashtags,
+      mentions: request.mentions ?? before.mentions,
+      scheduledAt: nextScheduledAt,
       platforms,
     })
 
-    if (!updatedPost) {
-      return { post: null, error: "Post not found or update failed" };
+    if (!after) {
+      return { post: null, error: "Update failed" }
     }
 
-    // --------------------------------------------------
-    // 3️⃣ OPTIONAL: SYNC UPDATE TO PLATFORM
-    // --------------------------------------------------
-
-    const syncPlan = buildPlatformSyncPlan(existingPost, updatedPost)
-
-
+    // ---------- 3️⃣ Optional: sync published platforms ----------
+    const syncPlan = buildPlatformSyncPlan(before, after)
     if (!syncPlan.payload || syncPlan.platforms.length === 0) {
-      return {
-        post: updatedPost,
-        platformUpdated: false,
-      }
+      return { post: after, platformUpdated: false }
     }
 
-    let updated = false
+    let platformUpdated = false
     let lastError: string | undefined
 
-    for (const platformMeta of syncPlan.platforms) {
-      try {
-        if (!updatedPost.userId) {
-          throw new Error("User ID is required for platform update");
-        }
-        const service = await this.platformFactory.create(
-          platformMeta.platform,
-          updatedPost.userId
-        )
-
-        const result = await service.update(
-          platformMeta.postId!,
-          {
-            title: syncPlan.payload.title ?? '',
-            body: syncPlan.payload.body,
-            media: syncPlan.payload.media,
-            hashtags: syncPlan.payload.hashtags ?? [],
-            mentions: syncPlan.payload.mentions ?? []
-          }
-        )
-
-        updated = updated || result.success
-        platformMeta.error = result.success ? undefined : result.error
-      } catch (err) {
-        lastError = err instanceof Error ? err.message : "Platform update failed"
-        platformMeta.error = lastError
+    if (!after.userId) {
+      return {
+        post: after,
+        platformUpdated: false,
+        error: "User ID is required for platform update",
       }
     }
 
-    const persisted = await this.postRepo.update({
-      id: updatedPost.id,
-      platforms: updatedPost.platforms,
+    for (const meta of syncPlan.platforms) {
+      try {
+        const service = await this.platformFactory.create(
+          meta.platform,
+          after.userId
+        )
+
+        const result = await service.update(meta.postId!, {
+          title: syncPlan.payload.title ?? "",
+          body: syncPlan.payload.body,
+          media: syncPlan.payload.media,
+          hashtags: syncPlan.payload.hashtags ?? [],
+          mentions: syncPlan.payload.mentions ?? [],
+        })
+
+        platformUpdated ||= result.success
+        meta.error = result.success ? undefined : result.error
+      } catch (e) {
+        lastError =
+          e instanceof Error ? e.message : "Platform update failed"
+        meta.error = lastError
+      }
+    }
+
+    await this.postRepo.update({
+      id: after.id,
+      platforms: after.platforms,
     })
 
     return {
-      post: persisted ?? updatedPost,
-      platformUpdated: updated,
+      post: after,
+      platformUpdated,
       error: lastError,
     }
-
-
   }
 }
 
@@ -150,38 +148,33 @@ interface PlatformSyncPlan {
     mentions?: string[]
   } | null
 }
-
 function buildPlatformSyncPlan(
   before: Post,
   after: Post
 ): PlatformSyncPlan {
-  const payload: PlatformSyncPlan["payload"] = {}
+  const payload: NonNullable<PlatformSyncPlan["payload"]> = {}
 
   if (before.title !== after.title) payload.title = after.title
   if (before.body !== after.body) payload.body = after.body
+  if (!shallowEqual(before.media, after.media)) payload.media = after.media
+  if (!arrayEqual(before.hashtags, after.hashtags)) payload.hashtags = after.hashtags
+  if (!arrayEqual(before.mentions, after.mentions)) payload.mentions = after.mentions
 
-  if (JSON.stringify(before.media) !== JSON.stringify(after.media)) {
-    payload.media = after.media
-  }
-
-  if (JSON.stringify(before.hashtags) !== JSON.stringify(after.hashtags)) {
-    payload.hashtags = after.hashtags
-  }
-
-  if (JSON.stringify(before.mentions) !== JSON.stringify(after.mentions)) {
-    payload.mentions = after.mentions
-  }
-
-  const hasChanges = Object.keys(payload).length > 0
-
-  if (!hasChanges) {
+  if (Object.keys(payload).length === 0) {
     return { platforms: [], payload: null }
   }
 
-  const platforms = after.platforms.filter(
-    p => p.status === "published" && !!p.postId
-  )
-
-  return { platforms, payload }
+  return {
+    payload,
+    platforms: after.platforms.filter(
+      p => p.status === "published" && !!p.postId
+    ),
+  }
 }
 
+// --- utils ---
+const shallowEqual = (a: any, b: any) =>
+  JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
+
+const arrayEqual = (a?: any[], b?: any[]) =>
+  JSON.stringify(a ?? []) === JSON.stringify(b ?? [])

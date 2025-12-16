@@ -2,27 +2,13 @@
 
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
-import { parseDateTimeLocal } from "@/lib/date-utils"
 import { updatePostUseCase } from "@/app/api/posts/depends"
-import type { ContentType, Platform, PostMedia, PlatformMetadata } from "@/core/domain/marketing/post"
-
-export interface UpdatePostPayload {
-    title?: string
-    body?: string
-    contentType?: ContentType
-
-    platforms?: Platform[]
-    media?: PostMedia | null
-    hashtags?: string[]
-    scheduledAt?: string | null
-}
-
-
-export type PostSubmitMode = "draft" | "schedule" | "publish"
+import { PostPayload } from "@/core/application/interfaces/marketing/post-repo"
+import { PostStatus } from "@/core/domain/marketing/post"
 
 export interface UpdatePostInput {
     postId: string
-    payload: UpdatePostPayload
+    payload: PostPayload
 }
 
 
@@ -36,50 +22,28 @@ export async function updatePostAction(input: UpdatePostInput) {
         throw new Error("Unauthorized")
     }
 
-    // ---------- Build update data ----------
-    const updateData: any = {
-        id: postId,
-        userId: userIdCookie.value,
-        updatedAt: new Date()
-    }
-
-    if (payload.title !== undefined) {
-        updateData.title = payload.title
-    }
-
-    if (payload.body !== undefined) {
-        updateData.body = payload.body
-    }
-
-    if (payload.contentType !== undefined) {
-        updateData.contentType = payload.contentType
-    }
-
-    if (payload.platforms !== undefined) {
-        const platforms: PlatformMetadata[] = payload.platforms.map(platform => ({
-            platform,
-            status: "draft" // update không auto publish
-        }))
-        updateData.platforms = platforms
-    }
-
-    if (payload.media !== undefined) {
-        updateData.media = payload.media ?? undefined
-    }
-
-    if (payload.hashtags !== undefined) {
-        updateData.hashtags = payload.hashtags
-    }
-
-    if (payload.scheduledAt !== undefined) {
-        updateData.scheduledAt = payload.scheduledAt
-            ? parseDateTimeLocal(payload.scheduledAt)
-            : undefined
-    }
+    // ---------- Parse schedule ----------
+    const scheduledAt = payload.scheduledAt
+        ? new Date(payload.scheduledAt)
+        : undefined
 
     // ---------- UseCase ----------
     const useCase = await updatePostUseCase()
-    await useCase.execute(updateData)
+    await useCase.execute(
+        {
+            id: postId,
+            title: payload.title,
+            body: payload.body,
+            contentType: payload.contentType,
+            platforms: payload.platforms?.map(platform => ({
+                platform: platform.platform,
+                status: (scheduledAt ? "scheduled" : "draft") as PostStatus
+            })),
+            media: payload.media,
+            hashtags: payload.hashtags,
+            scheduledAt,
+        }
+    )
 
     // ---------- Cache ----------
     revalidatePath("/crm/posts")

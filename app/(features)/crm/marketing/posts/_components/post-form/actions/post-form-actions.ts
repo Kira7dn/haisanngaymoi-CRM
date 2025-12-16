@@ -1,4 +1,4 @@
-import { Post } from '@/core/domain/marketing/post'
+import { Post, PostStatus } from '@/core/domain/marketing/post'
 import { PostFormState } from '../state/usePostFormState'
 import { updatePostAction } from '../../../_actions/update-post-action'
 import { createPostAction } from '../../../_actions/create-post-action'
@@ -18,7 +18,6 @@ export interface PostFormActions {
   submit: () => Promise<void>
   saveDraft: () => Promise<void>
   delete: () => Promise<void>
-  close: () => void
 }
 
 export type SubmitMode = 'draft' | 'schedule' | 'publish'
@@ -26,7 +25,6 @@ export type SubmitMode = 'draft' | 'schedule' | 'publish'
 export interface PostFormActionsDeps {
   getState: () => PostFormState
   post?: Post
-  onClose?: () => void
 }
 
 // ---------- factory ----------
@@ -36,10 +34,9 @@ export interface PostFormActionsDeps {
  *
  * Plain action factory (NO React, NO hook)
  */
-export function createPostFormActions({
+export function PostFormActions({
   getState,
   post,
-  onClose,
 }: PostFormActionsDeps): PostFormActions {
 
   // ===== submit (publish / schedule) =====
@@ -55,24 +52,38 @@ export function createPostFormActions({
       title: state.title,
       body: state.body,
       contentType: state.contentType,
-      platforms: state.platforms,
+      platforms: state.platforms.map(platform => ({
+        platform: platform.platform,
+        status: (state.scheduledAt ? "scheduled" : "draft") as PostStatus
+      })),
       media: state.media || undefined,
       hashtags: parseHashtags(state.hashtags),
-      scheduledAt: state.scheduledAt?.toISOString(),
+      scheduledAt: state.scheduledAt ? new Date(state.scheduledAt) : undefined,
     }
 
     // update
     if (post?.id) {
+      const updatePayload = {
+        title: state.title,
+        body: state.body,
+        contentType: state.contentType,
+        platforms: state.platforms.map(platform => ({
+          platform: platform.platform,
+          status: (state.scheduledAt ? "scheduled" : "draft") as PostStatus
+        })),
+        media: state.media || undefined,
+        hashtags: parseHashtags(state.hashtags),
+        scheduledAt: state.scheduledAt ? new Date(state.scheduledAt) : undefined,
+      }
       await updatePostAction({
         postId: post.id,
-        payload,
+        payload: updatePayload,
       })
       return
     }
 
     // create
     await createPostAction({
-      mode: state.scheduledAt ? 'schedule' : 'publish',
       payload,
     })
   }
@@ -86,22 +97,36 @@ export function createPostFormActions({
       title: state.title,
       body: state.body,
       contentType: state.contentType,
-      platforms: [], // draft không cần platform
+      platforms: state.platforms.map(platform => ({
+        platform: platform.platform,
+        status: "draft" as PostStatus
+      })),
       media: state.media || undefined,
       hashtags: parseHashtags(state.hashtags),
       scheduledAt: undefined,
     }
 
     if (post?.id) {
+      const updatePayload = {
+        title: state.title,
+        body: state.body,
+        contentType: state.contentType,
+        platforms: state.platforms.map(platform => ({
+          platform: platform.platform,
+          status: "draft" as PostStatus
+        })),
+        media: state.media || undefined,
+        hashtags: parseHashtags(state.hashtags),
+        scheduledAt: undefined,
+      }
       await updatePostAction({
         postId: post.id,
-        payload,
+        payload: updatePayload,
       })
       return
     }
 
     await createPostAction({
-      mode: 'draft',
       payload,
     })
   }
@@ -116,16 +141,9 @@ export function createPostFormActions({
     await deletePostAction(post.id)
   }
 
-  // ===== close =====
-
-  const close = (): void => {
-    onClose?.()
-  }
-
   return {
     submit,
     saveDraft,
     delete: deletePost,
-    close,
   }
 }

@@ -2,7 +2,7 @@
 
 import { Button } from '@shared/ui/button'
 import { Loader2, Trash2 } from 'lucide-react'
-import { usePostFormData } from '../PostFormContext'
+import { usePostFormContext } from '../PostFormContext'
 // nếu bạn đã có hook actions riêng
 // import { usePostFormActions } from './PostFormActions'
 
@@ -29,7 +29,7 @@ export default function PostFormView() {
     actions,
     isDirty,
     isSubmitting,
-  } = usePostFormData()
+  } = usePostFormContext()
 
   const hasPlatformError = state.platforms.length === 0
 
@@ -57,7 +57,7 @@ export default function PostFormView() {
       </header>
 
       {/* ===== AI Section ===== */}
-      {/* <AIGenerationSection /> */}
+      <AIGenerationSection />
 
       {/* ===== Quality Score ===== */}
       {/* <QualityScoreDisplay /> */}

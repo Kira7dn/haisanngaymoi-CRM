@@ -1,3 +1,5 @@
+import { Product } from "../catalog/product";
+
 /**
  * Platform types for social media marketing
  * Note: "website" and "telegram" are messaging-only platforms

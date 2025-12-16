@@ -1,10 +1,10 @@
 "use server"
 
-import { createGeneratePostContentUseCase, createGeneratePostMultiPassUseCase } from "@/app/api/content-generation/depends"
+import { createSinglePassGenUseCase, createGeneratePostMultiPassUseCase } from "@/app/api/content-generation/depends"
 import { getBrandMemoryAction } from "./brand-memory-action"
 import { createCheckContentSimilarityUseCase, createStoreContentEmbeddingUseCase } from "@/app/api/content-memory/depends"
 
-export async function generatePostContentAction(params: {
+export async function SinglePassGenAction(params: {
   topic?: string
   platform?: string
   idea?: string // NEW
@@ -12,7 +12,7 @@ export async function generatePostContentAction(params: {
   detailInstruction?: string // NEW
 }) {
   try {
-    const useCase = await createGeneratePostContentUseCase()
+    const useCase = await createSinglePassGenUseCase()
     const result = await useCase.execute(params)
     return { success: true, content: result }
   } catch (error) {

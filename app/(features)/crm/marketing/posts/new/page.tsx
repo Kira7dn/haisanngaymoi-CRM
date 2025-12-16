@@ -1,4 +1,4 @@
-import PostForm from '../_components/post-form2/PostForm'
+import PostForm from '../_components/post-form/PostForm'
 import { filterProductsUseCase } from '@/app/api/products/depends'
 import { Product, ProductPlain } from '@/core/domain/catalog/product'
 import { getBrandMemoryAction } from '../_actions/brand-memory-action'

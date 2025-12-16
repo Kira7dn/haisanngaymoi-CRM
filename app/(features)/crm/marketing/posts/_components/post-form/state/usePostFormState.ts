@@ -1,17 +1,16 @@
 import { Product } from '@/core/domain/catalog/product'
-import { ContentType, Platform, Post, PostMedia } from '@/core/domain/marketing/post'
+import { ContentType, PlatformMetadata, Post, PostMedia } from '@/core/domain/marketing/post'
 import { useRef, useState, useCallback, useEffect } from 'react'
 
 
 // ---------- types ----------
-
 export interface PostFormState {
     // ===== form fields =====
     title: string
     body: string
     media: PostMedia | null
     hashtags: string
-    platforms: Platform[]
+    platforms: PlatformMetadata[]
     contentType: ContentType
     scheduledAt?: Date
 
@@ -19,33 +18,8 @@ export interface PostFormState {
     idea: string
     product: Product | null
     contentInstruction: string
-
-    // ===== runtime / bootstrap =====
-    products: Product[]
+    // Generation state
     variations: Array<{ title: string; content: string; style: string }>
-    hasBrandMemory: boolean
-}
-
-// ---------- helpers ----------
-
-function createBaseState(): Omit<
-    PostFormState,
-    | 'title'
-    | 'body'
-    | 'media'
-    | 'hashtags'
-    | 'platforms'
-    | 'contentType'
-    | 'scheduledAt'
-> {
-    return {
-        idea: '',
-        product: null,
-        contentInstruction: '',
-        products: [],
-        variations: [],
-        hasBrandMemory: false,
-    }
 }
 
 function mapPostToFormState(
@@ -58,15 +32,16 @@ function mapPostToFormState(
         body: post.body ?? '',
         media: post.media ?? null,
         hashtags: post.hashtags?.join(' ') ?? '',
-        platforms: post.platforms.map(p => p.platform),
+        platforms: post.platforms,
         contentType: post.contentType ?? 'post',
         scheduledAt: post.scheduledAt
             ? new Date(post.scheduledAt)
             : initialScheduledAt,
 
-        ...createBaseState(),
-
         idea: initialIdea ?? '',
+        product: null,
+        contentInstruction: '',
+        variations: [],
     }
 }
 
@@ -82,10 +57,10 @@ function createEmptyState(
         platforms: [],
         contentType: 'post',
         scheduledAt: initialScheduledAt,
-
-        ...createBaseState(),
-
         idea: initialIdea ?? '',
+        product: null,
+        contentInstruction: '',
+        variations: [],
     }
 }
 
@@ -141,26 +116,11 @@ export function usePostFormState({
         []
     )
 
-    // ---------- derived ----------
-
-    const primaryPlatform = state.platforms[0] ?? null
-
-    const hasTextContent =
-        Boolean(state.title.trim() || state.body.trim())
-
-    const isVideoContent =
-        state.contentType === 'video' ||
-        state.contentType === 'short'
 
     return {
         state,
         setField,
         updateMultipleFields,
-
-        // derived
-        primaryPlatform,
-        hasTextContent,
-        isVideoContent,
         isDirty: isDirtyRef.current,
     }
 }

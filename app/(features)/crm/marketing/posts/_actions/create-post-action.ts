@@ -2,39 +2,20 @@
 
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
-import { parseDateTimeLocal } from "@/lib/date-utils"
 
 import { createPostUseCase } from "@/app/api/posts/depends"
 import { createStoreContentEmbeddingUseCase } from "@/app/api/content-memory/depends"
 
-import type { ContentType, PostMedia, Platform, PostStatus } from "@/core/domain/marketing/post"
+import type { PostStatus } from "@/core/domain/marketing/post"
+import { PostPayload } from "@/core/application/interfaces/marketing/post-repo"
 
-// ==============================
-// DTO
-// ==============================
-export interface CreatePostPayload {
-  title: string
-  body: string
-  contentType: ContentType
-
-  platforms: Platform[]
-  media?: PostMedia
-  hashtags: string[]
-  scheduledAt?: string // ISO | datetime-local
-}
-
-export type PostSubmitMode = "draft" | "schedule" | "publish"
 
 export interface SubmitPostInput {
-  mode: PostSubmitMode
-  payload: CreatePostPayload
+  payload: PostPayload
 }
 
-// ==============================
-// Server Action
-// ==============================
 export async function createPostAction(input: SubmitPostInput) {
-  const { mode, payload } = input
+  const { payload } = input
 
   // ---------- Auth ----------
   const cookieStore = await cookies()
@@ -46,7 +27,7 @@ export async function createPostAction(input: SubmitPostInput) {
   const userId = userIdCookie.value
 
   // ---------- Validation ----------
-  if (mode !== "draft" && payload.platforms.length === 0) {
+  if (payload.platforms?.length === 0) {
     throw new Error("At least one platform is required")
   }
 
@@ -55,10 +36,9 @@ export async function createPostAction(input: SubmitPostInput) {
   }
 
   // ---------- Parse schedule ----------
-  const scheduledAt =
-    mode === "schedule" && payload.scheduledAt
-      ? parseDateTimeLocal(payload.scheduledAt)
-      : undefined
+  const scheduledAt = payload.scheduledAt
+    ? new Date(payload.scheduledAt)
+    : undefined
 
   // ---------- UseCase ----------
   const useCase = await createPostUseCase()
@@ -68,9 +48,9 @@ export async function createPostAction(input: SubmitPostInput) {
     title: payload.title,
     body: payload.body,
     contentType: payload.contentType,
-    platforms: payload.platforms.map(platform => ({
-      platform,
-      status: (mode === "draft" ? "draft" : mode === "schedule" ? "scheduled" : "published") as PostStatus
+    platforms: payload.platforms?.map(platform => ({
+      platform: platform.platform,
+      status: (scheduledAt ? "scheduled" : "draft") as PostStatus
     })),
     media: payload.media,
     hashtags: payload.hashtags,
@@ -78,9 +58,8 @@ export async function createPostAction(input: SubmitPostInput) {
   })
 
   // ---------- Store Embedding (side-effect) ----------
-  // Chỉ lưu embedding cho publish / schedule (không phải draft)
-  if (mode !== "draft" && post.body) {
-    const primaryPlatform = payload.platforms[0]
+  if (post.body) {
+    const primaryPlatform = payload.platforms?.[0]?.platform
 
     if (primaryPlatform) {
       try {
@@ -94,7 +73,6 @@ export async function createPostAction(input: SubmitPostInput) {
           topic: post.title || undefined,
         })
       } catch (error) {
-        // Không fail toàn bộ flow
         console.error(
           "[createPostAction] Failed to store embedding:",
           error

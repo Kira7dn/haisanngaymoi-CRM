@@ -3,36 +3,37 @@ import { z } from "zod"
 
 const ResponseSchema = z.object({
   title: z.string(),
-  content: z.string(),
+  body: z.string(),
+  hashtags: z.array(z.string()),
   variations: z.array(
     z.object({
       title: z.string(),
-      content: z.string(),
+      body: z.string(),
       style: z.string(),
     })
   ),
 })
 
-export interface GeneratePostContentRequest {
+export interface SinglePassGenRequest {
   topic?: string
-  platform?: string
   idea?: string // NEW: Post idea from schedule
   productUrl?: string // NEW: Product URL for context
   detailInstruction?: string // NEW: Specific instructions for this post
 }
 
-export interface GeneratePostContentResponse {
+export interface SinglePassGenResponse {
   title: string
-  content: string
+  body: string
+  hashtags: string[]
   variations: Array<{
     title: string
-    content: string
+    body: string
     style: string
   }>
 }
 
-export class GeneratePostContentUseCase {
-  async execute(params: GeneratePostContentRequest): Promise<GeneratePostContentResponse> {
+export class SinglePassGenUseCase {
+  async execute(params: SinglePassGenRequest): Promise<SinglePassGenResponse> {
     // Load settings (business logic)
     const settings = this.loadSettings()
 
@@ -43,7 +44,6 @@ Product: ${settings.productDescription}
 Style: ${settings.contentStyle}
 Language: ${settings.language}
 ${params.topic ? `Topic: ${params.topic}` : ""}
-${params.platform ? `Platform: ${params.platform}` : ""}
 ${params.idea ? `Post Idea: ${params.idea}` : ""}
 ${params.productUrl ? `Product URL for reference: ${params.productUrl}` : ""}
 ${params.detailInstruction ? `Specific Instructions: ${params.detailInstruction}` : ""}
@@ -56,11 +56,12 @@ Generate:
 Return ONLY valid JSON (no markdown, no explanation) in this exact format:
 {
   "title": "string",
-  "content": "string",
+  "body": "string",
+  "hashtags": ["string"],
   "variations": [
-    { "title": "string", "content": "string", "style": "professional" },
-    { "title": "string", "content": "string", "style": "casual" },
-    { "title": "string", "content": "string", "style": "promotional" }
+    { "title": "string", "body": "string", "style": "professional" },
+    { "title": "string", "body": "string", "style": "casual" },
+    { "title": "string", "body": "string", "style": "promotional" }
   ]
 }`
 
