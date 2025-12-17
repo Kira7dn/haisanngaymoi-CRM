@@ -20,7 +20,7 @@ export interface BrandVoice {
  * Represents the structured memory for AI content generation
  */
 export interface BrandMemory {
-  id: string
+  id?: string
 
   // Basic settings (UPDATED)
   brandDescription: string  // CHANGED from productDescription
@@ -37,7 +37,7 @@ export interface BrandMemory {
   contentsInstruction?: string  // Guide AI to create post ideas
 
   // NEW: Selected products
-  selectedProductIds?: number[]  // Products for brand context
+  selectedProductIds?: string[]  // Products for brand context
 
   // Metadata
   createdAt?: Date

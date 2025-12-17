@@ -20,13 +20,13 @@ export class BrandMemoryRepository extends BaseRepository<BrandMemory, string> i
    * Get the current brand memory
    * Returns default if not found
    */
-  async get(): Promise<BrandMemory> {
+  async get(): Promise<BrandMemory | undefined> {
     const collection = await this.getCollection()
     const doc = await collection.findOne({ _id: this.SINGLETON_ID } as any)
 
     if (!doc) {
       // Return default brand memory if not found
-      return { ...DEFAULT_BRAND_MEMORY, id: this.SINGLETON_ID }
+      return undefined
     }
 
     return this.toDomain(doc)
@@ -35,7 +35,7 @@ export class BrandMemoryRepository extends BaseRepository<BrandMemory, string> i
   /**
    * Create or update brand memory (upsert)
    */
-  async upsert(payload: BrandMemoryPayload): Promise<BrandMemory> {
+  async upsert(payload: BrandMemoryPayload): Promise<BrandMemory | undefined> {
     const collection = await this.getCollection()
 
     const now = new Date()
@@ -88,4 +88,31 @@ export class BrandMemoryRepository extends BaseRepository<BrandMemory, string> i
   protected convertId(value: any): string {
     return String(value)
   }
+
+  buildContext(brandMemory?: BrandMemory): string {
+    if (!brandMemory) {
+      return ""
+    }
+
+    const parts = [
+      `Brand: ${brandMemory.brandDescription}`,
+      `Niche: ${brandMemory.niche}`,
+      `Style: ${brandMemory.contentStyle}`,
+      `Language: ${brandMemory.language}`,
+    ]
+
+    if (brandMemory.brandVoice) {
+      parts.push(`Tone: ${brandMemory.brandVoice.tone}`)
+      if (brandMemory.brandVoice.writingPatterns?.length > 0) {
+        parts.push(`Writing patterns: ${brandMemory.brandVoice.writingPatterns.join(", ")}`)
+      }
+    }
+
+    if (brandMemory.keyPoints?.length) {
+      parts.push(`Key points: ${brandMemory.keyPoints.join(", ")}`)
+    }
+
+    return parts.join("\n")
+  }
+
 }

@@ -1,15 +1,149 @@
 'use client'
 
 import { Button } from '@shared/ui/button'
-import { Sparkles, Zap, Settings, Info, Loader2, AlertTriangle } from 'lucide-react'
+import { Sparkles, Zap, Loader2, AlertTriangle } from 'lucide-react'
 import { usePostFormContext } from '../PostFormContext'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/@shared/ui/tabs'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/@shared/ui/card'
+import { useMemo, useState } from 'react'
+import { singlePassGenAction } from '../../../_actions/generate-content-action'
+import { streamMultiPassGeneration } from '../actions/stream-generate-action'
+import { usePostSettingStore } from '../../../_store/usePostSettingStore'
 
 export default function AIGenerationSection() {
-  const { state, setField, products } = usePostFormContext()
-  const isGenerating = false
-  const isDisabled = false
+  const { state, setField } = usePostFormContext()
+  const {
+    title,
+    body,
+    hashtags,
+    contentType,
+    idea,
+    product,
+    contentInstruction,
+  } = state
+  const [progress, setProgress] = useState<string[]>([])
+  const [similarityWarning, setSimilarityWarning] = useState<string | undefined>(undefined)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const { brand } = usePostSettingStore()
+  console.log("AIGenerationSection:", brand);
+
+  // Generate session ID for this generation session
+  const sessionId = useMemo(() => {
+    return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  }, [])
+
+  // Check if form is ready for generation
+  const isDisabled = !idea && !product && !contentInstruction && !title
+
+  // ========== AI Generation Actions ==========
+  const genParam = {
+    ...state,
+    brand,
+    sessionId,
+  }
+  const handleSinglePassGen = async () => {
+    try {
+      setIsGenerating(true)
+      setProgress(['Starting single-pass generation...'])
+      const result = await singlePassGenAction(genParam)
+      if (!result.success && result.error) {
+        setSimilarityWarning(result.error)
+        return
+      }
+      // Update form with generated content
+      if (result.success && result.content) {
+        if (result.content.title) {
+          setField('title', result.content.title)
+        }
+        if (result.content.body) {
+          setField('body', result.content.body)
+        }
+        if (result.content.variations) {
+          setField('variations', result.content.variations)
+        }
+      }
+
+      setProgress(['Generation completed!'])
+      setTimeout(() => setProgress([]), 2000)
+    } catch (error) {
+      console.error('Single-pass generation failed:', error)
+      setProgress([])
+      setSimilarityWarning('Generation failed. Please try again.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleMultiPassGen = async () => {
+    try {
+      setIsGenerating(true)
+
+      // Reset UI
+      setProgress([])
+      setField('title', '')
+      setField('body', '')
+      setSimilarityWarning(undefined)
+
+      let draftBuffer = ''
+      let enhanceBuffer = ''
+
+      const stream = streamMultiPassGeneration(genParam)
+
+      for await (const event of stream) {
+        switch (event.type) {
+
+          // ✅ TITLE COMES EARLY
+          case 'title:ready':
+            setField('title', event.title)
+            setProgress(prev => [...prev, '📝 Title generated'])
+            break
+
+          case 'pass:start':
+            if (event.pass === 'draft') draftBuffer = ''
+            if (event.pass === 'enhance') enhanceBuffer = ''
+            setProgress(prev => [...prev, `▶️ Starting ${event.pass}...`])
+            break
+
+          case 'body:token':
+            if (event.pass === 'draft') {
+              draftBuffer += event.content
+              setField('body', draftBuffer)
+            }
+            if (event.pass === 'enhance') {
+              enhanceBuffer += event.content
+              setField('body', enhanceBuffer)
+            }
+            break
+
+          case 'pass:complete':
+            setProgress(prev => [...prev, `✅ ${event.pass} completed`])
+            break
+
+          case 'final':
+            // Final consistency overwrite
+            if (event.result.title) {
+              setField('title', event.result.title)
+            }
+            if (event.result.body) {
+              setField('body', event.result.body)
+            }
+            setProgress(prev => [...prev, '🎉 Generation completed!'])
+            break
+
+          case 'error':
+            setSimilarityWarning(event.message)
+            setProgress([])
+            break
+        }
+      }
+    } catch (error) {
+      console.error('Multi-pass generation failed:', error)
+      setSimilarityWarning('Generation failed. Please try again.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   return (
     <div className="border rounded-lg p-4 bg-linear-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 space-y-3">
       {/* Header */}
@@ -46,7 +180,7 @@ export default function AIGenerationSection() {
                 <Button
                   type="button"
                   variant="default"
-                  // onClick={onGenerate}
+                  onClick={handleSinglePassGen}
                   disabled={isGenerating || isDisabled}
                   className="w-full gap-2"
                 >
@@ -80,14 +214,14 @@ export default function AIGenerationSection() {
                 <Button
                   type="button"
                   variant="default"
-                  // onClick={onGenerate}
+                  onClick={handleMultiPassGen}
                   disabled={isGenerating || isDisabled}
                   className="w-full gap-2"
                 >
                   {isGenerating ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Single-pass...
+                      {progress.length > 0 ? progress[progress.length - 1] : 'Multi-pass...'}
                     </>
                   ) : (
                     <>
@@ -102,24 +236,15 @@ export default function AIGenerationSection() {
         </Tabs>
       </div>
 
-      {/* Generation Progress */}
-      {/* {progress.length > 0 && (
-        <div className="text-xs space-y-1 text-gray-600 dark:text-gray-400">
-          {progress.map((progressItem, idx) => (
-            <div key={idx}>{progressItem}</div>
-          ))}
-        </div>
-      )} */}
-
       {/* Similarity Warning */}
-      {/* {similarityWarning && (
+      {similarityWarning && (
         <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
           <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
           <div className="text-sm text-yellow-800 dark:text-yellow-200">
             {similarityWarning}
           </div>
         </div>
-      )} */}
+      )}
     </div>
   )
 }

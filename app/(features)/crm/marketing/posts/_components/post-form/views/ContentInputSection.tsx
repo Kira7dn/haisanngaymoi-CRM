@@ -186,12 +186,12 @@ const VariationButton = memo(function VariationButton({
   variation,
   onSelect
 }: {
-  variation: { title: string; content: string; style: string }
-  onSelect: (title: string, content: string) => void
+  variation: { title: string; body: string; style: string }
+  onSelect: (title: string, body: string) => void
 }) {
   const handleClick = useCallback(() => {
-    onSelect(variation.title, variation.content)
-  }, [variation.title, variation.content, onSelect])
+    onSelect(variation.title, variation.body)
+  }, [variation.title, variation.body, onSelect])
 
   return (
     <button
@@ -204,7 +204,7 @@ const VariationButton = memo(function VariationButton({
       </div>
       <div className="font-semibold text-sm mb-1">{variation.title}</div>
       <div className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-        {variation.content}
+        {variation.body}
       </div>
     </button>
   )

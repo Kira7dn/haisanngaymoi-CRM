@@ -4,52 +4,14 @@
  * Uses in-memory Map with TTL (Time To Live)
  */
 
-/**
- * Generation Session stored in cache
- */
-export interface GenerationSession {
-  sessionId: string
-  ideaPass?: {
-    ideas: string[]
-    selectedIdea: string
-  }
-  anglePass?: {
-    angles: string[]
-    selectedAngle: string
-  }
-  outlinePass?: {
-    outline: string
-    sections: string[]
-  }
-  draftPass?: {
-    draft: string
-    wordCount: number
-  }
-  enhancePass?: {
-    enhanced: string
-    improvements: string[]
-  }
-  metadata: {
-    topic?: string
-    platform?: string
-    startedAt: Date
-    lastUpdatedAt: Date
-  }
-  expiresAt: Date
-}
+import { CacheEntry, GenerationSession, ICacheService } from "@/core/application/interfaces/marketing/post-gen-service"
 
-/**
- * Cache entry with TTL
- */
-interface CacheEntry<T> {
-  value: T
-  expiresAt: number
-}
+
 
 /**
  * Cache Service using in-memory Map
  */
-export class CacheService {
+export class CacheService implements ICacheService {
   private cache: Map<string, CacheEntry<any>>
   private readonly defaultTTL = 30 * 60 * 1000 // 30 minutes in milliseconds
   private cleanupInterval: NodeJS.Timeout | null = null
@@ -171,7 +133,7 @@ export class CacheService {
    */
   getOrCreateSession(
     sessionId: string,
-    metadata?: { topic?: string; platform?: string }
+    metadata?: { title?: string }
   ): GenerationSession {
     const existing = this.get<GenerationSession>(sessionId)
 
@@ -183,8 +145,7 @@ export class CacheService {
     const session: GenerationSession = {
       sessionId,
       metadata: {
-        topic: metadata?.topic,
-        platform: metadata?.platform,
+        title: metadata?.title,
         startedAt: now,
         lastUpdatedAt: now,
       },

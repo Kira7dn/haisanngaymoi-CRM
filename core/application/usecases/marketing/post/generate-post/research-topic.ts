@@ -3,8 +3,14 @@
  * Uses Perplexity AI to research topics for content generation
  */
 
-import { getPerplexityService } from "@/infrastructure/adapters/perplexity-service"
-import { getLLMService } from "@/infrastructure/adapters/llm-service"
+import { ILLMService } from "@/core/application/interfaces/marketing/post-gen-service"
+
+export interface PerplexityService {
+  search(query: string): Promise<{
+    content: string
+    citations: Array<{ url: string; title: string }>
+  }>
+}
 
 export interface ResearchTopicRequest {
   topic: string
@@ -23,9 +29,12 @@ export interface ResearchTopicResponse {
  * Researches a topic using Perplexity online search and structures the results
  */
 export class ResearchTopicUseCase {
+  constructor(
+    private readonly llmService: ILLMService,
+    private readonly perplexityService: PerplexityService,
+  ) { }
+
   async execute(request: ResearchTopicRequest): Promise<ResearchTopicResponse> {
-    const perplexity = getPerplexityService()
-    const llm = getLLMService()
 
     // Step 1: Research with Perplexity (online search)
     const researchQuery = `Research this topic for social media content creation:
@@ -41,7 +50,7 @@ Provide:
 
 Focus on actionable insights for content creators.`
 
-    const researchResult = await perplexity.search(researchQuery)
+    const researchResult = await this.perplexityService.search(researchQuery)
 
     // Step 2: Parse results into structured format using LLM
     const parsePrompt = `Extract structured insights from this research content:
@@ -57,7 +66,7 @@ Return ONLY valid JSON (no markdown):
 
 Make insights specific and actionable for content creation.`
 
-    const parseResponse = await llm.generateCompletion({
+    const parseResponse = await this.llmService.generateCompletion({
       systemPrompt: "You are a data extraction assistant. Return valid JSON only. Never use markdown code blocks.",
       prompt: parsePrompt,
       temperature: 0.2,

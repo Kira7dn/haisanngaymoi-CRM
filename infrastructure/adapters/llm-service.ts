@@ -3,36 +3,14 @@
  * Provides AI capabilities for chatbot and content generation
  */
 
+import { ILLMService, LLMRequest, LLMResponse } from "@/core/application/interfaces/marketing/post-gen-service";
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/chat";
 
 /**
- * LLM Request configuration
- */
-export interface LLMRequest {
-  prompt: string;
-  systemPrompt?: string;
-  maxTokens?: number;
-  temperature?: number;
-  model?: string;
-}
-
-/**
- * LLM Response
- */
-export interface LLMResponse {
-  content: string;
-  usage: {
-    inputTokens: number;
-    outputTokens: number;
-  };
-  model: string;
-}
-
-/**
  * LLM Service class
  */
-export class LLMService {
+export class LLMService implements ILLMService {
   private client: OpenAI;
   private readonly defaultModel = "gpt-4o-mini";
   private readonly defaultMaxTokens = 1024;
@@ -136,31 +114,4 @@ export class LLMService {
       );
     }
   }
-
-  /**
-   * Check if API key is configured
-   */
-  static isConfigured(): boolean {
-    return !!process.env.OPENAI_API_KEY;
-  }
-}
-
-/**
- * Singleton instance
- */
-let llmServiceInstance: LLMService | null = null;
-
-/**
- * Get LLM Service instance
- */
-export function getLLMService(): LLMService {
-  if (!llmServiceInstance) {
-    if (!LLMService.isConfigured()) {
-      throw new Error(
-        "LLM Service is not configured. Please set OPENAI_API_KEY environment variable."
-      );
-    }
-    llmServiceInstance = new LLMService();
-  }
-  return llmServiceInstance;
 }

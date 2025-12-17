@@ -80,8 +80,7 @@ export interface CacheConfig {
  * Helper function to generate cache key from object
  * Uses stable JSON stringify and hashing
  */
-export function generateCacheKey(prefix: string, data: unknown): string {
-  const crypto = require("crypto")
+export async function generateCacheKey(prefix: string, data: unknown): Promise<string> {
 
   // Normalize numbers to avoid floating-point precision issues
   const normalize = (obj: unknown): unknown => {
@@ -122,7 +121,27 @@ export function generateCacheKey(prefix: string, data: unknown): string {
 
   const normalized = normalize(data)
   const serialized = serialize(normalized)
-  const hash = crypto.createHash("sha256").update(serialized).digest("hex")
+  const hash = await sha256Hex(serialized)
 
   return `${prefix}:${hash}`
 }
+
+
+async function sha256Hex(input: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(input)
+
+  // Use global crypto (available in both Edge Runtime and Node.js)
+  const cryptoInstance = globalThis.crypto || (global as any).crypto
+  if (!cryptoInstance) {
+    throw new Error('Web Crypto API not available')
+  }
+
+  const hashBuffer = await cryptoInstance.subtle.digest("SHA-256", data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+
+  return hashArray
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("")
+}
+

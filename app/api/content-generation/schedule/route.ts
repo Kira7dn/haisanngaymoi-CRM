@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server"
-import { GeneratePostScheduleUseCase } from "@/core/application/usecases/marketing/post/generate-post-schedule"
+import { GeneratePostScheduleUseCase } from "@/core/application/usecases/marketing/post/generate-schedule"
 import { getBrandMemoryAction } from "@/app/(features)/crm/marketing/posts/_actions/brand-memory-action"
 import { Product } from "@/core/domain/catalog/product"
 

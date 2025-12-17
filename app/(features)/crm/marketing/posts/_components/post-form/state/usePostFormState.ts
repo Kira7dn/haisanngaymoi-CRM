@@ -16,7 +16,7 @@ export interface PostFormState {
 
     // ===== AI / helper =====
     idea: string
-    product: Product | null
+    product: Product | undefined
     contentInstruction: string
     // Generation state
     variations: Array<{ title: string; content: string; style: string }>
@@ -30,7 +30,7 @@ function mapPostToFormState(
     return {
         title: post.title ?? '',
         body: post.body ?? '',
-        media: post.media ?? null,
+        media: post.media ?? undefined,
         hashtags: post.hashtags?.join(' ') ?? '',
         platforms: post.platforms,
         contentType: post.contentType ?? 'post',
@@ -39,7 +39,7 @@ function mapPostToFormState(
             : initialScheduledAt,
 
         idea: initialIdea ?? '',
-        product: null,
+        product: undefined,
         contentInstruction: '',
         variations: [],
     }
@@ -52,13 +52,13 @@ function createEmptyState(
     return {
         title: '',
         body: '',
-        media: null,
+        media: undefined,
         hashtags: '',
         platforms: [],
         contentType: 'post',
         scheduledAt: initialScheduledAt,
         idea: initialIdea ?? '',
-        product: null,
+        product: undefined,
         contentInstruction: '',
         variations: [],
     }

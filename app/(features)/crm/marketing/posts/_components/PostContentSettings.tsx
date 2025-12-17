@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
+
 import { Button } from '@shared/ui/button'
 import { Label } from '@shared/ui/label'
 import { Input } from '@shared/ui/input'
@@ -19,10 +20,8 @@ import {
   SelectValue,
 } from '@shared/ui/select'
 import type { BrandMemory } from '@/core/domain/brand-memory'
-import { DEFAULT_BRAND_MEMORY } from '@/core/domain/brand-memory'
 import { toast } from 'sonner'
-import { getBrandMemoryAction, saveBrandMemoryAction } from '../_actions/brand-memory-action'
-import { Product } from '@/core/domain/catalog/product'
+import { usePostSettingStore } from '../_store/usePostSettingStore'
 
 interface PostContentSettingsProps {
   open: boolean
@@ -30,67 +29,25 @@ interface PostContentSettingsProps {
 }
 
 export default function PostContentSettings({ open, onClose }: PostContentSettingsProps) {
-  const [settings, setSettings] = useState<Omit<BrandMemory, 'id' | 'createdAt' | 'updatedAt'>>(DEFAULT_BRAND_MEMORY)
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [products, setProducts] = useState<Array<{ id: number, name: string }>>([])
+  const {
+    brand: settings,
+    products,
+    isLoading,
+    error,
+    loadProducts,
+    setBrand: setSettings,
+    toggleProduct,
+    reset
+  } = usePostSettingStore()
 
   useEffect(() => {
     if (open) {
-      loadSettings()
       loadProducts()
     }
-  }, [open])
-
-  const loadSettings = async () => {
-    setLoading(true)
-    try {
-      const result = await getBrandMemoryAction()
-      if (result.success && result.brandMemory) {
-        const { id, createdAt, updatedAt, ...brandSettings } = result.brandMemory
-        setSettings(brandSettings)
-      } else {
-        setSettings(DEFAULT_BRAND_MEMORY)
-      }
-    } catch (error) {
-      console.error('Failed to load brand memory:', error)
-      toast.error('Failed to load settings')
-      setSettings(DEFAULT_BRAND_MEMORY)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadProducts = async () => {
-    try {
-      const res = await fetch('/api/products')
-      const data = await res.json()
-      setProducts(data.map((p: Product) => ({ id: p.id, name: p.name })))
-    } catch (error) {
-      console.error('Failed to load products:', error)
-    }
-  }
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const result = await saveBrandMemoryAction(settings)
-      if (result.success) {
-        toast.success('Brand settings saved successfully')
-        onClose()
-      } else {
-        toast.error('Failed to save settings')
-      }
-    } catch (error) {
-      console.error('Failed to save brand memory:', error)
-      toast.error('Failed to save settings')
-    } finally {
-      setSaving(false)
-    }
-  }
+  }, [open, loadProducts])
 
   const handleReset = () => {
-    setSettings(DEFAULT_BRAND_MEMORY)
+    reset()
   }
 
   // Helper to add item to array field
@@ -151,7 +108,7 @@ export default function PostContentSettings({ open, onClose }: PostContentSettin
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl">
@@ -159,7 +116,22 @@ export default function PostContentSettings({ open, onClose }: PostContentSettin
             <DialogTitle>Brand Settings</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center py-8">
-            <div className="text-gray-500">Loading settings...</div>
+            <div className="text-gray-500">Loading products...</div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  if (error) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Brand Settings</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-red-500">Error: {error}</div>
           </div>
         </DialogContent>
       </Dialog>
@@ -422,14 +394,8 @@ export default function PostContentSettings({ open, onClose }: PostContentSettin
                 <label key={product.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                   <input
                     type="checkbox"
-                    checked={settings.selectedProductIds?.includes(product.id) || false}
-                    onChange={(e) => {
-                      const currentIds = settings.selectedProductIds || []
-                      const newIds = e.target.checked
-                        ? [...currentIds, product.id]
-                        : currentIds.filter(id => id !== product.id)
-                      setSettings({ ...settings, selectedProductIds: newIds })
-                    }}
+                    checked={settings.selectedProductIds?.includes(product.id.toString()) || false}
+                    onChange={() => toggleProduct(product.id.toString())}
                     className="h-4 w-4"
                   />
                   <span className="text-sm">{product.name}</span>
@@ -465,7 +431,7 @@ export default function PostContentSettings({ open, onClose }: PostContentSettin
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <p className="text-sm text-blue-900 dark:text-blue-100">
               <strong>Note:</strong> These settings define your brand voice and are used by AI to generate consistent,
-              on-brand content. They are stored in MongoDB and persist across sessions.
+              on-brand content. They are stored in localStorage and persist across sessions.
             </p>
           </div>
 
@@ -476,10 +442,7 @@ export default function PostContentSettings({ open, onClose }: PostContentSettin
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving...' : 'Save Settings'}
+                Close
               </Button>
             </div>
           </div>

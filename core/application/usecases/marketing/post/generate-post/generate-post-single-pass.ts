@@ -1,5 +1,7 @@
-import { getLLMService } from "@/infrastructure/adapters/llm-service"
 import { z } from "zod"
+import { ILLMService } from "@/core/application/interfaces/marketing/post-gen-service"
+import { BrandMemoryService } from "@/core/application/interfaces/brand-memory-service"
+import type { BrandMemory } from "@/core/domain/brand-memory"
 
 const ResponseSchema = z.object({
   title: z.string(),
@@ -33,14 +35,20 @@ export interface SinglePassGenResponse {
 }
 
 export class SinglePassGenUseCase {
+  constructor(
+    private readonly llmService: ILLMService,
+    private readonly brandMemoryRepo: BrandMemoryService,
+  ) { }
+
   async execute(params: SinglePassGenRequest): Promise<SinglePassGenResponse> {
-    // Load settings (business logic)
-    const settings = this.loadSettings()
+    // Get brand memory from repository
+    const brandMemory = await this.brandMemoryRepo.get()
+    const settings = this.buildSettings(brandMemory)
 
     // Build prompt (business logic) - UPDATED with new fields
     const prompt = `Generate social media post content:
 
-Product: ${settings.productDescription}
+Product: ${settings.brandDescription}
 Style: ${settings.contentStyle}
 Language: ${settings.language}
 ${params.topic ? `Topic: ${params.topic}` : ""}
@@ -66,8 +74,7 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
 }`
 
     // Call generic AI adapter
-    const llm = getLLMService()
-    const response = await llm.generateCompletion({
+    const response = await this.llmService.generateCompletion({
       systemPrompt: "You are a professional social media content creator. Always respond with valid JSON only.",
       prompt: prompt,
       temperature: 0.8,
@@ -80,13 +87,19 @@ Return ONLY valid JSON (no markdown, no explanation) in this exact format:
     return parsed
   }
 
-  private loadSettings() {
-    // Server-side: Cannot access localStorage, return defaults
-    // Client will pass settings via context if needed
+  private buildSettings(brandMemory?: BrandMemory | null) {
+    if (!brandMemory) {
+      return {
+        brandDescription: "Premium fresh seafood from Cô Tô Island, delivered daily",
+        contentStyle: "professional",
+        language: "vietnamese",
+      }
+    }
+
     return {
-      productDescription: "Premium fresh seafood from Cô Tô Island, delivered daily",
-      contentStyle: "professional",
-      language: "vietnamese",
+      brandDescription: brandMemory.brandDescription,
+      contentStyle: brandMemory.contentStyle,
+      language: brandMemory.language,
     }
   }
 }
