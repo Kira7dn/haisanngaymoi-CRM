@@ -3,8 +3,8 @@
  * Creates use case instances for content similarity and embedding storage
  */
 
-import { StoreContentEmbeddingUseCase } from "@/core/application/usecases/marketing/content-memory/store-content-embedding"
-import { CheckContentSimilarityUseCase } from "@/core/application/usecases/marketing/content-memory/check-content-similarity"
+import { StoreContentEmbeddingUseCase } from "@/core/application/usecases/marketing/post/content-memory/store-content-embedding"
+import { CheckContentSimilarityUseCase } from "@/core/application/usecases/marketing/post/content-memory/check-content-similarity"
 
 /**
  * Create StoreContentEmbeddingUseCase instance

@@ -1,7 +1,7 @@
 "use server"
 import { createCheckContentSimilarityUseCase, createStoreContentEmbeddingUseCase } from "@/app/api/content-memory/depends"
 import { SinglePassGenRequest, SinglePassGenResponse } from "@/core/application/usecases/marketing/post/generate-post/generate-post-single-pass"
-import { MultiPassGenRequest, MultiPassGenResponse, GenerationEvent } from "@/core/application/usecases/marketing/post/generate-post/stream-gen-multi-pass"
+import { MultiPassGenRequest, GenerationEvent } from "@/core/application/usecases/marketing/post/generate-post/stream-gen-multi-pass"
 import { createSinglePassGenUseCase, createStreamMultiPassUseCase } from "@/app/api/posts/gen-content/depends"
 
 export async function singlePassGenAction(params: SinglePassGenRequest): Promise<{

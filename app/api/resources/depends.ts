@@ -1,41 +1,64 @@
-/**
- * Resource API Dependencies
- * Factory functions for creating use case instances
- */
-
 import { ResourceRepository } from "@/infrastructure/repositories/marketing/resource-repo"
-import { UploadResourceUseCase } from "@/core/application/usecases/marketing/resource/upload-resource"
-import { GetResourcesUseCase } from "@/core/application/usecases/marketing/resource/get-resources"
-import { DeleteResourceUseCase } from "@/core/application/usecases/marketing/resource/delete-resource"
 import type { ResourceService } from "@/core/application/interfaces/marketing/resource-service"
 
+import { UploadResourceUseCase } from "@/core/application/usecases/marketing/post/resource/upload-resource"
+import { GetResourcesUseCase } from "@/core/application/usecases/marketing/post/resource/get-resources"
+import { DeleteResourceUseCase } from "@/core/application/usecases/marketing/post/resource/delete-resource"
+import { StoreContentEmbeddingUseCase } from "@/core/application/usecases/marketing/post/content-memory/store-content-embedding"
+
 /**
- * Get resource service instance
+ * ======================================================
+ * Singleton Instances
+ * ======================================================
+ */
+let resourceServiceInstance: ResourceService | null = null
+let storeContentEmbeddingUseCaseInstance: StoreContentEmbeddingUseCase | null = null
+
+/**
+ * ======================================================
+ * Repositories
+ * ======================================================
  */
 const getResourceService = async (): Promise<ResourceService> => {
-  return new ResourceRepository()
+  if (!resourceServiceInstance) {
+    resourceServiceInstance = new ResourceRepository()
+  }
+  return resourceServiceInstance
 }
 
 /**
- * Create UploadResourceUseCase instance
+ * ======================================================
+ * Content Embedding Service
+ * ======================================================
  */
-export const uploadResourceUseCase = async () => {
+export const getStoreContentEmbeddingUseCase = (): StoreContentEmbeddingUseCase => {
+  if (!storeContentEmbeddingUseCaseInstance) {
+    storeContentEmbeddingUseCaseInstance = new StoreContentEmbeddingUseCase()
+  }
+  return storeContentEmbeddingUseCaseInstance
+}
+
+/**
+ * ======================================================
+ * UseCases
+ * ======================================================
+ */
+
+// 🔹 Upload Resource
+export const uploadResourceUseCase = async (): Promise<UploadResourceUseCase> => {
   const service = await getResourceService()
-  return new UploadResourceUseCase(service)
+  const storeContentUseCase = getStoreContentEmbeddingUseCase()
+  return new UploadResourceUseCase(service, storeContentUseCase)
 }
 
-/**
- * Create GetResourcesUseCase instance
- */
-export const getResourcesUseCase = async () => {
+// 🔹 Get Resources
+export const getResourcesUseCase = async (): Promise<GetResourcesUseCase> => {
   const service = await getResourceService()
   return new GetResourcesUseCase(service)
 }
 
-/**
- * Create DeleteResourceUseCase instance
- */
-export const deleteResourceUseCase = async () => {
+// 🔹 Delete Resource
+export const deleteResourceUseCase = async (): Promise<DeleteResourceUseCase> => {
   const service = await getResourceService()
   return new DeleteResourceUseCase(service)
 }

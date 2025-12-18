@@ -133,7 +133,7 @@ export class CacheService implements ICacheService {
    */
   getOrCreateSession(
     sessionId: string,
-    metadata?: { title?: string }
+    metadata?: { idea?: string }
   ): GenerationSession {
     const existing = this.get<GenerationSession>(sessionId)
 
@@ -145,7 +145,7 @@ export class CacheService implements ICacheService {
     const session: GenerationSession = {
       sessionId,
       metadata: {
-        title: metadata?.title,
+        idea: metadata?.idea,
         startedAt: now,
         lastUpdatedAt: now,
       },

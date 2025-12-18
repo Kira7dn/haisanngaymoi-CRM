@@ -92,23 +92,3 @@ export class EmbeddingService {
     return !!process.env.OPENAI_API_KEY
   }
 }
-
-/**
- * Singleton instance
- */
-let embeddingServiceInstance: EmbeddingService | null = null
-
-/**
- * Get Embedding Service instance
- */
-export function getEmbeddingService(): EmbeddingService {
-  if (!embeddingServiceInstance) {
-    if (!EmbeddingService.isConfigured()) {
-      throw new Error(
-        "Embedding Service is not configured. Please set OPENAI_API_KEY environment variable."
-      )
-    }
-    embeddingServiceInstance = new EmbeddingService()
-  }
-  return embeddingServiceInstance
-}

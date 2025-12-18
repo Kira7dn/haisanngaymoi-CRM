@@ -6,12 +6,14 @@ import { CreatePostUseCase } from "@/core/application/usecases/marketing/post/cr
 import { UpdatePostUseCase } from "@/core/application/usecases/marketing/post/update-post"
 import { DeletePostUseCase } from "@/core/application/usecases/marketing/post/delete-post"
 import { PublishPostUseCase } from "@/core/application/usecases/marketing/post/publish-post"
+import { StoreContentEmbeddingUseCase } from "@/core/application/usecases/marketing/post/content-memory/store-content-embedding"
 
 import type { PostingAdapterFactory } from "@/core/application/interfaces/marketing/posting-adapter"
 import { getPostingAdapterFactory } from "@/infrastructure/adapters/external/social/factories/posting-adapter-factory"
 
 import type { QueueService } from "@/core/application/interfaces/shared/queue-service"
 import { QStashAdapter } from "@/infrastructure/queue/qstash-adapter"
+import { getStoreContentEmbeddingUseCase } from "../resources/depends"
 
 /**
  * ======================================================
@@ -65,9 +67,11 @@ export const getPostsUseCase = async (): Promise<GetPostsUseCase> => {
 export const publishPostUseCase = async (): Promise<PublishPostUseCase> => {
   if (!publishPostUseCaseInstance) {
     const postRepo = await getPostRepo()
+    const storeContentEmbeddingUseCase = getStoreContentEmbeddingUseCase()
     publishPostUseCaseInstance = new PublishPostUseCase(
       postRepo,
-      platformFactoryInstance
+      platformFactoryInstance,
+      storeContentEmbeddingUseCase
     )
   }
   return publishPostUseCaseInstance

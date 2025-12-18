@@ -5,7 +5,7 @@
 
 import type { ResourceService } from "@/core/application/interfaces/marketing/resource-service"
 import { createS3StorageService } from "@/infrastructure/adapters/storage/s3-storage-service"
-import { getVectorDBService } from "@/infrastructure/adapters/vector-db"
+import { getVectorDBService } from "@/infrastructure/adapters/external/ai"
 
 export interface DeleteResourceRequest {
   resourceId: string
@@ -42,9 +42,9 @@ export class DeleteResourceUseCase {
     }
 
     // 3. Delete embeddings from VectorDB
-    const vectorDB = getVectorDBService()
+    const vectorDB = await getVectorDBService()
     try {
-      await vectorDB.deleteEmbedding(request.resourceId)
+      await vectorDB.deleteByResourceId(request.resourceId)
     } catch (error) {
       console.error(`[DeleteResource] Failed to delete embedding ${request.resourceId} from VectorDB:`, error)
       throw new Error(`Không thể xóa embedding từ VectorDB: ${error instanceof Error ? error.message : String(error)}`)

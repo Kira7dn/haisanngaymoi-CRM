@@ -1,11 +1,13 @@
 import { PostRepo } from "@/core/application/interfaces/marketing/post-repo"
 import { PostingAdapterFactory } from "@/infrastructure/adapters/external/social"
 import { PostStatus } from "@/core/domain/marketing/post"
+import { StoreContentEmbeddingUseCase } from "./content-memory/store-content-embedding"
 
 export class PublishPostUseCase {
   constructor(
     private readonly postRepo: PostRepo,
-    private readonly platformFactory: PostingAdapterFactory
+    private readonly platformFactory: PostingAdapterFactory,
+    private readonly storeEmbeddingUseCase: StoreContentEmbeddingUseCase
   ) { }
 
   async execute(postId: string, userId: string) {
@@ -53,6 +55,23 @@ export class PublishPostUseCase {
       id: postId,
       platforms: updatedPlatforms,
     })
+
+    // Store embedding for published content
+    const successfulPublishes = updatedPlatforms.filter(p => p.status === "published")
+    if (successfulPublishes.length > 0) {
+      try {
+        await this.storeEmbeddingUseCase.execute({
+          embeddingCategory: "published_post",
+          postId,
+          content: post.body || '',
+          title: post.title,
+        })
+        console.log(`[PublishPost] Stored embedding for published post: ${postId}`)
+      } catch (error) {
+        console.error(`[PublishPost] Failed to store embedding for post ${postId}:`, error)
+        // Don't throw error - embedding failure shouldn't affect publish success
+      }
+    }
 
     return results
   }

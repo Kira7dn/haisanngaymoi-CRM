@@ -6,10 +6,9 @@
 import type { ResourceService } from "@/core/application/interfaces/marketing/resource-service"
 import type { Resource } from "@/core/domain/marketing/resource"
 import { createS3StorageService } from "@/infrastructure/adapters/storage/s3-storage-service"
-import { getVectorDBService } from "@/infrastructure/adapters/vector-db"
 import { DocumentChunker } from "@/infrastructure/utils/document-chunker"
 import { PDFParser } from "@/infrastructure/utils/pdf-parser"
-import OpenAI from "openai"
+import { StoreContentEmbeddingUseCase } from "../content-memory/store-content-embedding"
 
 export interface UploadResourceRequest {
   userId: string
@@ -28,14 +27,11 @@ export interface UploadResourceResponse {
  * Orchestrates the complete resource upload workflow
  */
 export class UploadResourceUseCase {
-  private openai: OpenAI
 
-  constructor(private resourceService: ResourceService) {
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
-      throw new Error("OPENAI_API_KEY environment variable is required for embedding generation")
-    }
-    this.openai = new OpenAI({ apiKey })
+  constructor(
+    private resourceService: ResourceService,
+    private storeContentUsecase: StoreContentEmbeddingUseCase,
+  ) {
   }
 
   async execute(request: UploadResourceRequest): Promise<UploadResourceResponse> {
@@ -85,27 +81,19 @@ export class UploadResourceUseCase {
     console.log(`[UploadResource] Created resource in DB: ${resource.id}`)
 
     // 5. Generate embeddings and store in VectorDB
-    const vectorDB = getVectorDBService()
 
     for (let i = 0; i < chunks.length; i++) {
-      const embedding = await this.generateEmbedding(chunks[i])
-
-      await vectorDB.storeEmbedding({
-        id: `${resource.id}-chunk-${i}`,
-        postId: resource.id, // Reuse postId field for resourceId
+      const params = {
+        embeddingCategory: "knowledge_resource" as const,
+        resourceId: resource.id,
         content: chunks[i],
-        embedding,
-        metadata: {
-          contentType: "knowledge_resource",  // CRITICAL: Mark as knowledge resource
-          title: request.fileName,
-          resourceId: resource.id,
-          chunkIndex: i,
-          fileType: request.fileType,
-        },
-        createdAt: new Date(),
-      })
+        title: `${request.fileName}`,
+        chunkIndex: i,
+      }
+      const result = await this.storeContentUsecase.execute(params)
+      console.log("[UploadResource] Embedded chunk", result.success)
 
-      if ((i + 1) % 10 === 0 || i === chunks.length - 1) {
+      if (result.success && (i + 1) % 10 === 0 || i === chunks.length - 1) {
         console.log(`[UploadResource] Embedded ${i + 1}/${chunks.length} chunks`)
       }
     }
@@ -125,23 +113,5 @@ export class UploadResourceUseCase {
       pdf: "application/pdf",
     }
     return types[fileType] || "application/octet-stream"
-  }
-
-  /**
-   * Generate embedding using OpenAI
-   */
-  private async generateEmbedding(text: string): Promise<number[]> {
-    try {
-      const response = await this.openai.embeddings.create({
-        model: "text-embedding-3-small",
-        input: text,
-        encoding_format: "float"
-      })
-
-      return response.data[0].embedding
-    } catch (error) {
-      console.error("[UploadResource] Failed to generate embedding:", error)
-      throw new Error(`Embedding generation failed: ${error instanceof Error ? error.message : String(error)}`)
-    }
   }
 }

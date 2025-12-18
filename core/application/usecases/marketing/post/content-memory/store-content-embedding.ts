@@ -3,16 +3,18 @@
  * Generates and stores embeddings for content in vector DB
  */
 
-import { getEmbeddingService } from "@/infrastructure/adapters/embedding-service"
-import { getVectorDBService } from "@/infrastructure/adapters/vector-db"
-import type { ContentEmbedding } from "@/infrastructure/adapters/vector-db"
+import { getEmbeddingService } from "@/infrastructure/adapters/external/ai"
+import { getVectorDBService } from "@/infrastructure/adapters/external/ai"
+import { ContentEmbedding, EmbeddingCategory } from "@/infrastructure/adapters/external/ai/vector-db"
 
 export interface StoreContentEmbeddingRequest {
-  postId: string
+  embeddingCategory: EmbeddingCategory
+  postId?: string
+  productId?: number
+  resourceId?: string
   content: string
   title?: string
-  platform?: string
-  topic?: string
+  chunkIndex?: number
 }
 
 export interface StoreContentEmbeddingResponse {
@@ -26,7 +28,7 @@ export interface StoreContentEmbeddingResponse {
 export class StoreContentEmbeddingUseCase {
   async execute(request: StoreContentEmbeddingRequest): Promise<StoreContentEmbeddingResponse> {
     const embeddingService = getEmbeddingService()
-    const vectorDB = getVectorDBService()
+    const vectorDB = await getVectorDBService()
 
     // Generate embedding for content
     const textToEmbed = `${request.title || ''} ${request.content}`.trim()
@@ -38,14 +40,15 @@ export class StoreContentEmbeddingUseCase {
     // Store in vector DB
     const contentEmbedding: ContentEmbedding = {
       id: embeddingId,
-      postId: request.postId,
       content: request.content,
       embedding,
       metadata: {
-        contentType: "draft_content",  // Mark as draft content (not published, not knowledge)
+        embeddingCategory: request.embeddingCategory,
+        postId: request.postId,
+        productId: request.productId,
+        resourceId: request.resourceId,
         title: request.title,
-        platform: request.platform,
-        topic: request.topic,
+        chunkIndex: request.chunkIndex,
       },
       createdAt: new Date(),
     }

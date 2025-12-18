@@ -1,61 +1,9 @@
-import { MultiPassGenRequest } from "../gen-multi-pass"
 import { z } from "zod"
-import { GenerationEvent, GenerationPass, PassContext, PassType } from "./stream-gen-multi-pass"
+import { GenerationEvent, GenerationPass, MultiPassGenRequest, PassContext, PassType } from "./stream-gen-multi-pass"
 
 const AnglePassSchema = z.object({
     angles: z.array(z.string()).min(3),
 })
-
-export async function anglePass(
-    llm: any,
-    request: MultiPassGenRequest,
-    brandContext: string,
-    selectedIdea: string
-): Promise<{ angles: string[] }> {
-    const prompt = `Generate 3 different angles for this content idea.
-
-      Brand Context:
-      ${brandContext}
-
-      Idea: ${selectedIdea}
-
-      Requirements:
-      - Each angle must approach the idea differently
-      - Consider different audience perspectives
-      - Make angles compelling and unique
-
-      Return ONLY a valid JSON object with this exact format:
-      {
-        "angles": ["angle 1 as a single string", "angle 2 as a single string", "angle 3 as a single string"]
-      }
-
-      Do not include any markdown, code blocks, or additional text. Only return the raw JSON object.
-    `
-
-    const response = await llm.generateCompletion({
-        systemPrompt: "You are a content strategist. Always respond with valid JSON only. Never use markdown code blocks.",
-        prompt,
-        temperature: 0.8,
-        maxTokens: 500,
-    })
-
-    // Clean response content
-    let cleanContent = response.content.trim()
-    if (cleanContent.startsWith('```json')) {
-        cleanContent = cleanContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    } else if (cleanContent.startsWith('```')) {
-        cleanContent = cleanContent.replace(/```\n?/g, '').trim()
-    }
-
-    try {
-        const parsed = JSON.parse(cleanContent)
-        console.log('[Multi-Pass] Angle pass parsed:', parsed)
-        return AnglePassSchema.parse(parsed)
-    } catch (error) {
-        console.error('[Multi-Pass] Failed to parse angle response:', cleanContent)
-        throw new Error(`Invalid JSON response from angle pass: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-}
 
 export class AnglePass implements GenerationPass {
     readonly name: PassType = 'angle'

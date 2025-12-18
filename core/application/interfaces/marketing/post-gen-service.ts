@@ -40,7 +40,7 @@ export interface GenerationSession {
         sources: Array<{ url: string; title: string }>
     }
     ragPass?: {
-        context: string
+        ragContext: string
         sources: Array<{
             postId: string
             title: string
@@ -51,6 +51,10 @@ export interface GenerationSession {
     ideaPass?: {
         ideas: string[]
         selectedIdea: string
+        meta: {
+            usedResearch: boolean
+            usedRag: boolean
+        },
     }
     anglePass?: {
         angles: string[]
@@ -82,7 +86,7 @@ export interface GenerationSession {
         suggestedFixes: string[]
     }
     metadata: {
-        title?: string
+        idea?: string
         startedAt: Date
         lastUpdatedAt: Date
     }
@@ -104,7 +108,7 @@ export interface ICacheService<T = any> {
     delete(key: string): boolean;
     clear(): void;
     size(): number;
-    getOrCreateSession(sessionId: string, metadata?: { title?: string }): GenerationSession;
+    getOrCreateSession(sessionId: string, metadata?: { idea?: string }): GenerationSession;
     updateSession(sessionId: string, updates: Partial<GenerationSession>): void;
     deleteSession(sessionId: string): boolean;
     getActiveSessions(): string[];

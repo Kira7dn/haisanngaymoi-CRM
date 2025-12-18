@@ -3,16 +3,16 @@
  * Checks if content is too similar to existing content
  */
 
-import { getEmbeddingService } from "@/infrastructure/adapters/embedding-service"
-import { getVectorDBService } from "@/infrastructure/adapters/vector-db"
-import type { SimilarityResult } from "@/infrastructure/adapters/vector-db"
+import { getEmbeddingService } from "@/infrastructure/adapters/external/ai"
+import { getVectorDBService } from "@/infrastructure/adapters/external/ai"
+import type { SimilarityResult } from "@/infrastructure/adapters/external/ai/vector-db"
 
 export interface CheckContentSimilarityRequest {
   content: string
   title?: string
-  platform?: string
   similarityThreshold?: number // 0.0 to 1.0, default 0.8
   limit?: number // max similar content to return, default 3
+  productId?: number
 }
 
 export interface CheckContentSimilarityResponse {
@@ -22,7 +22,7 @@ export interface CheckContentSimilarityResponse {
     postId: string
     content: string
     title?: string
-    platform?: string
+    resourceId?: string
     similarity: number
   }>
   warning?: string
@@ -34,7 +34,7 @@ export interface CheckContentSimilarityResponse {
 export class CheckContentSimilarityUseCase {
   async execute(request: CheckContentSimilarityRequest): Promise<CheckContentSimilarityResponse> {
     const embeddingService = getEmbeddingService()
-    const vectorDB = getVectorDBService()
+    const vectorDB = await getVectorDBService()
 
     const similarityThreshold = request.similarityThreshold ?? 0.8
     const limit = request.limit ?? 3
@@ -47,24 +47,20 @@ export class CheckContentSimilarityUseCase {
     const similarResults: SimilarityResult[] = await vectorDB.searchSimilar(embedding, {
       limit,
       scoreThreshold: similarityThreshold * 0.8, // Lower threshold for search to get more candidates
-      filter: request.platform
+      category: "published_post",
+      filter: request.productId
         ? {
-            must: [
-              {
-                key: "platform",
-                match: { value: request.platform },
-              },
-            ],
-          }
+          productId: request.productId,
+        }
         : undefined,
     })
 
     // Map results
     const similarContent = similarResults.map(result => ({
-      postId: result.postId,
+      postId: result.metadata.postId || '',
       content: result.content.substring(0, 200) + (result.content.length > 200 ? "..." : ""),
       title: result.metadata.title,
-      platform: result.metadata.platform,
+      resourceId: result.metadata.resourceId,
       similarity: result.score,
     }))
 

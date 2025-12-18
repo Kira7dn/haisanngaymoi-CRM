@@ -5,11 +5,16 @@
  */
 
 import { GenerationSession, ILLMService, ICacheService } from "@/core/application/interfaces/marketing/post-gen-service"
-import { BrandMemoryService } from "@/core/application/interfaces/brand-memory-service"
 import { DraftStreamingPass } from "./draft-pass"
 import { EnhanceStreamingPass } from "./enhance-pass"
 import { Product } from "@/core/domain/catalog/product"
 import { BrandMemory } from "@/core/domain/brand-memory"
+import { RAGPass } from "./rag-pass"
+import { IdeaGenerationPass } from "./ideapass"
+import { AnglePass } from "./angle-pass"
+import { OutlinePass } from "./outline-pass"
+import { ScoringPass } from "./scoring-pass"
+import { ResearchPass } from "./research-pass"
 
 
 export interface MultiPassGenRequest {
@@ -75,16 +80,10 @@ export type PassType =
   | 'enhance'
   | 'scoring'
 
-export interface PassContext {
-  topic?: string
-  platform?: string
-  idea?: string // NEW: Post idea from schedule
-  product?: Product // NEW: Product URL for context
-  detailInstruction?: string // NEW: Specific instructions for this post
-  brand?: BrandMemory
+export interface PassContext extends Omit<MultiPassGenRequest, 'cache' | 'llm'> {
   sessionId: string
-  cache: any
-  llm: any
+  cache: ICacheService;
+  llm: ILLMService;
 }
 
 
@@ -110,14 +109,14 @@ export interface GenerationPass {
  * All passes implement canSkip() to check if they should run
  */
 export const postGenerationPipeline: GenerationPass[] = [
-  // new ResearchPass(),        // Optional: External research via Perplexity
-  // new RAGPass(),             // Optional: Retrieve knowledge from vector DB
-  // new IdeaGenerationPass(),  // Generate content ideas
-  // new AnglePass(),           // Explore different angles
-  // new OutlinePass(),         // Create content structure
+  new ResearchPass(),        // Optional: External research via Perplexity
+  new RAGPass(),             // Optional: Retrieve knowledge from vector DB
+  new IdeaGenerationPass(),  // Generate content ideas
+  new AnglePass(),           // Explore different angles
+  new OutlinePass(),         // Create content structure
   new DraftStreamingPass(),  // Write initial draft (streaming)
   new EnhanceStreamingPass(), // Enhance and polish content (streaming)
-  // new ScoringPass(),         // Score content quality
+  new ScoringPass(),         // Score content quality
 ]
 
 /**
@@ -139,7 +138,7 @@ export class StreamMultiPassUseCase {
       // Get or create session
       const sessionId = request.sessionId || `session_${Date.now()}`
       this.cache.getOrCreateSession(sessionId, {
-        title: request.title,
+        idea: request.idea,
       })
 
       const ctx: PassContext = {
