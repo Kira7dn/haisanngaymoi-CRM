@@ -34,12 +34,15 @@ export interface ILLMService {
 export interface GenerationSession {
     sessionId: string
     researchPass?: {
+        initialIdea: string
         insights: string[]
         risks: string[]
         recommendedAngles: string[]
         sources: Array<{ url: string; title: string }>
     }
     ragPass?: {
+        initialIdea: string
+        product: any
         ragContext: string
         sources: Array<{
             postId: string
@@ -49,6 +52,8 @@ export interface GenerationSession {
         }>
     }
     ideaPass?: {
+        initialIdea: string
+        product: any
         ideas: string[]
         selectedIdea: string
         meta: {

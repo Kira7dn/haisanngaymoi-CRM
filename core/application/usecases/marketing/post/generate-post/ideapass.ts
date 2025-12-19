@@ -17,9 +17,15 @@ export class IdeaGenerationPass implements GenerationPass {
     readonly name: PassType = 'idea'
 
     async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
-        const { title, body, hashtags, idea, product: selectedProduct, brand, sessionId, contentInstruction } = ctx
+        const { title, body, hashtags, idea, product, brand, sessionId, contentInstruction } = ctx
         const session = ctx.cache.get<GenerationSession>(sessionId);
-        const canSkip = session?.ideaPass;
+        // Điều kiện skip:
+        // - đã có ideaPass trong session và idea không khác so với session.ideaPass.initIdea hoặc product không khác so với session.ideaPass.product (cần bổ sung logic set idea và pproduct vào session)
+        // - hoặc không có PerplexityService được cấu hình
+        const hasChange =
+            session?.ideaPass?.initialIdea === idea ||
+            JSON.stringify(session?.ideaPass?.product) !== JSON.stringify(product)
+        const canSkip = (!idea && session?.researchPass && !hasChange)
         if (canSkip) {
             yield { type: 'pass:skip', pass: 'idea' }
             return
@@ -38,10 +44,10 @@ export class IdeaGenerationPass implements GenerationPass {
                 }
         `.trim() : ""
 
-        const productBlock = selectedProduct ?
-            `Product reference:${selectedProduct.name}
-            Background:${selectedProduct.detail || "N/A"}
-            Reference link:${selectedProduct.url || "N/A"}
+        const productBlock = product ?
+            `Product reference:${product.name}
+            Background:${product.detail || "N/A"}
+            Reference link:${product.url || "N/A"}
             The product may appear implicitly through context, examples, or storytelling,
             serving as a gentle cue that encourages interest or consideration rather than direct promotion.
             `
@@ -101,6 +107,8 @@ export class IdeaGenerationPass implements GenerationPass {
 
             ctx.cache.updateSession(sessionId, {
                 ideaPass: {
+                    initialIdea: idea || "",
+                    product: product,
                     ideas: ideas.ideas,
                     selectedIdea: ideas.ideas[0],
                     meta: {

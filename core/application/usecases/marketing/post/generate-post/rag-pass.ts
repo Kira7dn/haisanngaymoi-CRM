@@ -16,8 +16,16 @@ export class RAGPass implements GenerationPass {
     readonly name: PassType = 'rag'
 
     async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
-        const session = ctx.cache.get<GenerationSession>(ctx.sessionId);
-        if (!session) {
+        const { idea, product, brand, contentType, sessionId } = ctx
+        const session = ctx.cache.get<GenerationSession>(sessionId);
+        // Điều kiện skip:
+        // - đã có ragPass trong session và idea không khác so với session.ragPass.initIdea hoặc product không khác so với session.ragPass.product (cần bổ sung logic set idea và pproduct vào session)
+        // - hoặc không có PerplexityService được cấu hình
+        const hasChange =
+            session?.ragPass?.initialIdea === idea ||
+            JSON.stringify(session?.ragPass?.product) !== JSON.stringify(product)
+        const canSkip = (!idea && session?.researchPass && !hasChange)
+        if (canSkip) {
             yield { type: 'pass:skip', pass: 'rag' }
             return
         }
@@ -59,6 +67,8 @@ export class RAGPass implements GenerationPass {
 
             ctx.cache.updateSession(ctx.sessionId, {
                 ragPass: {
+                    initialIdea: idea || '',
+                    product: product,
                     ragContext,
                     sources,
                 }
@@ -69,13 +79,6 @@ export class RAGPass implements GenerationPass {
             )
         } catch (error) {
             console.warn('[RAGPass] Failed, continuing without RAG:', error)
-
-            ctx.cache.updateSession(ctx.sessionId, {
-                ragPass: {
-                    ragContext: '',
-                    sources: [],
-                }
-            })
         }
 
         yield { type: 'pass:complete', pass: 'rag' }

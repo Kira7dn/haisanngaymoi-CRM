@@ -21,8 +21,12 @@ export class ResearchPass implements GenerationPass {
   async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
     const { idea, product, brand, contentType, sessionId } = ctx
     const session = ctx.cache.get<GenerationSession>(ctx.sessionId);
-
-    const canSkip = session?.researchPass || !PerplexityService.isConfigured()
+    // Điều kiện skip research:
+    // - đã có researchPass trong session và idea không khác so với session.researchPass.initIdea (cần bổ sung logic set idea vào form researchPass)
+    // - hoặc không có PerplexityService được cấu hình
+    const canSkip = 
+      (session?.researchPass && session.researchPass.initialIdea === idea) || 
+      !PerplexityService.isConfigured()
     if (canSkip) {
       yield { type: 'pass:skip', pass: 'research' }
       return
@@ -51,6 +55,7 @@ export class ResearchPass implements GenerationPass {
 
       ctx.cache.updateSession(sessionId, {
         researchPass: {
+          initialIdea: idea,
           insights: research.insights,
           risks: research.risks,
           recommendedAngles: research.recommendedAngles,
@@ -66,6 +71,7 @@ export class ResearchPass implements GenerationPass {
 
       ctx.cache.updateSession(sessionId, {
         researchPass: {
+          initialIdea: "",
           insights: [],
           risks: [],
           recommendedAngles: [],

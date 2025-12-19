@@ -4,8 +4,9 @@ import { memo, useState } from 'react'
 import { scoringGeneration, streamMultiPassGeneration } from '../actions/stream-generate-action'
 import { usePostFormContext } from '../PostFormContext'
 import { usePostSettingStore } from '../../../_store/usePostSettingStore'
-import { Loader2, BarChart3 } from 'lucide-react'
+import { Loader2, BarChart3, Lightbulb, X, Sparkles } from 'lucide-react'
 import { Button } from '@shared/ui/button'
+import { Textarea } from '@shared/ui/textarea'
 
 /**
  * Quality Score Constants
@@ -54,11 +55,16 @@ interface ScoreData {
  * and displays the scoring results in real-time.
  */
 function QualityScoreDisplaySection() {
-  const { state } = usePostFormContext()
+  const { state, setField, updateMultipleFields } = usePostFormContext()
   const { brand } = usePostSettingStore()
   const [scoreData, setScoreData] = useState<ScoreData | null>(null)
   const [isScoring, setIsScoring] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // UX states for improve flow
+  const [showImproveSection, setShowImproveSection] = useState(false)
+  const [improveInstruction, setImproveInstruction] = useState('')
+  const [isImproving, setIsImproving] = useState(false)
 
   // Check if we have content to score
   const hasContent = Boolean(state.body || state.title)
@@ -70,6 +76,7 @@ function QualityScoreDisplaySection() {
     setIsScoring(true)
     setError(null)
     setScoreData(null)
+    setShowImproveSection(false) // Close improve section when re-scoring
 
     try {
       const sessionId = `score-${Date.now()}-${Math.random()
@@ -109,6 +116,80 @@ function QualityScoreDisplaySection() {
       setError('Failed to score content. Please try again.')
     } finally {
       setIsScoring(false)
+    }
+  }
+
+  // Open improve section with pre-filled suggestions
+  const handleOpenImprove = () => {
+    if (!scoreData || scoreData.suggestedFixes.length === 0) return
+
+    // Format suggestions as numbered list
+    const formattedSuggestions = scoreData.suggestedFixes
+      .map((fix, idx) => `${idx + 1}. ${fix}`)
+      .join('\n')
+
+    setImproveInstruction(formattedSuggestions)
+    setShowImproveSection(true)
+  }
+
+  // Cancel improve flow
+  const handleCancelImprove = () => {
+    setShowImproveSection(false)
+    setImproveInstruction('')
+  }
+
+  // Submit improve request to AI
+  const handleSubmitImprove = async () => {
+    if (!improveInstruction.trim()) return
+
+    setIsImproving(true)
+    setError(null)
+
+    try {
+      const sessionId = `improve-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 11)}`
+
+      // Call AI to improve content based on instructions
+      const events = await streamMultiPassGeneration({
+        ...state,
+        contentInstruction: improveInstruction,
+        brand,
+        sessionId,
+      })
+
+      let improvedTitle = ''
+      let improvedBody = ''
+
+      for await (const event of events) {
+        if (event.type === 'final' && event.result) {
+          if (event.result.title) improvedTitle = event.result.title
+          if (event.result.body) improvedBody = event.result.body
+        } else if (event.type === 'error') {
+          setError(event.message)
+          break
+        }
+      }
+
+      // Update form with improved content
+      if (improvedTitle || improvedBody) {
+        updateMultipleFields({
+          title: improvedTitle || state.title,
+          body: improvedBody || state.body,
+        })
+
+        // Close improve section and clear instruction
+        setShowImproveSection(false)
+        setImproveInstruction('')
+
+        // Automatically re-score the improved content
+        setTimeout(() => handleScoreContent(), 500)
+      }
+    } catch (err) {
+      console.error('Improve failed:', err)
+      setError('Failed to improve content. Please try again.')
+    } finally {
+      setIsImproving(false)
     }
   }
 
@@ -213,15 +294,27 @@ function QualityScoreDisplaySection() {
             {scoreLabel}
           </div>
         </div>
-        <Button
-          type="button"
-          onClick={handleScoreContent}
-          variant="outline"
-          size="sm"
-        >
-          <BarChart3 className="h-4 w-4 mr-2" />
-          Re-score
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={handleOpenImprove}
+            variant="default"
+            size="sm"
+            disabled={!scoreData.suggestedFixes || scoreData.suggestedFixes.length === 0 || showImproveSection}
+          >
+            <Lightbulb className="h-4 w-4 mr-2" />
+            Improve
+          </Button>
+          <Button
+            type="button"
+            onClick={handleScoreContent}
+            variant="outline"
+            size="sm"
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Re-score
+          </Button>
+        </div>
       </div>
 
       {/* Score Breakdown */}
@@ -274,6 +367,71 @@ function QualityScoreDisplaySection() {
               <li key={idx}>{fix}</li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Improve Section - Expandable */}
+      {showImproveSection && (
+        <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3 animate-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-sm text-purple-700 dark:text-purple-300 flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Customize Improvement Instructions
+            </h4>
+            <Button
+              type="button"
+              onClick={handleCancelImprove}
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Textarea
+            value={improveInstruction}
+            onChange={(e) => setImproveInstruction(e.target.value)}
+            placeholder="Edit or add improvement instructions..."
+            className="min-h-[120px] text-sm"
+            disabled={isImproving}
+          />
+
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              AI will regenerate your content based on these instructions
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={handleCancelImprove}
+                variant="outline"
+                size="sm"
+                disabled={isImproving}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmitImprove}
+                variant="default"
+                size="sm"
+                disabled={!improveInstruction.trim() || isImproving}
+              >
+                {isImproving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Improving...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Submit Improve
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

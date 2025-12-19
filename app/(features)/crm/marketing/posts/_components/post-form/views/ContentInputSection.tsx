@@ -34,12 +34,12 @@ function ContentInputSection() {
     [setField, products]
   )
 
-  const onInstructionChange = useCallback(
-    (e: ChangeEvent<HTMLTextAreaElement>) => {
-      setField('contentInstruction', e.target.value)
-    },
-    [setField]
-  )
+  // const onInstructionChange = useCallback(
+  //   (e: ChangeEvent<HTMLTextAreaElement>) => {
+  //     setField('contentInstruction', e.target.value)
+  //   },
+  //   [setField]
+  // )
 
   const onTitleChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +111,7 @@ function ContentInputSection() {
       )}
 
       {/* Detail Content Instruction */}
-      <div>
+      {/* <div>
         <Label htmlFor="contentInstruction">Specific Instructions for this Post</Label>
         <textarea
           id="contentInstruction"
@@ -121,7 +121,7 @@ function ContentInputSection() {
           placeholder="e.g., Emphasize premium quality, include customer testimonial, add urgency..."
           className="w-full border rounded-md p-3"
         />
-      </div>
+      </div> */}
 
       {/* Title */}
       <div>

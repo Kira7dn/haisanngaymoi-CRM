@@ -34,6 +34,17 @@ export default function AIGenerationSection() {
   // Check if form is ready for generation
   const isDisabled = !idea && !product && !contentInstruction && !title
 
+  // Helper function to auto-scroll body textarea to bottom
+  const scrollBodyTextareaToBottom = () => {
+    // Use requestAnimationFrame for smooth scrolling after DOM update
+    requestAnimationFrame(() => {
+      const bodyTextarea = document.getElementById('body') as HTMLTextAreaElement
+      if (bodyTextarea) {
+        bodyTextarea.scrollTop = bodyTextarea.scrollHeight
+      }
+    })
+  }
+
   // ========== AI Generation Actions ==========
   const genParam = {
     ...state,
@@ -115,10 +126,14 @@ export default function AIGenerationSection() {
             if (event.pass === 'draft') {
               draftBuffer += event.content
               setField('body', draftBuffer)
+              // Auto-scroll body textarea to bottom
+              scrollBodyTextareaToBottom()
             }
             if (event.pass === 'enhance') {
               enhanceBuffer += event.content
               setField('body', enhanceBuffer)
+              // Auto-scroll body textarea to bottom
+              scrollBodyTextareaToBottom()
             }
             break
 

@@ -5,64 +5,115 @@ import { useFileUpload } from "@/lib/hooks/use-file-upload";
 import { Upload, X, Loader2 } from "lucide-react";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
+import type { PostMedia } from "@/core/domain/marketing/post";
 
 export interface MediaUploadProps {
-  value?: string;
-  onChange: (url: string) => void;
+  value?: PostMedia;
+  onChange: (media: PostMedia | null) => void;
   folder?: string;
-  type?: "image" | "video";
-  maxSize?: number; // in MB
+  maxSize?: number; // in MB (optional, uses type-based defaults)
   disabled?: boolean;
 }
 
+/**
+ * MediaUpload - Smart media upload component with auto-detection
+ *
+ * Features:
+ * - Accepts both images and videos
+ * - Auto-detects file type from MIME
+ * - Returns PostMedia object with type and URL
+ * - Type-specific size limits (200MB video, 10MB image)
+ * - Preview display (image or video player)
+ *
+ * Breaking Change from v1:
+ * - value: string → PostMedia
+ * - onChange: (url: string) → (media: PostMedia | null)
+ * - Removed type prop (auto-detected)
+ */
 export function MediaUpload({
   value,
   onChange,
   folder = "media",
-  type = "image",
   maxSize,
   disabled = false,
 }: MediaUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const fileAccept = type === "video" ? "video/*" : "image/*";
-  const fileMaxSize = maxSize || (type === "video" ? 500 : 10);
+
+  // Accept both images and videos
+  const fileAccept = "image/*,video/*";
+
+  // File type state (detected from uploaded file)
+  const currentType = value?.type || null;
 
   const { isUploading, error, upload } = useFileUpload({
-    fileType: type,
+    fileType: currentType || "image", // Default for hook, but we override
     folder,
-    onSuccess: (url) => onChange(url),
+    onSuccess: () => { }, // We handle success manually in handleFileChange
   });
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Detect media type from file MIME type
+    const detectedType: 'image' | 'video' = file.type.startsWith('video/')
+      ? 'video'
+      : 'image';
+
+    // Type-specific size limits
+    const fileMaxSize = maxSize || (detectedType === 'video' ? 200 : 10);
+
+    // Validate file size
     if (file.size > fileMaxSize * 1024 * 1024) {
-      alert(`File must be less than ${fileMaxSize}MB`);
+      alert(`${detectedType === 'video' ? 'Video' : 'Image'} must be less than ${fileMaxSize}MB`);
       return;
     }
 
-    await upload(file);
+    try {
+      // Upload to S3
+      const result = await upload(file);
+
+      if (result?.url) {
+        // Return PostMedia object with detected type
+        onChange({
+          type: detectedType,
+          url: result.url,
+        });
+      }
+    } catch (err) {
+      console.error('Upload failed:', err);
+      // Error is already handled by useFileUpload hook
+    }
+  };
+
+  const handleRemove = () => {
+    onChange(null); // Pass null instead of empty string
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
     <div className="space-y-2">
-      {value ? (
+      {value?.url ? (
         <div className="relative border rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900">
-          {type === "video" ? (
-            <video src={value} controls className="w-full max-h-96" />
+          {value.type === "video" ? (
+            <video src={value.url} controls className="w-full max-h-48" />
           ) : (
-            <img src={value} alt="Preview" className="w-full max-h-96 object-contain" />
+            <img
+              src={value.url}
+              alt="Preview"
+              className="w-full max-h-48 object-contain"
+              loading="lazy"
+            />
           )}
           <Button
             type="button"
             size="sm"
             variant="destructive"
-            onClick={() => {
-              onChange("");
-              if (fileInputRef.current) fileInputRef.current.value = "";
-            }}
+            onClick={handleRemove}
             className="absolute top-2 right-2"
+            disabled={disabled}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -70,9 +121,10 @@ export function MediaUpload({
       ) : (
         <div
           onClick={() => !disabled && !isUploading && fileInputRef.current?.click()}
-          className={`w-full h-48 border-2 border-dashed rounded-lg flex flex-col items-center justify-center ${
-            !disabled && !isUploading ? "cursor-pointer hover:border-primary" : "opacity-50"
-          }`}
+          className={`w-full h-24 border-2 border-dashed rounded-lg flex flex-col items-center justify-center ${!disabled && !isUploading
+            ? "cursor-pointer hover:border-primary transition-colors"
+            : "opacity-50 cursor-not-allowed"
+            }`}
         >
           {isUploading ? (
             <>
@@ -81,9 +133,13 @@ export function MediaUpload({
             </>
           ) : (
             <>
-              <Upload className="h-10 w-10 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mt-2">Click to upload {type}</p>
-              <p className="text-xs text-muted-foreground mt-1">Max {fileMaxSize}MB</p>
+              <Upload className="h-6 w-6 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground mt-2">
+                Click to upload image or video
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Max 10MB for images, 200MB for videos
+              </p>
             </>
           )}
         </div>

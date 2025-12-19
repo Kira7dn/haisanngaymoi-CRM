@@ -19,6 +19,10 @@ import ContentInputSection from './ContentInputSection'
  * - No business logic
  * - No async / side effects
  * - Only render based on context
+ *
+ * Layout: Two-column responsive design
+ * - Desktop: Left (60%) = Form Fields, Right (40%) = AI Tools + Actions (sticky)
+ * - Mobile: Stacked - AI Tools → Form Fields → Actions
  */
 export default function PostFormView() {
   const {
@@ -39,10 +43,10 @@ export default function PostFormView() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 p-6 bg-white dark:bg-gray-800 rounded-lg border"
+      className="p-6 bg-white dark:bg-gray-800 rounded-lg border"
     >
-      {/* ===== Header ===== */}
-      <header className="flex items-center gap-2">
+      {/* ===== Header - Full Width ===== */}
+      <header className="flex items-center gap-2 mb-6">
         <h2 className="text-xl font-semibold">
           {post ? 'Edit Post' : 'Create New Post'}
         </h2>
@@ -54,78 +58,93 @@ export default function PostFormView() {
         )}
       </header>
 
-      {/* ===== AI Section ===== */}
-      <AIGenerationSection />
+      {/* ===== Two Column Layout ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6">
 
-      {/* ===== Quality Score ===== */}
-      <QualityScoreDisplay />
+        {/* ===== LEFT COLUMN - Form Fields (60%) ===== */}
+        <div className="space-y-6 order-2 lg:order-1">
+          {/* Content Input - Idea, Product, Title, Body */}
+          <ContentInputSection />
 
-      {/* ===== Content ===== */}
-      <ContentInputSection />
+          {/* Media / Hashtag / Schedule - MOVED UP */}
+          {/* Media upload auto-detects content type */}
+          <MediaHashtagScheduleSection />
 
-      {/* ===== Platform ===== */}
-      {/* <PlatformSelector hasError={hasPlatformError} /> */}
-
-      {/* ===== Media / Hashtag / Schedule ===== */}
-      <MediaHashtagScheduleSection />
-
-      {/* ===== Actions ===== */}
-      <footer className="flex items-center justify-between gap-2 pt-2">
-        <div className="flex gap-2">
-          {post && (
-            <Button
-              type="button"
-              variant="destructive"
-              // onClick={actions.delete}
-              disabled={isSubmitting}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Xóa
-            </Button>
-          )}
-
-          {!post && (
-            <Button
-              type="button"
-              variant="outline"
-              // onClick={actions.saveDraft}
-              disabled={isSubmitting}
-            >
-              Save as Draft
-            </Button>
-          )}
+          {/* Platform Selector - MOVED DOWN */}
+          {/* Platforms filtered by content type from media */}
+          <PlatformSelector />
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            // onClick={actions.close}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
+        {/* ===== RIGHT COLUMN - AI Tools + Actions (40%) ===== */}
+        <div className="order-1 lg:order-2 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] flex flex-col">
+          {/* AI Tools Container - Scrollable */}
+          <div className="ai-tools-scroll space-y-6 lg:overflow-y-auto lg:max-h-[calc(100vh-12rem)] lg:pr-2">
+            {/* AI Generation */}
+            <AIGenerationSection />
 
-          <Button
-            type="submit"
-            disabled={isSubmitting || hasPlatformError}
-            className="min-w-[140px]"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : post ? (
-              'Update Post'
-            ) : state.scheduledAt ? (
-              'Schedule Post'
-            ) : (
-              'Publish Now'
-            )}
-          </Button>
+            {/* Quality Score */}
+            <QualityScoreDisplay />
+          </div>
+
+          {/* Actions - Sticky at bottom of right column */}
+          <footer className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2 mt-6 pt-4 border-t bg-white dark:bg-gray-800">
+            <div className="flex gap-2">
+              {post && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  // onClick={actions.delete}
+                  disabled={isSubmitting}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Xóa
+                </Button>
+              )}
+
+              {!post && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  // onClick={actions.saveDraft}
+                  disabled={isSubmitting}
+                >
+                  Save as Draft
+                </Button>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                // onClick={actions.close}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="submit"
+                disabled={isSubmitting || hasPlatformError}
+                className="min-w-[140px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : post ? (
+                  'Update Post'
+                ) : state.scheduledAt ? (
+                  'Schedule Post'
+                ) : (
+                  'Publish Now'
+                )}
+              </Button>
+            </div>
+          </footer>
         </div>
-      </footer>
+      </div>
     </form>
   )
 }
