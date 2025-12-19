@@ -1,6 +1,6 @@
 import { z } from "zod"
-import { GenerationEvent, GenerationPass, MultiPassGenRequest, PassContext, PassType } from "./stream-gen-multi-pass"
-import { GenerationSession } from "@/core/application/interfaces/marketing/post-gen-service"
+import { GenerationSession } from "@/core/application/usecases/marketing/post/generate-post/post-gen-service.interfaces"
+import { GenerationEvent, GenerationPass, PassContext, PassType } from "../stream-post-generationn"
 
 // Schema for each pass response
 const IdeaPassSchema = z.object({
@@ -17,15 +17,9 @@ export class IdeaGenerationPass implements GenerationPass {
     readonly name: PassType = 'idea'
 
     async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
-        const { title, body, hashtags, idea, product, brand, sessionId, contentInstruction } = ctx
-        const session = ctx.cache.get<GenerationSession>(sessionId);
-        // Điều kiện skip:
-        // - đã có ideaPass trong session và idea không khác so với session.ideaPass.initIdea hoặc product không khác so với session.ideaPass.product (cần bổ sung logic set idea và pproduct vào session)
-        // - hoặc không có PerplexityService được cấu hình
-        const hasChange =
-            session?.ideaPass?.initialIdea === idea ||
-            JSON.stringify(session?.ideaPass?.product) !== JSON.stringify(product)
-        const canSkip = (!idea && session?.researchPass && !hasChange)
+        const { title, body, hashtags, idea, product, brand, sessionId, contentInstruction, hasChange } = ctx
+        const session = await ctx.cache.get<GenerationSession>(sessionId)
+        const canSkip = (!idea || (session?.ideaPass && !hasChange))
         if (canSkip) {
             yield { type: 'pass:skip', pass: 'idea' }
             return
@@ -105,10 +99,8 @@ export class IdeaGenerationPass implements GenerationPass {
             console.log('[Multi-Pass] Idea pass parsed:', parsed)
             const ideas = IdeaPassSchema.parse(parsed)
 
-            ctx.cache.updateSession(sessionId, {
+            const updateData: any = {
                 ideaPass: {
-                    initialIdea: idea || "",
-                    product: product,
                     ideas: ideas.ideas,
                     selectedIdea: ideas.ideas[0],
                     meta: {
@@ -116,7 +108,9 @@ export class IdeaGenerationPass implements GenerationPass {
                         usedRag: Boolean(ragContext),
                     },
                 },
-            })
+            }
+
+            await ctx.cache.updateSession(sessionId, updateData)
         } catch (error) {
             console.error('[Multi-Pass] Failed to parse idea response:', cleanContent)
             throw new Error(`Invalid JSON response from idea pass: ${error instanceof Error ? error.message : 'Unknown error'}`)

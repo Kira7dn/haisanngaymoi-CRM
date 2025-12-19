@@ -3,7 +3,7 @@
  * Uses Perplexity AI for external knowledge + LLM for synthesis
  */
 
-import { ILLMService } from "@/core/application/interfaces/marketing/post-gen-service"
+import { ILLMService } from "@/core/application/usecases/marketing/post/generate-post/post-gen-service.interfaces"
 import { BrandMemory } from "@/core/domain/brand-memory";
 import { Product } from "@/core/domain/catalog/product";
 

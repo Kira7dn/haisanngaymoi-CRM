@@ -4,8 +4,8 @@ import {
     GenerationPass,
     PassContext,
     PassType,
-} from "./stream-gen-multi-pass"
-import { GenerationSession } from "@/core/application/interfaces/marketing/post-gen-service"
+} from "../stream-post-generationn"
+import { GenerationSession } from "@/core/application/usecases/marketing/post/generate-post/post-gen-service.interfaces"
 
 /**
  * =========================
@@ -26,18 +26,14 @@ export class AnglePass implements GenerationPass {
     readonly name: PassType = "angle"
 
     async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
-        yield { type: "pass:start", pass: "angle" }
-
-        const { brand, product, sessionId } = ctx
-        const session = ctx.cache.get<GenerationSession>(sessionId)
-        const canSkip = session?.anglePass && session.anglePass.angles?.length >= 3
+        const session = await ctx.cache.get<GenerationSession>(ctx.sessionId)
+        const { idea, brand, product, sessionId, hasChange } = ctx
+        const canSkip = (!idea || (session?.anglePass && !hasChange))
         if (canSkip) {
             yield { type: "pass:skip", pass: "angle" }
             return
         }
-        if (!session?.ideaPass?.selectedIdea) {
-            throw new Error("AnglePass requires IdeaGenerationPass to be completed first")
-        }
+        yield { type: "pass:start", pass: "angle" }
 
         const prompt = `
             You are a senior content strategist.
@@ -48,7 +44,7 @@ export class AnglePass implements GenerationPass {
             ${brand?.brandDescription ? `Brand context (for alignment only): ${brand?.brandDescription}` : ""}
 
             Core content idea:
-            ${session.ideaPass.selectedIdea}
+            ${session?.ideaPass?.selectedIdea || idea}
 
             ${product?.name ? `Product reference (optional):${product?.name} 
                 The product may be referenced subtly as context or inspiration,
@@ -100,12 +96,14 @@ export class AnglePass implements GenerationPass {
             console.log('[Multi-Pass] Angle pass parsed:', parsed)
             const angles = AnglePassSchema.parse(parsed)
 
-            ctx.cache.updateSession(sessionId, {
+            const updateData: any = {
                 anglePass: {
                     angles: angles.angles,
                     selectedAngle: angles.angles[0],
-                },
-            })
+                }
+            }
+
+            await ctx.cache.updateSession(sessionId, updateData)
         } catch (error) {
             console.error("[AnglePass] Invalid response:", cleanContent)
             throw new Error(

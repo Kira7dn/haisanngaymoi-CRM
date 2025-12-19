@@ -1,220 +1,209 @@
 /**
- * Cache Service for Episodic Memory
- * Stores intermediate results during multi-pass content generation
- * Uses in-memory Map with TTL (Time To Live)
+ * Refactored Cache Service for Episodic Memory
+ * - Promise-aware (avoid duplicate creation/update)
+ * - Consistent TTL handling
+ * - No background side effects unless enabled
+ * - Keeps existing public API semantics
  */
 
-import { CacheEntry, GenerationSession, ICacheService } from "@/core/application/interfaces/marketing/post-gen-service"
+import { CacheEntry, GenerationSession, ICacheService } from "@/core/application/usecases/marketing/post/generate-post/post-gen-service.interfaces"
 
+const DEFAULT_TTL_MS = 30 * 60 * 1000 // 30 minutes
 
-
-/**
- * Cache Service using in-memory Map
- */
 export class CacheService implements ICacheService {
-  private cache: Map<string, CacheEntry<any>>
-  private readonly defaultTTL = 30 * 60 * 1000 // 30 minutes in milliseconds
+  private readonly store = new Map<string, CacheEntry<any>>()
+
+  /**
+   * Track in-flight operations per key to avoid logical race conditions
+   */
+  private readonly inflight = new Map<string, Promise<any>>()
+
+  private readonly defaultTTL: number
   private cleanupInterval: NodeJS.Timeout | null = null
 
-  constructor() {
-    this.cache = new Map()
-    this.startCleanupInterval()
-  }
+  constructor(options?: { defaultTTL?: number; enableCleanup?: boolean }) {
+    this.defaultTTL = options?.defaultTTL ?? DEFAULT_TTL_MS
 
-  /**
-   * Start periodic cleanup of expired entries
-   */
-  private startCleanupInterval(): void {
-    // Run cleanup every 5 minutes
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup()
-    }, 5 * 60 * 1000)
-  }
-
-  /**
-   * Stop cleanup interval
-   */
-  public stopCleanup(): void {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval)
-      this.cleanupInterval = null
+    if (options?.enableCleanup !== false) {
+      this.startCleanup()
     }
   }
 
-  /**
-   * Remove expired entries
-   */
-  private cleanup(): void {
-    const now = Date.now()
-    const expiredKeys: string[] = []
+  /* ----------------------------------
+   * Core cache primitives
+   * ---------------------------------- */
 
-    for (const [key, entry] of this.cache.entries()) {
-      if (entry.expiresAt < now) {
-        expiredKeys.push(key)
-      }
-    }
+  async get<T>(key: string): Promise<T | undefined> {
+    const entry = this.store.get(key)
+    if (!entry) return undefined
 
-    expiredKeys.forEach(key => this.cache.delete(key))
-
-    if (expiredKeys.length > 0) {
-      console.log(`[CacheService] Cleaned up ${expiredKeys.length} expired entries`)
-    }
-  }
-
-  /**
-   * Set cache entry with TTL
-   */
-  set<T>(key: string, value: T, ttl?: number): void {
-    const expiresAt = Date.now() + (ttl || this.defaultTTL)
-    this.cache.set(key, {
-      value,
-      expiresAt,
-    })
-  }
-
-  /**
-   * Get cache entry
-   * Returns undefined if not found or expired
-   */
-  get<T>(key: string): T | undefined {
-    const entry = this.cache.get(key)
-
-    if (!entry) {
-      return undefined
-    }
-
-    // Check if expired
-    if (entry.expiresAt < Date.now()) {
-      this.cache.delete(key)
+    if (this.isExpired(entry)) {
+      this.store.delete(key)
       return undefined
     }
 
     return entry.value as T
   }
 
-  /**
-   * Check if key exists and is not expired
-   */
-  has(key: string): boolean {
-    const entry = this.cache.get(key)
+  async set<T>(key: string, value: T, ttlMs?: number): Promise<void> {
+    this.store.set(key, {
+      value,
+      expiresAt: Date.now() + (ttlMs ?? this.defaultTTL),
+    })
+  }
+
+  async has(key: string): Promise<boolean> {
+    const entry = this.store.get(key)
     if (!entry) return false
 
-    if (entry.expiresAt < Date.now()) {
-      this.cache.delete(key)
+    if (this.isExpired(entry)) {
+      this.store.delete(key)
       return false
     }
 
     return true
   }
 
-  /**
-   * Delete cache entry
-   */
-  delete(key: string): boolean {
-    return this.cache.delete(key)
+  async delete(key: string): Promise<boolean> {
+    return this.store.delete(key)
   }
 
-  /**
-   * Clear all cache entries
-   */
-  clear(): void {
-    this.cache.clear()
+  async clear(): Promise<void> {
+    this.store.clear()
   }
 
-  /**
-   * Get cache size
-   */
-  size(): number {
-    return this.cache.size
+  async size(): Promise<number> {
+    return this.store.size
   }
 
-  /**
-   * Get or create generation session
-   */
-  getOrCreateSession(
+  /* ----------------------------------
+   * Generation session helpers
+   * ---------------------------------- */
+
+  async getOrCreateSession(
     sessionId: string,
-    metadata?: { idea?: string }
-  ): GenerationSession {
-    const existing = this.get<GenerationSession>(sessionId)
+    metadata?: { idea?: string; productId?: string }
+  ): Promise<GenerationSession> {
+    return this.runExclusive(sessionId, async () => {
+      const existing = await this.get<GenerationSession>(sessionId)
+      if (existing) return existing
 
-    if (existing) {
-      return existing
-    }
+      const now = new Date()
 
-    const now = new Date()
-    const session: GenerationSession = {
-      sessionId,
-      metadata: {
-        idea: metadata?.idea,
-        startedAt: now,
-        lastUpdatedAt: now,
-      },
-      expiresAt: new Date(now.getTime() + this.defaultTTL),
-    }
+      const session: GenerationSession = {
+        sessionId,
+        metadata: {
+          idea: metadata?.idea,
+          productId: metadata?.productId,
+          startedAt: now,
+          lastUpdatedAt: now,
+        },
+        expiresAt: new Date(now.getTime() + this.defaultTTL),
+      }
 
-    this.set(sessionId, session)
-    return session
+      await this.set(sessionId, session)
+      return session
+    })
   }
 
-  /**
-   * Update generation session
-   */
-  updateSession(sessionId: string, updates: Partial<GenerationSession>): GenerationSession | null {
-    const session = this.get<GenerationSession>(sessionId)
+  async updateSession(
+    sessionId: string,
+    updates: Partial<GenerationSession>
+  ): Promise<GenerationSession | null> {
+    return this.runExclusive(sessionId, async () => {
+      const session = await this.get<GenerationSession>(sessionId)
+      if (!session) return null
 
-    if (!session) {
-      return null
-    }
+      const updated: GenerationSession = {
+        ...session,
+        ...updates,
+        metadata: {
+          ...session.metadata,
+          ...updates.metadata,
+          lastUpdatedAt: new Date(),
+        },
+      }
 
-    const updated: GenerationSession = {
-      ...session,
-      ...updates,
-      metadata: {
-        ...session.metadata,
-        ...updates.metadata,
-        lastUpdatedAt: new Date(),
-      },
-    }
-
-    this.set(sessionId, updated)
-    return updated
+      await this.set(sessionId, updated)
+      return updated
+    })
   }
 
-  /**
-   * Delete generation session
-   */
-  deleteSession(sessionId: string): boolean {
+  async deleteSession(sessionId: string): Promise<boolean> {
     return this.delete(sessionId)
   }
 
-  /**
-   * Get all active session IDs
-   */
-  getActiveSessions(): string[] {
+  async getActiveSessions(): Promise<string[]> {
     const now = Date.now()
-    const sessions: string[] = []
+    const result: string[] = []
 
-    for (const [key, entry] of this.cache.entries()) {
-      if (entry.expiresAt >= now && typeof entry.value === 'object' && 'sessionId' in entry.value) {
-        sessions.push(key)
+    for (const [key, entry] of this.store.entries()) {
+      if (entry.expiresAt >= now && entry.value && typeof entry.value === 'object' && 'sessionId' in entry.value) {
+        result.push(key)
       }
     }
 
-    return sessions
+    return result
+  }
+
+  /* ----------------------------------
+   * Internal helpers
+   * ---------------------------------- */
+
+  private isExpired(entry: CacheEntry<any>): boolean {
+    return entry.expiresAt < Date.now()
+  }
+
+  /**
+   * Ensure only one async operation per key at a time
+   */
+  private async runExclusive<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    if (this.inflight.has(key)) {
+      return this.inflight.get(key) as Promise<T>
+    }
+
+    const promise = fn().finally(() => {
+      this.inflight.delete(key)
+    })
+
+    this.inflight.set(key, promise)
+    return promise
+  }
+
+  /* ----------------------------------
+   * Cleanup
+   * ---------------------------------- */
+
+  private startCleanup(): void {
+    this.cleanupInterval = setInterval(() => this.cleanup(), 5 * 60 * 1000)
+  }
+
+  stopCleanup(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval)
+      this.cleanupInterval = null
+    }
+  }
+
+  private cleanup(): void {
+    const now = Date.now()
+    for (const [key, entry] of this.store.entries()) {
+      if (entry.expiresAt < now) {
+        this.store.delete(key)
+      }
+    }
   }
 }
 
-/**
- * Singleton instance
- */
-let cacheServiceInstance: CacheService | null = null
+/* ----------------------------------
+ * Singleton factory
+ * ---------------------------------- */
 
-/**
- * Get Cache Service instance
- */
+let instance: CacheService | null = null
+
 export function getCacheService(): CacheService {
-  if (!cacheServiceInstance) {
-    cacheServiceInstance = new CacheService()
+  if (!instance) {
+    instance = new CacheService()
   }
-  return cacheServiceInstance
+  return instance
 }

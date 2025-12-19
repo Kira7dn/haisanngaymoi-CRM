@@ -1,7 +1,6 @@
 import { BaseRepository } from "@/infrastructure/db/base-repository";
 import { Product, SizeOption } from "@/core/domain/catalog/product";
 import type { ProductService, ProductPayload, FilterProductsParams } from "@/core/application/interfaces/catalog/product-service";
-import { getNextId } from "@/infrastructure/db/auto-increment";
 
 const normalizeSizes = (product: any): SizeOption[] | undefined => {
   if (!product.sizes || product.sizes.length === 0) return undefined;
@@ -23,7 +22,7 @@ const normalizeSizes = (product: any): SizeOption[] | undefined => {
     .filter((s: any) => s !== null) as SizeOption[];
 };
 
-export class ProductRepository extends BaseRepository<Product, number> implements ProductService {
+export class ProductRepository extends BaseRepository<Product, string> implements ProductService {
   protected collectionName = "products";
 
   async getAll(): Promise<Product[]> {
@@ -32,7 +31,7 @@ export class ProductRepository extends BaseRepository<Product, number> implement
     return docs.map(doc => this.toDomain(doc));
   }
 
-  async getById(id: number): Promise<Product | null> {
+  async getById(id: string): Promise<Product | null> {
     const collection = await this.getCollection();
     const doc = await collection.findOne({ _id: id } as any);
     return doc ? this.toDomain(doc) : null;
@@ -57,13 +56,10 @@ export class ProductRepository extends BaseRepository<Product, number> implement
   }
 
   async create(payload: ProductPayload): Promise<Product> {
-    const client = await this.getClient();
-    const id = await getNextId(client, this.collectionName);
     const now = new Date();
 
     const doc = this.toDocument({
       ...payload,
-      id,
       categoryId: payload.categoryId || 0,
       name: payload.name || "",
       price: payload.price || 0,
@@ -77,8 +73,12 @@ export class ProductRepository extends BaseRepository<Product, number> implement
     });
 
     const collection = await this.getCollection();
-    await collection.insertOne(doc);
-    return this.toDomain(doc);
+    const { insertedId } = await collection.insertOne(doc);
+
+    return this.toDomain({
+      _id: insertedId,
+      ...doc
+    });
   }
 
   async update(payload: ProductPayload): Promise<Product | null> {
@@ -102,7 +102,7 @@ export class ProductRepository extends BaseRepository<Product, number> implement
     return result && result.value ? this.toDomain(result.value) : null;
   }
 
-  async delete(id: number): Promise<boolean> {
+  async delete(id: string): Promise<boolean> {
     const collection = await this.getCollection();
     const result = await collection.deleteOne({ _id: id } as any);
     return result.deletedCount > 0;

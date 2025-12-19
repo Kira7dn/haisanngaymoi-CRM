@@ -1,11 +1,11 @@
-import { GenerationEvent, MultiPassGenRequest } from "@/core/application/usecases/marketing/post/generate-post/stream-gen-multi-pass"
+import { GenerationEvent, PostGenRequest } from "@/core/application/usecases/marketing/post/generate-post/stream-post-generationn"
 
 /**
  * Client-side helper to consume streaming generation events
  * Uses fetch with SSE (Server-Sent Events) format
  */
 export async function* streamMultiPassGeneration(
-  params: MultiPassGenRequest
+  params: PostGenRequest
 ): AsyncGenerator<GenerationEvent> {
   const response = await fetch('/api/posts/gen-content/stream', {
     method: 'POST',
@@ -59,26 +59,3 @@ export async function* streamMultiPassGeneration(
   }
 }
 
-export async function scoringGeneration(
-  params: MultiPassGenRequest
-): Promise<GenerationEvent[]> {
-  const response = await fetch('/api/posts/gen-content/scoring', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(params),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.statusText}`)
-  }
-
-  const result = await response.json()
-
-  if (!result?.success) {
-    throw new Error(result?.error ?? 'Unknown error')
-  }
-
-  return result.data as GenerationEvent[]
-}

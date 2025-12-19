@@ -3,7 +3,7 @@
  * Provides AI capabilities for chatbot and content generation
  */
 
-import { ILLMService, LLMRequest, LLMResponse } from "@/core/application/interfaces/marketing/post-gen-service";
+import { ILLMService, LLMRequest, LLMResponse } from "@/core/application/usecases/marketing/post/generate-post/post-gen-service.interfaces";
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/chat";
 

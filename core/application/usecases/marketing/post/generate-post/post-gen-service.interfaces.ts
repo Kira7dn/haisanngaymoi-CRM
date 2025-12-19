@@ -34,14 +34,12 @@ export interface ILLMService {
 export interface GenerationSession {
     sessionId: string
     researchPass?: {
-        initialIdea: string
         insights: string[]
         risks: string[]
         recommendedAngles: string[]
         sources: Array<{ url: string; title: string }>
     }
     ragPass?: {
-        initialIdea: string
         product: any
         ragContext: string
         sources: Array<{
@@ -52,8 +50,6 @@ export interface GenerationSession {
         }>
     }
     ideaPass?: {
-        initialIdea: string
-        product: any
         ideas: string[]
         selectedIdea: string
         meta: {
@@ -90,6 +86,7 @@ export interface GenerationSession {
     }
     metadata: {
         idea?: string
+        productId?: string
         startedAt: Date
         lastUpdatedAt: Date
     }
@@ -105,14 +102,14 @@ export interface CacheEntry<T> {
 }
 
 export interface ICacheService<T = any> {
-    set(key: string, value: T, ttl?: number): void;
-    get<U>(key: string): U | undefined;
-    has(key: string): boolean;
-    delete(key: string): boolean;
-    clear(): void;
-    size(): number;
-    getOrCreateSession(sessionId: string, metadata?: { idea?: string }): GenerationSession;
-    updateSession(sessionId: string, updates: Partial<GenerationSession>): void;
-    deleteSession(sessionId: string): boolean;
-    getActiveSessions(): string[];
+    set(key: string, value: T, ttl?: number): Promise<void>;
+    get<U>(key: string): Promise<U | undefined>;
+    has(key: string): Promise<boolean>;
+    delete(key: string): Promise<boolean>;
+    clear(): Promise<void>;
+    size(): Promise<number>;
+    getOrCreateSession(sessionId: string, metadata?: { idea?: string; productId?: string }): Promise<GenerationSession>;
+    updateSession(sessionId: string, updates: Partial<GenerationSession>): Promise<GenerationSession | null>;
+    deleteSession(sessionId: string): Promise<boolean>;
+    getActiveSessions(): Promise<string[]>;
 }

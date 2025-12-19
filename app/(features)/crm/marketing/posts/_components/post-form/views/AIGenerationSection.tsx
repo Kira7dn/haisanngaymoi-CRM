@@ -6,9 +6,9 @@ import { usePostFormContext } from '../PostFormContext'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/@shared/ui/tabs'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/@shared/ui/card'
 import { useMemo, useState } from 'react'
-import { singlePassGenAction } from '../../../_actions/generate-content-action'
 import { streamMultiPassGeneration } from '../actions/stream-generate-action'
 import { usePostSettingStore } from '../../../_store/usePostSettingStore'
+import { scrollBodyTextareaToBottom } from './utils'
 
 export default function AIGenerationSection() {
   const { state, setField } = usePostFormContext()
@@ -34,17 +34,6 @@ export default function AIGenerationSection() {
   // Check if form is ready for generation
   const isDisabled = !idea && !product && !contentInstruction && !title
 
-  // Helper function to auto-scroll body textarea to bottom
-  const scrollBodyTextareaToBottom = () => {
-    // Use requestAnimationFrame for smooth scrolling after DOM update
-    requestAnimationFrame(() => {
-      const bodyTextarea = document.getElementById('body') as HTMLTextAreaElement
-      if (bodyTextarea) {
-        bodyTextarea.scrollTop = bodyTextarea.scrollHeight
-      }
-    })
-  }
-
   // ========== AI Generation Actions ==========
   const genParam = {
     ...state,
@@ -52,112 +41,133 @@ export default function AIGenerationSection() {
     sessionId,
   }
   const handleSinglePassGen = async () => {
+    setIsGenerating(true)
+    setProgress(['Starting single-pass generation...'])
+
     try {
-      setIsGenerating(true)
-      setProgress(['Starting single-pass generation...'])
-      const result = await singlePassGenAction(genParam)
-      if (!result.success && result.error) {
-        setSimilarityWarning(result.error)
-        return
-      }
-      // Update form with generated content
-      if (result.success && result.content) {
-        if (result.content.title) {
-          setField('title', result.content.title)
-        }
-        if (result.content.body) {
-          setField('body', result.content.body)
-        }
-        if (result.content.variations) {
-          setField('variations', result.content.variations)
-        }
-      }
+      const stream = streamMultiPassGeneration({
+        ...genParam,
+        action: 'singlepass',
+      })
 
-      setProgress(['Generation completed!'])
-      setTimeout(() => setProgress([]), 2000)
-    } catch (error) {
-      console.error('Single-pass generation failed:', error)
-      setProgress([])
-      setSimilarityWarning('Generation failed. Please try again.')
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const handleMultiPassGen = async () => {
-    try {
-      setIsGenerating(true)
-
-      // Reset UI
-      setProgress([])
-      setSimilarityWarning(undefined)
-
-      let draftBuffer = ''
-      let enhanceBuffer = ''
-
-      const stream = streamMultiPassGeneration(genParam)
+      let body = ''
 
       for await (const event of stream) {
-        switch (event.type) {
 
-          // ✅ TITLE COMES EARLY
+        switch (event.type) {
           case 'title:ready':
             setField('title', event.title)
-            setProgress(prev => [...prev, '📝 Title generated'])
+            setProgress(p => [...p, '📝 Title generated'])
             break
 
-          // ✅ HASHTAGS COMES EARLY  
           case 'hashtags:ready':
             setField('hashtags', event.hashtags)
-            setProgress(prev => [...prev, '🏷️ Hashtags generated'])
+            setProgress(p => [...p, '🏷️ Hashtags generated'])
             break
 
           case 'pass:start':
-            if (event.pass === 'draft') draftBuffer = ''
-            if (event.pass === 'enhance') enhanceBuffer = ''
-            setProgress(prev => [...prev, `▶️ Starting ${event.pass}...`])
+            // Enhance overwrite Draft
+            body = ''
+            setProgress(p => [...p, `▶️ Starting ${event.pass}...`])
             break
 
           case 'pass:skip':
-            setProgress(prev => [...prev, `▶️ Skipping ${event.pass}...`])
+            setProgress(p => [...p, `⏭️ Skipping ${event.pass}`])
             break
 
           case 'body:token':
-            if (event.pass === 'draft') {
-              draftBuffer += event.content
-              setField('body', draftBuffer)
-              // Auto-scroll body textarea to bottom
-              scrollBodyTextareaToBottom()
-            }
-            if (event.pass === 'enhance') {
-              enhanceBuffer += event.content
-              setField('body', enhanceBuffer)
-              // Auto-scroll body textarea to bottom
-              scrollBodyTextareaToBottom()
-            }
+            body += event.content
+            setField('body', body)
+            scrollBodyTextareaToBottom()
             break
 
           case 'pass:complete':
-            setProgress(prev => [...prev, `✅ ${event.pass} completed`])
+            setProgress(p => [...p, `✅ ${event.pass} completed`])
             break
 
           case 'final':
-            setProgress(prev => [...prev, '🎉 Generation completed!'])
+            setProgress(p => [...p, '🎉 Generation completed!'])
             break
 
           case 'error':
             setSimilarityWarning(event.message)
             setProgress([])
-            break
+            return
         }
       }
-    } catch (error) {
-      console.error('Multi-pass generation failed:', error)
+    } catch (err) {
+      console.error(err)
+      setSimilarityWarning('Generation failed. Please try again.')
+    } finally {
+      setIsGenerating(false)
+      setTimeout(() => setProgress([]), 2000)
+    }
+  }
+
+
+  const handleMultiPassGen = async () => {
+    setIsGenerating(true)
+    setProgress([])
+    setSimilarityWarning(undefined)
+
+    let body = ''
+
+    try {
+      const stream = streamMultiPassGeneration({
+        ...genParam,
+        action: 'multipass',
+      })
+
+      for await (const event of stream) {
+        switch (event.type) {
+          case 'title:ready':
+            setField('title', event.title)
+            setProgress(p => [...p, '📝 Title generated'])
+            break
+
+          case 'hashtags:ready':
+            setField('hashtags', event.hashtags)
+            setProgress(p => [...p, '🏷️ Hashtags generated'])
+            break
+
+          case 'pass:start':
+            // Enhance overwrite Draft
+            body = ''
+            setProgress(p => [...p, `▶️ Starting ${event.pass}...`])
+            break
+
+          case 'pass:skip':
+            setProgress(p => [...p, `⏭️ Skipping ${event.pass}`])
+            break
+
+          case 'body:token':
+            body += event.content
+            setField('body', body)
+            scrollBodyTextareaToBottom()
+            break
+
+          case 'pass:complete':
+            setProgress(p => [...p, `✅ ${event.pass} completed`])
+            break
+
+          case 'final':
+            setProgress(p => [...p, '🎉 Generation completed!'])
+            break
+
+          case 'error':
+            setSimilarityWarning(event.message)
+            setProgress([])
+            return
+        }
+      }
+    } catch (err) {
+      console.error(err)
       setSimilarityWarning('Generation failed. Please try again.')
     } finally {
       setIsGenerating(false)
     }
   }
+
 
   return (
     <div className="border rounded-lg p-4 bg-linear-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 space-y-3">

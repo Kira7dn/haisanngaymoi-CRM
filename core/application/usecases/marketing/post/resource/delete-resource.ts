@@ -3,7 +3,7 @@
  * Deletes resource from S3, DB, and VectorDB
  */
 
-import type { ResourceService } from "@/core/application/interfaces/marketing/resource-service"
+import type { ResourceService } from "@/core/application/usecases/marketing/post/resource/resource-service.interfaces"
 import { createS3StorageService } from "@/infrastructure/adapters/storage/s3-storage-service"
 import { getVectorDBService } from "@/infrastructure/adapters/external/ai"
 

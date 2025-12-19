@@ -1,12 +1,13 @@
 'use client'
 
 import { memo, useState } from 'react'
-import { scoringGeneration, streamMultiPassGeneration } from '../actions/stream-generate-action'
+import { streamMultiPassGeneration } from '../actions/stream-generate-action'
 import { usePostFormContext } from '../PostFormContext'
 import { usePostSettingStore } from '../../../_store/usePostSettingStore'
 import { Loader2, BarChart3, Lightbulb, X, Sparkles } from 'lucide-react'
 import { Button } from '@shared/ui/button'
 import { Textarea } from '@shared/ui/textarea'
+import { scrollBodyTextareaToBottom } from './utils'
 
 /**
  * Quality Score Constants
@@ -54,6 +55,7 @@ interface ScoreData {
  * This component triggers the multi-pass generation when content is ready
  * and displays the scoring results in real-time.
  */
+
 function QualityScoreDisplaySection() {
   const { state, setField, updateMultipleFields } = usePostFormContext()
   const { brand } = usePostSettingStore()
@@ -65,6 +67,9 @@ function QualityScoreDisplaySection() {
   const [showImproveSection, setShowImproveSection] = useState(false)
   const [improveInstruction, setImproveInstruction] = useState('')
   const [isImproving, setIsImproving] = useState(false)
+  const [progress, setProgress] = useState<string[]>([])
+  const [similarityWarning, setSimilarityWarning] = useState<string | undefined>(undefined)
+
 
   // Check if we have content to score
   const hasContent = Boolean(state.body || state.title)
@@ -83,13 +88,14 @@ function QualityScoreDisplaySection() {
         .toString(36)
         .substring(2, 11)}`
 
-      const events = await scoringGeneration({
+      const events = await streamMultiPassGeneration({
         ...state,
         brand,
         sessionId,
+        action: 'scoring',
       })
 
-      for (const event of events) {
+      for await (const event of events) {
         if (event.type === 'final' && event.result?.metadata) {
           const {
             score,
@@ -156,34 +162,54 @@ function QualityScoreDisplaySection() {
         contentInstruction: improveInstruction,
         brand,
         sessionId,
+        action: "improve"
       })
 
-      let improvedTitle = ''
-      let improvedBody = ''
+      let body = ''
 
       for await (const event of events) {
-        if (event.type === 'final' && event.result) {
-          if (event.result.title) improvedTitle = event.result.title
-          if (event.result.body) improvedBody = event.result.body
-        } else if (event.type === 'error') {
-          setError(event.message)
-          break
+        switch (event.type) {
+          case 'title:ready':
+            setField('title', event.title)
+            setProgress(p => [...p, '📝 Title generated'])
+            break
+
+          case 'hashtags:ready':
+            setField('hashtags', event.hashtags)
+            setProgress(p => [...p, '🏷️ Hashtags generated'])
+            break
+
+          case 'pass:start':
+            // Enhance overwrite Draft
+            body = ''
+            setProgress(p => [...p, `▶️ Starting ${event.pass}...`])
+            break
+
+          case 'pass:skip':
+            setProgress(p => [...p, `⏭️ Skipping ${event.pass}`])
+            break
+
+          case 'body:token':
+            body += event.content
+            setField('body', body)
+            scrollBodyTextareaToBottom()
+            break
+
+          case 'pass:complete':
+            setProgress(p => [...p, `✅ ${event.pass} completed`])
+            break
+
+          case 'final':
+            setProgress(p => [...p, '🎉 Generation completed!'])
+            setShowImproveSection(false)
+            setImproveInstruction('')
+            break
+
+          case 'error':
+            setSimilarityWarning(event.message)
+            setProgress([])
+            return
         }
-      }
-
-      // Update form with improved content
-      if (improvedTitle || improvedBody) {
-        updateMultipleFields({
-          title: improvedTitle || state.title,
-          body: improvedBody || state.body,
-        })
-
-        // Close improve section and clear instruction
-        setShowImproveSection(false)
-        setImproveInstruction('')
-
-        // Automatically re-score the improved content
-        setTimeout(() => handleScoreContent(), 500)
       }
     } catch (err) {
       console.error('Improve failed:', err)
@@ -421,7 +447,7 @@ function QualityScoreDisplaySection() {
                 {isImproving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Improving...
+                    {progress.length > 0 ? progress[progress.length - 1] : 'Multi-pass...'}
                   </>
                 ) : (
                   <>

@@ -3,7 +3,7 @@
  * Handles file upload to S3, text extraction, chunking, and embedding into VectorDB
  */
 
-import type { ResourceService } from "@/core/application/interfaces/marketing/resource-service"
+import type { ResourceService } from "@/core/application/usecases/marketing/post/resource/resource-service.interfaces"
 import type { Resource } from "@/core/domain/marketing/resource"
 import { createS3StorageService } from "@/infrastructure/adapters/storage/s3-storage-service"
 import { DocumentChunker } from "@/infrastructure/utils/document-chunker"

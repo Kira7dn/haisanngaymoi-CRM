@@ -1,6 +1,6 @@
 import { BaseRepository } from "@/infrastructure/db/base-repository"
 import { Resource } from "@/core/domain/marketing/resource"
-import type { ResourceService, ResourcePayload } from "@/core/application/interfaces/marketing/resource-service"
+import type { ResourceService, ResourcePayload } from "@/core/application/usecases/marketing/post/resource/resource-service.interfaces"
 import { ObjectId } from "mongodb"
 
 /**

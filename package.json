@@ -60,6 +60,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@types/bcryptjs": "^2.4.6",
     "@upstash/qstash": "^2.8.4",
+    "@upstash/redis": "^1.35.8",
     "@xstate/react": "^6.0.0",
     "ai": "^5.0.97",
     "bcryptjs": "^3.0.3",

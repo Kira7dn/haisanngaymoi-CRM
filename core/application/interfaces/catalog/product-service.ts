@@ -9,9 +9,9 @@ export interface FilterProductsParams {
 
 export interface ProductService {
   getAll(): Promise<Product[]>;
-  getById(id: number): Promise<Product | null>;
+  getById(id: string): Promise<Product | null>;
   filter(params: FilterProductsParams): Promise<Product[]>;
   create(payload: ProductPayload): Promise<Product>;
-  update(payload: ProductPayload & { id: number }): Promise<Product | null>;
-  delete(id: number): Promise<boolean>;
+  update(payload: ProductPayload & { id: string }): Promise<Product | null>;
+  delete(id: string): Promise<boolean>;
 }

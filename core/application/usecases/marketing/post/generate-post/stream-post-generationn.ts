@@ -4,12 +4,21 @@
  * Passes: Idea → Angle → Outline → Draft → Enhance
  */
 
-import { GenerationSession, ILLMService, ICacheService } from "@/core/application/interfaces/marketing/post-gen-service"
+import { GenerationSession, ILLMService, ICacheService } from "@/core/application/usecases/marketing/post/generate-post/post-gen-service.interfaces"
 import { Product } from "@/core/domain/catalog/product"
 import { BrandMemory } from "@/core/domain/brand-memory"
+import { DraftStreamingPass } from "./generatation-pass/draft-pass"
+import { EnhanceStreamingPass } from "./generatation-pass/enhance-pass"
+import { AnglePass } from "./generatation-pass/angle-pass"
+import { ResearchPass } from "./generatation-pass/research-pass"
+import { RAGPass } from "./generatation-pass/rag-pass"
+import { IdeaGenerationPass } from "./generatation-pass/ideapass"
+import { OutlinePass } from "./generatation-pass/outline-pass"
+import { ScoringPass } from "./generatation-pass/scoring-pass"
 
-
-export interface MultiPassGenRequest {
+export type AIGenerateAction = "multipass" | "singlepass" | "scoring" | "improve"
+export interface PostGenRequest {
+  action: AIGenerateAction
   // Post content
   title?: string
   body?: string
@@ -29,7 +38,7 @@ export interface MultiPassGenRequest {
   detailInstruction?: string
 }
 
-export interface MultiPassGenResponse {
+export interface PostGenResponse {
   sessionId: string
   title: string
   body: string
@@ -60,7 +69,7 @@ export type GenerationEvent =
   | { type: 'hashtags:ready'; hashtags: string }
   | { type: 'body:token'; pass: 'draft' | 'enhance'; content: string }
   | { type: 'pass:complete'; pass: PassType }
-  | { type: 'final'; result: MultiPassGenResponse }
+  | { type: 'final'; result: PostGenResponse }
   | { type: 'error'; message: string }
 
 export type PassType =
@@ -73,10 +82,11 @@ export type PassType =
   | 'enhance'
   | 'scoring'
 
-export interface PassContext extends Omit<MultiPassGenRequest, 'cache' | 'llm'> {
+export interface PassContext extends Omit<PostGenRequest, 'cache' | 'llm'> {
   sessionId: string
   cache: ICacheService;
   llm: ILLMService;
+  hasChange?: boolean;
 }
 
 
@@ -93,7 +103,7 @@ export interface GenerationPass {
 /**
  * Multi-pass content generation orchestrator
  */
-export class StreamMultiPassUseCase {
+export class StreamPostUseCase {
   constructor(
     private readonly llm: ILLMService,
     private readonly cache: ICacheService,
@@ -102,14 +112,15 @@ export class StreamMultiPassUseCase {
   /**
    * Execute multi-pass generation with streaming support
    */
-  async *execute(request: MultiPassGenRequest, generatioPass: GenerationPass[]): AsyncGenerator<GenerationEvent> {
+  async *execute(request: PostGenRequest, generatioPass?: GenerationPass[]): AsyncGenerator<GenerationEvent> {
 
     try {
 
       // Get or create session
       const sessionId = request.sessionId || `session_${Date.now()}`
-      this.cache.getOrCreateSession(sessionId, {
+      await this.cache.getOrCreateSession(sessionId, {
         idea: request.idea,
+        productId: request.product?.id
       })
 
       const ctx: PassContext = {
@@ -120,17 +131,41 @@ export class StreamMultiPassUseCase {
       }
       console.log("StreamMultiPassUseCase:", ctx);
 
-      for (const pass of generatioPass) {
-        const session = this.cache.get<GenerationSession>(sessionId)
-        if (!session) {
-          throw new Error(`Session not found for pass: ${pass.name}`)
-        }
-        yield* pass.execute(ctx, session)
+      // Execute passes with optimized session handling
+      let currentSession = await this.cache.get<GenerationSession>(sessionId)
+      if (!currentSession) {
+        throw new Error(`Session not found: ${sessionId}`)
       }
-      const finalSession = this.cache.get<GenerationSession>(sessionId)
+
+      // Calculate hasChange once for all passes
+      const hasChange =
+        (currentSession?.metadata.idea !== ctx.idea) ||
+        (currentSession?.metadata.productId !== ctx.product?.id)
+      const postGenerationPipeline = generatioPass || buildGenerationPipeline(request.action)
+      for (const pass of postGenerationPipeline) {
+        // Pass the current session and hasChange to avoid repeated cache calls
+        const passContext = { ...ctx, hasChange }
+        yield* pass.execute(passContext, currentSession)
+      }
+
+      // Update session if hasChange lastUpdatedAt after all passes complete
+      if (hasChange) {
+        await ctx.cache.updateSession(sessionId, {
+          metadata: {
+            ...currentSession.metadata,
+            idea: ctx.idea,
+            productId: ctx.product?.id,
+            startedAt: currentSession.metadata?.startedAt || new Date(),
+            lastUpdatedAt: new Date()
+          }
+        })
+      }
+
+      const finalSession = await this.cache.get<GenerationSession>(sessionId)
       if (!finalSession) {
         throw new Error('Final session not found')
       }
+
 
       // Build list of completed passes
       const passesCompleted: string[] = []
@@ -164,5 +199,42 @@ export class StreamMultiPassUseCase {
       const errorMessage = error instanceof Error ? error.message : String(error)
       yield { type: 'error', message: errorMessage }
     }
+  }
+}
+
+export function buildGenerationPipeline(
+  action: AIGenerateAction
+): GenerationPass[] {
+  switch (action) {
+    case 'multipass':
+      return [
+        new ResearchPass(),
+        new RAGPass(),
+        new IdeaGenerationPass(),
+        new AnglePass(),
+        new OutlinePass(),
+        new DraftStreamingPass(),
+        new EnhanceStreamingPass(),
+      ]
+
+    case 'singlepass':
+      return [
+        new OutlinePass(),
+        new DraftStreamingPass(),
+      ]
+
+    case 'scoring':
+      return [
+        new ScoringPass(),
+      ]
+
+    case 'improve':
+      return [
+        new EnhanceStreamingPass(),
+        new ScoringPass(),
+      ]
+
+    default:
+      throw new Error(`Unsupported action: ${action}`)
   }
 }

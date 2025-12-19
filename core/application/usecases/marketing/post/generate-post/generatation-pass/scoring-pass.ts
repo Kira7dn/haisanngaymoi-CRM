@@ -1,6 +1,6 @@
-import { GenerationSession, ILLMService } from "@/core/application/interfaces/marketing/post-gen-service"
+import { GenerationSession } from "@/core/application/usecases/marketing/post/generate-post/post-gen-service.interfaces"
 import { z } from "zod"
-import { GenerationEvent, GenerationPass, PassContext, PassType } from "./stream-gen-multi-pass"
+import { GenerationEvent, GenerationPass, PassContext, PassType } from "../stream-post-generationn";
 
 const ScoringPassSchema = z.object({
   score: z.number(),
@@ -18,9 +18,11 @@ const ScoringPassSchema = z.object({
 export class ScoringPass implements GenerationPass {
   readonly name: PassType = 'scoring'
 
-  async *execute(ctx: PassContext, session: GenerationSession): AsyncGenerator<GenerationEvent> {
-    const { title, body, hashtags, brand } = ctx;
-    const content = body || session.enhancePass?.enhanced || session.draftPass?.draft
+  async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
+    const { title, body, hashtags, brand, sessionId } = ctx;
+    const session = await ctx.cache.get<GenerationSession>(sessionId)
+
+    const content = body || session?.enhancePass?.enhanced || session?.draftPass?.draft
     const canSkip = !content
     if (canSkip) {
       yield { type: 'pass:skip', pass: 'scoring' }
@@ -80,7 +82,7 @@ export class ScoringPass implements GenerationPass {
       console.log('[Multi-Pass] Scoring parsed:', parsed)
       const scoring = ScoringPassSchema.parse(parsed)
 
-      ctx.cache.updateSession(ctx.sessionId, {
+      await ctx.cache.updateSession(sessionId, {
         scoringPass: {
           score: scoring.score,
           scoreBreakdown: scoring.scoreBreakdown,

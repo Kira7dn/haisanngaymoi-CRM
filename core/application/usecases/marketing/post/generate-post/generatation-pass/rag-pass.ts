@@ -2,29 +2,18 @@
  * RAG Pass - Retrieves relevant internal knowledge from vector database
  */
 
-import {
-    GenerationEvent,
-    GenerationPass,
-    PassContext,
-    PassType
-} from "./stream-gen-multi-pass"
 
-import { RetrieveKnowledgeUseCase } from "../retrieve-knowledge"
-import { GenerationSession } from "@/core/application/interfaces/marketing/post-gen-service";
+import { GenerationSession } from "@/core/application/usecases/marketing/post/generate-post/post-gen-service.interfaces";
+import { GenerationEvent, GenerationPass, PassContext, PassType } from "../stream-post-generationn";
+import { RetrieveKnowledgeUseCase } from "../../retrieve-knowledge";
 
 export class RAGPass implements GenerationPass {
     readonly name: PassType = 'rag'
 
     async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
-        const { idea, product, brand, contentType, sessionId } = ctx
-        const session = ctx.cache.get<GenerationSession>(sessionId);
-        // Điều kiện skip:
-        // - đã có ragPass trong session và idea không khác so với session.ragPass.initIdea hoặc product không khác so với session.ragPass.product (cần bổ sung logic set idea và pproduct vào session)
-        // - hoặc không có PerplexityService được cấu hình
-        const hasChange =
-            session?.ragPass?.initialIdea === idea ||
-            JSON.stringify(session?.ragPass?.product) !== JSON.stringify(product)
-        const canSkip = (!idea && session?.researchPass && !hasChange)
+        const { idea, product, brand, contentType, sessionId, hasChange } = ctx
+        const session = await ctx.cache.get<GenerationSession>(sessionId)
+        const canSkip = (!idea || (session?.ragPass && !hasChange))
         if (canSkip) {
             yield { type: 'pass:skip', pass: 'rag' }
             return
@@ -65,14 +54,16 @@ export class RAGPass implements GenerationPass {
                 similarity: chunk.similarity
             }));
 
-            ctx.cache.updateSession(ctx.sessionId, {
+            const updateData: any = {
                 ragPass: {
-                    initialIdea: idea || '',
                     product: product,
                     ragContext,
                     sources,
                 }
-            })
+            }
+
+            // Metadata is handled by orchestrator, just update pass data
+            await ctx.cache.updateSession(ctx.sessionId, updateData)
 
             console.log(
                 `[RAGPass] Retrieved ${rag.chunks.length} knowledge chunks`

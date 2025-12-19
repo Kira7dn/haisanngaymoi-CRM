@@ -4,35 +4,32 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 import { createStreamMultiPassUseCase } from '@/app/api/posts/gen-content/depends'
-import { DraftStreamingPass } from '@/core/application/usecases/marketing/post/generate-post/draft-pass'
-import { OutlinePass } from '@/core/application/usecases/marketing/post/generate-post/outline-pass'
-import { ScoringPass } from '@/core/application/usecases/marketing/post/generate-post/scoring-pass'
-import { GenerationPass, MultiPassGenRequest } from '@/core/application/usecases/marketing/post/generate-post/stream-gen-multi-pass'
+import { PostGenRequest } from '@/core/application/usecases/marketing/post/generate-post/stream-post-generationn'
 import { NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const params: MultiPassGenRequest = await request.json()
+    const params: PostGenRequest = await request.json()
 
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder()
-        const postGenerationPipeline: GenerationPass[] = [
-          // new ResearchPass(),        // Optional: External research via Perplexity
-          // new RAGPass(),             // Optional: Retrieve knowledge from vector DB
-          // new IdeaGenerationPass(),  // Generate content ideas
-          // new AnglePass(),           // Explore different angles
-          new OutlinePass(),         // Create content structure
-          new DraftStreamingPass(),  // Write initial draft (streaming)
-          // new EnhanceStreamingPass(), // Enhance and polish content (streaming)
-        ]
+        // const postGenerationPipeline: GenerationPass[] = [
+        //   // new ResearchPass(),        // Optional: External research via Perplexity
+        //   // new RAGPass(),             // Optional: Retrieve knowledge from vector DB
+        //   // new IdeaGenerationPass(),  // Generate content ideas
+        //   // new AnglePass(),           // Explore different angles
+        //   new OutlinePass(),         // Create content structure
+        //   new DraftStreamingPass(),  // Write initial draft (streaming)
+        //   // new EnhanceStreamingPass(), // Enhance and polish content (streaming)
+        // ]
         try {
           const useCase = await createStreamMultiPassUseCase()
 
           // Initial ping
           controller.enqueue(encoder.encode(': stream-start\n\n'))
 
-          for await (const event of useCase.execute(params, postGenerationPipeline)) {
+          for await (const event of useCase.execute(params)) {
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
             )

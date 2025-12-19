@@ -3,7 +3,7 @@
  * Retrieves list of resources for a user
  */
 
-import type { ResourceService } from "@/core/application/interfaces/marketing/resource-service"
+import type { ResourceService } from "@/core/application/usecases/marketing/post/resource/resource-service.interfaces"
 import type { Resource } from "@/core/domain/marketing/resource"
 
 export interface GetResourcesRequest {
@@ -19,7 +19,7 @@ export interface GetResourcesResponse {
  * Fetches all resources for a specific user
  */
 export class GetResourcesUseCase {
-  constructor(private resourceService: ResourceService) {}
+  constructor(private resourceService: ResourceService) { }
 
   async execute(request: GetResourcesRequest): Promise<GetResourcesResponse> {
     const resources = await this.resourceService.getAll(request.userId)

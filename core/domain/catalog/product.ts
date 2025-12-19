@@ -5,7 +5,7 @@ export interface SizeOption {
 }
 
 export interface ProductPlain {
-  id: number;
+  id: string;
   categoryId: number;
   name: string;
   price: number;
@@ -21,7 +21,7 @@ export interface ProductPlain {
 
 export class Product {
   constructor(
-    public readonly id: number,
+    public readonly id: string,
     public categoryId: number,
     public name: string,
     public price: number,

@@ -3,16 +3,14 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 import { createStreamMultiPassUseCase } from '@/app/api/posts/gen-content/depends'
-import { ScoringPass } from '@/core/application/usecases/marketing/post/generate-post/scoring-pass'
-import {
-  GenerationPass,
-  MultiPassGenRequest,
-} from '@/core/application/usecases/marketing/post/generate-post/stream-gen-multi-pass'
+import { ScoringPass } from '@/core/application/usecases/marketing/post/generate-post/generatation-pass/scoring-pass'
+import { GenerationPass, PostGenRequest } from '@/core/application/usecases/marketing/post/generate-post/stream-post-generationn'
+
 import { NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const params: MultiPassGenRequest = await request.json()
+    const params: PostGenRequest = await request.json()
 
     const postGenerationPipeline: GenerationPass[] = [
       new ScoringPass(),

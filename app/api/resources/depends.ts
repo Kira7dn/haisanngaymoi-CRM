@@ -1,5 +1,5 @@
 import { ResourceRepository } from "@/infrastructure/repositories/marketing/resource-repo"
-import type { ResourceService } from "@/core/application/interfaces/marketing/resource-service"
+import type { ResourceService } from "@/core/application/usecases/marketing/post/resource/resource-service.interfaces"
 
 import { UploadResourceUseCase } from "@/core/application/usecases/marketing/post/resource/upload-resource"
 import { GetResourcesUseCase } from "@/core/application/usecases/marketing/post/resource/get-resources"

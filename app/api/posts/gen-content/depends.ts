@@ -1,14 +1,13 @@
-import { SinglePassGenUseCase } from "@/core/application/usecases/marketing/post/generate-post/generate-post-single-pass"
 import { LLMService } from "@/infrastructure/adapters/llm-service"
-import { CacheService } from "@/infrastructure/adapters/cache-service"
 import { BrandMemoryRepository } from "@/infrastructure/repositories/brand-memory-repo"
-import { PerplexityService as PerplexityServiceImpl } from "@/infrastructure/adapters/perplexity-service"
+import { PerplexityService as PerplexityServiceImpl } from "@/core/application/usecases/marketing/post/generate-post/perplexity.service"
 
-import type { ILLMService } from "@/core/application/interfaces/marketing/post-gen-service"
-import type { ICacheService } from "@/core/application/interfaces/marketing/post-gen-service"
+import type { ILLMService } from "@/core/application/usecases/marketing/post/generate-post/post-gen-service.interfaces"
+import type { ICacheService } from "@/core/application/usecases/marketing/post/generate-post/post-gen-service.interfaces"
 import type { BrandMemoryService } from "@/core/application/interfaces/brand-memory-service"
-import { StreamMultiPassUseCase } from "@/core/application/usecases/marketing/post/generate-post/stream-gen-multi-pass"
+import { StreamPostUseCase } from "@/core/application/usecases/marketing/post/generate-post/stream-post-generationn"
 import { PerplexityService, ResearchTopicUseCase } from "@/core/application/usecases/marketing/post/research-topic"
+import { RedisCacheService } from "@/core/application/usecases/marketing/post/generate-post/redis-cache.service"
 
 /**
  * ======================================================
@@ -18,8 +17,7 @@ import { PerplexityService, ResearchTopicUseCase } from "@/core/application/usec
 let llmServiceInstance: ILLMService | null = null
 let cacheServiceInstance: ICacheService | null = null
 let brandMemoryRepoInstance: BrandMemoryService | null = null
-let streamMultiPassUseCaseInstance: StreamMultiPassUseCase | null = null
-let singlePassGenUseCaseInstance: SinglePassGenUseCase | null = null
+let streamMultiPassUseCaseInstance: StreamPostUseCase | null = null
 let perplexityServiceInstance: PerplexityService | null = null
 let researchTopicUseCaseInstance: ResearchTopicUseCase | null = null
 
@@ -37,7 +35,7 @@ const getLLMService = (): ILLMService => {
 
 const getCacheService = (): ICacheService => {
     if (!cacheServiceInstance) {
-        cacheServiceInstance = new CacheService()
+        cacheServiceInstance = new RedisCacheService()
     }
     return cacheServiceInstance
 }
@@ -61,12 +59,12 @@ const getPerplexityService = (): PerplexityService => {
  * UseCases
  * ======================================================
  */
-export const createStreamMultiPassUseCase = async (): Promise<StreamMultiPassUseCase> => {
+export const createStreamMultiPassUseCase = async (): Promise<StreamPostUseCase> => {
     if (!streamMultiPassUseCaseInstance) {
         const llmService = getLLMService()
         const cacheService = getCacheService()
 
-        streamMultiPassUseCaseInstance = new StreamMultiPassUseCase(
+        streamMultiPassUseCaseInstance = new StreamPostUseCase(
             llmService,
             cacheService,
         )
@@ -74,18 +72,6 @@ export const createStreamMultiPassUseCase = async (): Promise<StreamMultiPassUse
     return streamMultiPassUseCaseInstance
 }
 
-export const createSinglePassGenUseCase = async (): Promise<SinglePassGenUseCase> => {
-    if (!singlePassGenUseCaseInstance) {
-        const llmService = getLLMService()
-        const brandMemoryRepo = getBrandMemoryRepo()
-
-        singlePassGenUseCaseInstance = new SinglePassGenUseCase(
-            llmService,
-            brandMemoryRepo
-        )
-    }
-    return singlePassGenUseCaseInstance
-}
 
 export const createResearchTopicUseCase = async (): Promise<ResearchTopicUseCase> => {
     if (!researchTopicUseCaseInstance) {
