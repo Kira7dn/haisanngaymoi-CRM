@@ -62,16 +62,14 @@ export interface GenerationSession {
     }
     outlinePass?: {
         outline: string
-        sections: string[]
         title: string
+        hashtags?: string
     }
     draftPass?: {
         draft: string
-        wordCount: number
     }
     enhancePass?: {
         enhanced: string
-        improvements: string[]
     }
     scoringPass?: {
         score: number

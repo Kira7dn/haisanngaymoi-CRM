@@ -1,161 +1,79 @@
-import { ILLMService } from "@/core/application/interfaces/marketing/post-gen-service"
-import { MultiPassGenRequest } from "../gen-multi-pass"
-import { z } from "zod"
 import { GenerationEvent, GenerationPass, PassContext, PassType } from "./stream-gen-multi-pass";
-
-const DraftPassSchema = z.object({
-    title: z.string(),
-    content: z.string(),
-})
-
-export async function draftPass(
-    llm: ILLMService,
-    request: MultiPassGenRequest,
-    brandContext: string,
-    outline: string
-): Promise<{ title: string; content: string }> {
-    const prompt = `Write the full content based on this outline.
-
-      Brand Context:
-      ${brandContext}
-
-      Outline:
-      ${outline}
-
-      Requirements:
-      - Write engaging, natural content
-      - Match the brand voice and style
-      - Include a clear call-to-action
-      - Optimize for ${request.platform || "social media"}
-
-      Return ONLY a valid JSON object with this exact format:
-      {
-        "title": "Post title as a single string (10-200 characters)",
-        "content": "Full post content as a single string (50-3000 characters)"
-      }
-
-      Do not include any markdown, code blocks, or additional text. Only return the raw JSON object.
-    `
-
-    const response = await llm.generateCompletion({
-        systemPrompt: "You are a professional content writer. Always respond with valid JSON only. Never use markdown code blocks.",
-        prompt,
-        temperature: 0.7,
-        maxTokens: 1500,
-    })
-
-    // Clean response content
-    let cleanContent = response.content.trim()
-    if (cleanContent.startsWith('```json')) {
-        cleanContent = cleanContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    } else if (cleanContent.startsWith('```')) {
-        cleanContent = cleanContent.replace(/```\n?/g, '').trim()
-    }
-
-    try {
-        const parsed = JSON.parse(cleanContent)
-        console.log('[Multi-Pass] Draft pass parsed:', { titleLength: parsed.title?.length, contentLength: parsed.content?.length })
-        return DraftPassSchema.parse(parsed)
-    } catch (error) {
-        console.error('[Multi-Pass] Failed to parse draft response:', cleanContent)
-        throw new Error(`Invalid JSON response from draft pass: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-}
-
-/**
-   * Draft pass with streaming support
-   */
-export async function* draftPassStreaming(
-    llm: ILLMService,
-    request: MultiPassGenRequest,
-    brandContext: string,
-    outline: string
-): AsyncGenerator<string> {
-    const prompt = `Write the full content based on this outline.
-
-      Brand Context:
-      ${brandContext}
-
-      Outline:
-      ${outline}
-
-      Requirements:
-      - Write engaging, natural content
-      - Match the brand voice and style
-      - Include a clear call-to-action
-      - Optimize for ${request.platform || "social media"}
-
-      Return ONLY a valid JSON object with this exact format:
-      {
-        "title": "Post title as a single string (10-200 characters)",
-        "content": "Full post content as a single string (50-3000 characters)"
-      }
-
-      Do not include any markdown, code blocks, or additional text. Only return the raw JSON object.
-    `
-
-    for await (const token of llm.generateStreamingCompletion({
-        systemPrompt: "You are a professional content writer. Always respond with valid JSON only. Never use markdown code blocks.",
-        prompt,
-        temperature: 0.7,
-        maxTokens: 1500,
-    })) {
-        yield token
-    }
-}
+import { GenerationSession } from "@/core/application/interfaces/marketing/post-gen-service";
 
 export class DraftStreamingPass implements GenerationPass {
-    readonly name: PassType = 'draft'
+    readonly name: PassType = 'draft';
 
-    canSkip(session: any): boolean {
-        return Boolean(session.draftPass)
-    }
+    private buildPrompt(ctx: PassContext, session?: GenerationSession): string {
+        const { title, body, brand, product: selectedProduct, contentInstruction } = ctx;
+        const officialTitle = session?.outlinePass?.title || title;
 
-    async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
-        const session = ctx.cache.get(ctx.sessionId)
-        yield { type: 'pass:start', pass: 'draft' }
+        // Brand info
+        const brandInfo = brand ? [
+            brand.brandDescription && `Brand Overview: ${brand.brandDescription}`,
+            brand.brandVoice && `Brand Voice: ${JSON.stringify(brand.brandVoice)}`,
+            brand.contentStyle && `Content Style: ${brand.contentStyle}`,
+            brand.language && `Language: ${brand.language}`,
+            brand.keyPoints?.length ? `Key Points:\n- ${brand.keyPoints.join("\n- ")}` : '',
+            brand.ctaLibrary?.length ? `CTA Library:\n- ${brand.ctaLibrary.join("\n- ")}` : '',
+        ].filter(Boolean).join("\n") : '';
 
-        const prompt = `Write the full content based on this outline.
+        // Product info
+        const productInfo = selectedProduct?.url ? [
+            "Product to include in content (if applicable):",
+            selectedProduct.name ? `- Name: ${selectedProduct.name}` : '',
+            selectedProduct.detail ? `- Details: ${selectedProduct.detail}` : '',
+            selectedProduct.url ? `- URL: ${selectedProduct.url}` : ''
+        ].filter(Boolean).join("\n") : '';
 
-            Brand Context:
-            ${ctx.brand}
+        return `
+            Write the full content based on this outline.
 
-            Outline:
-            ${session.outlinePass?.outline}
+            ${officialTitle ? `Title: ${officialTitle}` : ''}
+            ${body ? `Initial content: ${body}` : ''}
+
+            ${brandInfo}
+            ${productInfo}
+            ${session?.outlinePass?.outline ? `Outline: ${session.outlinePass.outline}` : ''}
+            ${contentInstruction ? `User Instruction: ${contentInstruction}` : ''}
 
             Requirements:
             - Write engaging, natural content
-            - Match the brand voice and style
+            - Follow the brand voice and style
             - Include a clear call-to-action
-            - Optimize for ${ctx.request.platform || "social media"}
+            - Return ONLY plain text, no markdown or extra formatting
+            `.trim();
+    }
 
-            Return ONLY a valid JSON object with this exact format:
-            {
-            "title": "Post title as a single string (10-200 characters)",
-            "content": "Full post content as a single string (50-3000 characters)"
-            }
+    async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
+        const session = ctx.cache.get<GenerationSession>(ctx.sessionId);
+        const canSkip = session?.draftPass;
+        if (canSkip) {
+            yield { type: 'pass:skip', pass: 'draft' }
+            return
+        }
+        yield { type: 'pass:start', pass: this.name };
 
-            Do not include any markdown, code blocks, or additional text. Only return the raw JSON object.
-        `
+        const prompt = this.buildPrompt(ctx, session);
 
-        let buffer = ''
+        let buffer = '';
         for await (const token of ctx.llm.generateStreamingCompletion({
-            systemPrompt: "You are a professional content writer. Always respond with valid JSON only. Never use markdown code blocks.",
+            systemPrompt: "You are a professional content writer. Always respond with valid string only. Never use markdown code blocks.",
             prompt,
             temperature: 0.7,
             maxTokens: 1500,
         })) {
-            buffer += token
-            yield { type: 'body:token', pass: 'draft', content: token }
+            buffer += token;
+            yield { type: 'body:token', pass: "draft", content: token };
         }
 
+        // Chỉ lưu content body vào session
         ctx.cache.updateSession(ctx.sessionId, {
             draftPass: {
                 draft: buffer,
-                wordCount: buffer.split(/\s+/).length,
             },
-        })
+        });
 
-        yield { type: 'pass:complete', pass: 'draft' }
+        yield { type: 'pass:complete', pass: this.name };
     }
 }

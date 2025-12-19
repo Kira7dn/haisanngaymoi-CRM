@@ -31,21 +31,14 @@ const initialBrand: BrandMemory = {
   brandVoice: {
     tone: 'Giọng văn thương hiệu',
     writingPatterns: [
-      'Kể chuyện người thật',
-      'Ưu tiên thông tin chính xác',
-      'Tránh quảng cáo thổi phồng',
-    ],
+      "Đặt câu hỏi về vấn đề hiện tại của doanh nghiệp",
+      "Mô tả kịch bản vận hành thực tế",
+      "Kết luận bằng định hướng hành động hoặc gợi ý giải pháp"
+    ]
   },
   ctaLibrary: [
-    'Nhắn tin nhận giá tươi hôm nay',
-    'Đặt hàng nhanh 60s',
-    'Gọi ngay để được tư vấn',
   ],
   keyPoints: [
-    'Đánh bắt trong ngày',
-    'Vận chuyển 0-4 độ C',
-    'Hoàn toàn không ướp đá',
-    'Cam kết tươi sống',
   ],
   contentsInstruction: '',
   selectedProductIds: [],

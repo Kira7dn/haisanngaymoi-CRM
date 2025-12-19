@@ -5,16 +5,8 @@
  */
 
 import { GenerationSession, ILLMService, ICacheService } from "@/core/application/interfaces/marketing/post-gen-service"
-import { DraftStreamingPass } from "./draft-pass"
-import { EnhanceStreamingPass } from "./enhance-pass"
 import { Product } from "@/core/domain/catalog/product"
 import { BrandMemory } from "@/core/domain/brand-memory"
-import { RAGPass } from "./rag-pass"
-import { IdeaGenerationPass } from "./ideapass"
-import { AnglePass } from "./angle-pass"
-import { OutlinePass } from "./outline-pass"
-import { ScoringPass } from "./scoring-pass"
-import { ResearchPass } from "./research-pass"
 
 
 export interface MultiPassGenRequest {
@@ -45,7 +37,6 @@ export interface MultiPassGenResponse {
     ideasGenerated: number
     anglesExplored: number
     passesCompleted: string[]
-    improvements: string[]
     score?: number
     scoreBreakdown?: {
       clarity: number
@@ -64,7 +55,9 @@ export interface MultiPassGenResponse {
  */
 export type GenerationEvent =
   | { type: 'pass:start'; pass: PassType }
+  | { type: 'pass:skip'; pass: PassType }
   | { type: 'title:ready'; title: string }
+  | { type: 'hashtags:ready'; hashtags: string }
   | { type: 'body:token'; pass: 'draft' | 'enhance'; content: string }
   | { type: 'pass:complete'; pass: PassType }
   | { type: 'final'; result: MultiPassGenResponse }
@@ -89,35 +82,13 @@ export interface PassContext extends Omit<MultiPassGenRequest, 'cache' | 'llm'> 
 
 export interface GenerationPass {
   readonly name: PassType
-  canSkip(session: any): boolean
-  execute(ctx: PassContext): AsyncGenerator<GenerationEvent, void, unknown>
+  execute(ctx: PassContext, session: GenerationSession): AsyncGenerator<GenerationEvent, void, unknown>
 }
 
 
 // =========================
 // 4. Pipeline Registry
 // =========================
-
-/**
- * Complete post generation pipeline with all passes
- * Order: Research → RAG → Idea → Angle → Outline → Draft → Enhance → Scoring
- *
- * Optional passes (skipped if not configured):
- * - ResearchPass: Requires PERPLEXITY_API_KEY
- * - RAGPass: Requires QDRANT_URL and QDRANT_API_KEY
- *
- * All passes implement canSkip() to check if they should run
- */
-export const postGenerationPipeline: GenerationPass[] = [
-  new ResearchPass(),        // Optional: External research via Perplexity
-  new RAGPass(),             // Optional: Retrieve knowledge from vector DB
-  new IdeaGenerationPass(),  // Generate content ideas
-  new AnglePass(),           // Explore different angles
-  new OutlinePass(),         // Create content structure
-  new DraftStreamingPass(),  // Write initial draft (streaming)
-  new EnhanceStreamingPass(), // Enhance and polish content (streaming)
-  new ScoringPass(),         // Score content quality
-]
 
 /**
  * Multi-pass content generation orchestrator
@@ -131,7 +102,7 @@ export class StreamMultiPassUseCase {
   /**
    * Execute multi-pass generation with streaming support
    */
-  async *execute(request: MultiPassGenRequest): AsyncGenerator<GenerationEvent> {
+  async *execute(request: MultiPassGenRequest, generatioPass: GenerationPass[]): AsyncGenerator<GenerationEvent> {
 
     try {
 
@@ -149,10 +120,12 @@ export class StreamMultiPassUseCase {
       }
       console.log("StreamMultiPassUseCase:", ctx);
 
-      for (const pass of postGenerationPipeline) {
-        const session = this.cache.get(sessionId)
-        if (pass.canSkip(session)) continue
-        yield* pass.execute(ctx)
+      for (const pass of generatioPass) {
+        const session = this.cache.get<GenerationSession>(sessionId)
+        if (!session) {
+          throw new Error(`Session not found for pass: ${pass.name}`)
+        }
+        yield* pass.execute(ctx, session)
       }
       const finalSession = this.cache.get<GenerationSession>(sessionId)
       if (!finalSession) {
@@ -174,13 +147,12 @@ export class StreamMultiPassUseCase {
         type: 'final',
         result: {
           sessionId,
-          title: finalSession.outlinePass?.title || 'Generated Content',
-          body: finalSession.enhancePass?.enhanced ?? finalSession.draftPass?.draft ?? '',
+          title: finalSession.outlinePass?.title || ctx.title || 'Generated Content',
+          body: finalSession.enhancePass?.enhanced || finalSession.draftPass?.draft || ctx.body || '',
           metadata: {
             ideasGenerated: finalSession.ideaPass?.ideas.length || 0,
             anglesExplored: finalSession.anglePass?.angles.length || 0,
             passesCompleted,
-            improvements: finalSession.enhancePass?.improvements || [],
             score: finalSession.scoringPass?.score,
             scoreBreakdown: finalSession.scoringPass?.scoreBreakdown,
             weaknesses: finalSession.scoringPass?.weaknesses,

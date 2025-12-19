@@ -25,7 +25,6 @@ export default function AIGenerationSection() {
   const [similarityWarning, setSimilarityWarning] = useState<string | undefined>(undefined)
   const [isGenerating, setIsGenerating] = useState(false)
   const { brand } = usePostSettingStore()
-  console.log("AIGenerationSection:", brand);
 
   // Generate session ID for this generation session
   const sessionId = useMemo(() => {
@@ -80,8 +79,6 @@ export default function AIGenerationSection() {
 
       // Reset UI
       setProgress([])
-      setField('title', '')
-      setField('body', '')
       setSimilarityWarning(undefined)
 
       let draftBuffer = ''
@@ -98,10 +95,20 @@ export default function AIGenerationSection() {
             setProgress(prev => [...prev, '📝 Title generated'])
             break
 
+          // ✅ HASHTAGS COMES EARLY  
+          case 'hashtags:ready':
+            setField('hashtags', event.hashtags)
+            setProgress(prev => [...prev, '🏷️ Hashtags generated'])
+            break
+
           case 'pass:start':
             if (event.pass === 'draft') draftBuffer = ''
             if (event.pass === 'enhance') enhanceBuffer = ''
             setProgress(prev => [...prev, `▶️ Starting ${event.pass}...`])
+            break
+
+          case 'pass:skip':
+            setProgress(prev => [...prev, `▶️ Skipping ${event.pass}...`])
             break
 
           case 'body:token':
@@ -120,13 +127,6 @@ export default function AIGenerationSection() {
             break
 
           case 'final':
-            // Final consistency overwrite
-            if (event.result.title) {
-              setField('title', event.result.title)
-            }
-            if (event.result.body) {
-              setField('body', event.result.body)
-            }
             setProgress(prev => [...prev, '🎉 Generation completed!'])
             break
 
@@ -153,7 +153,7 @@ export default function AIGenerationSection() {
           <h3 className="font-semibold">AI Content Generation</h3>
         </div>
       </div>
-      <div className="flex w-full flex-col gap-6">
+      <div className="flex w-full flex-col gap-6" suppressHydrationWarning>
         <Tabs defaultValue="account">
           <TabsList>
             <TabsTrigger value="account">

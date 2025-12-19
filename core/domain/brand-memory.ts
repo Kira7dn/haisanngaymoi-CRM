@@ -99,3 +99,30 @@ export function validateBrandMemory(memory: Partial<BrandMemory>): string[] {
 
   return errors
 }
+
+export function buildBrandContext(brand: BrandMemory | undefined): string {
+  if (!brand) return ""
+  return `
+        Brand overview:
+        ${brand.brandDescription}
+
+        Niche:
+        ${brand.niche}
+
+        Brand voice:
+        ${JSON.stringify(brand.brandVoice)}
+
+        Content style:
+        ${brand.contentStyle}
+
+        Language:
+        ${brand.language}
+
+        Key value points:
+        - ${brand.keyPoints.join("\n- ")}
+
+        ${brand.contentsInstruction
+      ? `Additional brand content rules:\n${brand.contentsInstruction}`
+      : ""}
+        `.trim()
+}

@@ -1,5 +1,4 @@
 import { SinglePassGenUseCase } from "@/core/application/usecases/marketing/post/generate-post/generate-post-single-pass"
-import { ResearchTopicUseCase, PerplexityService } from "@/core/application/usecases/marketing/post/generate-post/research-topic"
 import { LLMService } from "@/infrastructure/adapters/llm-service"
 import { CacheService } from "@/infrastructure/adapters/cache-service"
 import { BrandMemoryRepository } from "@/infrastructure/repositories/brand-memory-repo"
@@ -9,6 +8,7 @@ import type { ILLMService } from "@/core/application/interfaces/marketing/post-g
 import type { ICacheService } from "@/core/application/interfaces/marketing/post-gen-service"
 import type { BrandMemoryService } from "@/core/application/interfaces/brand-memory-service"
 import { StreamMultiPassUseCase } from "@/core/application/usecases/marketing/post/generate-post/stream-gen-multi-pass"
+import { PerplexityService, ResearchTopicUseCase } from "@/core/application/usecases/marketing/post/research-topic"
 
 /**
  * ======================================================

@@ -77,8 +77,6 @@ export default function PostForm({
     }),
     [state, post, products, actions, isDirty, setField, updateMultipleFields]
   )
-  console.log("state:", state);
-
   return (
     <PostFormProvider value={contextValue}>
       <PostFormView />

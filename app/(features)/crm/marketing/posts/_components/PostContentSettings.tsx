@@ -9,6 +9,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@shared/ui/dialog'
@@ -143,6 +144,9 @@ export default function PostContentSettings({ open, onClose }: PostContentSettin
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Brand Settings</DialogTitle>
+          <DialogDescription>
+            Make changes to your setting for AI Generation.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">

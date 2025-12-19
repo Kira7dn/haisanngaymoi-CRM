@@ -14,7 +14,7 @@ export interface PerplexitySearchResult {
 export class PerplexityService {
   private readonly apiKey: string
   private readonly baseURL = "https://api.perplexity.ai"
-  private readonly defaultModel = "llama-3.1-sonar-large-128k-online"
+  private readonly defaultModel = "sonar"
 
   constructor() {
     const key = process.env.PERPLEXITY_API_KEY

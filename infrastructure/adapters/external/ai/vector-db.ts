@@ -77,26 +77,60 @@ export class VectorDBService {
     )
 
     if (!exists) {
+      console.log('[VectorDB] Creating collection:', this.collectionName)
       await this.client.createCollection(this.collectionName, {
         vectors: { size: this.vectorSize, distance: "Cosine" },
       })
+    }
 
-      await Promise.all([
-        this.index("embeddingCategory", "keyword"),
-        this.index("postId", "keyword"),
-        this.index("resourceId", "keyword"),
-        this.index("productId", "integer"),
-      ])
+    // ✅ Always ensure indexes exist (not just on creation)
+    // This handles cases where collection exists but indexes are missing
+    await this.ensureIndexes()
+
+    // Log collection info for debugging
+    try {
+      const info = await this.client.getCollection(this.collectionName)
+      console.log('[VectorDB] Collection info:', {
+        collection: this.collectionName,
+        points_count: info.points_count,
+        indexed_vectors_count: info.indexed_vectors_count,
+        status: info.status
+      })
+    } catch (error) {
+      console.warn('[VectorDB] Could not fetch collection info:', error)
     }
 
     this.initialized = true
   }
 
-  private index(field: string, type: "keyword" | "integer") {
-    return this.client.createPayloadIndex(this.collectionName, {
-      field_name: field,
-      field_schema: { type },
-    })
+  /**
+   * Ensure all required indexes exist
+   * Safe to call multiple times - Qdrant will skip if index already exists
+   */
+  private async ensureIndexes(): Promise<void> {
+    const indexes = [
+      { field: "embeddingCategory", type: "keyword" as const },
+      { field: "postId", type: "keyword" as const },
+      { field: "resourceId", type: "keyword" as const },
+      { field: "productId", type: "integer" as const },
+    ]
+
+    await Promise.all(
+      indexes.map(async ({ field, type }) => {
+        try {
+          await this.client.createPayloadIndex(this.collectionName, {
+            field_name: field,
+            field_schema: { type },
+          })
+          console.log(`[VectorDB] Index created/verified: ${field} (${type})`)
+        } catch (error: any) {
+          // Ignore "already exists" errors
+          if (!error.message?.includes('already exists')) {
+            console.warn(`[VectorDB] Failed to create index for ${field}:`, error.message)
+          }
+        }
+      })
+    )
   }
 
   /**
@@ -146,35 +180,85 @@ export class VectorDBService {
   ): Promise<SimilarityResult[]> {
     await this.bootstrap()
 
+    // Validate vector dimension
+    if (vector.length !== this.vectorSize) {
+      throw new Error(
+        `Vector dimension mismatch: expected ${this.vectorSize}, got ${vector.length}`
+      )
+    }
+
     const must: any[] = []
 
-    Object.entries(options.filter ?? {}).forEach(([key, value]) => {
-      if (value !== undefined) {
-        must.push({ key, match: { value } })
-      }
-    })
+    // Build Qdrant filter conditions with correct schema
+    // Reference: https://qdrant.tech/documentation/concepts/filtering/
+    if (options.filter) {
+      Object.entries(options.filter).forEach(([key, value]) => {
+        if (value !== undefined) {
+          // Handle array values (e.g., multiple embeddingCategory)
+          if (Array.isArray(value)) {
+            must.push({
+              key,
+              match: { any: value }
+            })
+          } else {
+            // Single value match
+            must.push({
+              key,
+              match: { value }
+            })
+          }
+        }
+      })
+    }
 
-    const res = await this.client.search(this.collectionName, {
+    const params: any = {
       vector,
       limit: options.limit ?? 5,
       score_threshold: options.scoreThreshold ?? 0.7,
-      filter: must.length ? { must } : undefined,
       with_payload: true,
-    })
+    }
 
-    return res.map(r => ({
-      id: String(r.id),
-      content: r.payload!.content as string,
-      score: r.score,
-      metadata: {
-        embeddingCategory: r.payload!.embeddingCategory as EmbeddingCategory,
-        postId: r.payload!.postId as string | undefined,
-        productId: r.payload!.productId as number | undefined,
-        resourceId: r.payload!.resourceId as string | undefined,
-        title: r.payload!.title as string | undefined,
-        chunkIndex: r.payload!.chunkIndex as number | undefined,
-      },
-    }))
+    // Only add filter if we have conditions
+    if (must.length > 0) {
+      params.filter = { must }
+    }
+
+    console.log('[VectorDB] Search params:', JSON.stringify({
+      ...params,
+      vector: `[${vector.length} dimensions]` // Don't log full vector
+    }, null, 2))
+
+    try {
+      const res = await this.client.search(this.collectionName, params)
+      console.log('[VectorDB] Search results:', res.length, 'items')
+
+      return res.map(r => ({
+        id: String(r.id),
+        content: r.payload!.content as string,
+        score: r.score,
+        metadata: {
+          embeddingCategory: r.payload!.embeddingCategory as EmbeddingCategory,
+          postId: r.payload!.postId as string | undefined,
+          productId: r.payload!.productId as number | undefined,
+          resourceId: r.payload!.resourceId as string | undefined,
+          title: r.payload!.title as string | undefined,
+          chunkIndex: r.payload!.chunkIndex as number | undefined,
+        },
+      }))
+    } catch (error: any) {
+      console.error('[VectorDB] Search failed:', {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        url: error.url,
+        data: error.data,
+        params: {
+          ...params,
+          vector: `[${vector.length} dimensions]`
+        }
+      })
+      throw error
+    }
   }
 
 

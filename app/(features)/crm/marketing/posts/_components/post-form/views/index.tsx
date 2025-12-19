@@ -58,7 +58,7 @@ export default function PostFormView() {
       <AIGenerationSection />
 
       {/* ===== Quality Score ===== */}
-      {/* <QualityScoreDisplay /> */}
+      <QualityScoreDisplay />
 
       {/* ===== Content ===== */}
       <ContentInputSection />

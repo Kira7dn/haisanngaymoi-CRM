@@ -58,3 +58,27 @@ export async function* streamMultiPassGeneration(
     reader.releaseLock()
   }
 }
+
+export async function scoringGeneration(
+  params: MultiPassGenRequest
+): Promise<GenerationEvent[]> {
+  const response = await fetch('/api/posts/gen-content/scoring', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.statusText}`)
+  }
+
+  const result = await response.json()
+
+  if (!result?.success) {
+    throw new Error(result?.error ?? 'Unknown error')
+  }
+
+  return result.data as GenerationEvent[]
+}

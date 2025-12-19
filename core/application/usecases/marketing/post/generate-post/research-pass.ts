@@ -12,16 +12,21 @@ import {
 
 import { PerplexityService } from "@/infrastructure/adapters/perplexity-service"
 import { ResearchTopicUseCase } from "../research-topic"
+import { GenerationSession } from "@/core/application/interfaces/marketing/post-gen-service"
 
 export class ResearchPass implements GenerationPass {
   readonly name: PassType = 'research'
 
-  canSkip(session: any): boolean {
-    return Boolean(session?.researchPass) || !PerplexityService.isConfigured()
-  }
 
   async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
     const { idea, product, brand, contentType, sessionId } = ctx
+    const session = ctx.cache.get<GenerationSession>(ctx.sessionId);
+
+    const canSkip = session?.researchPass || !PerplexityService.isConfigured()
+    if (canSkip) {
+      yield { type: 'pass:skip', pass: 'research' }
+      return
+    }
 
     if (!idea) {
       console.log('[ResearchPass] Skipping - no idea')

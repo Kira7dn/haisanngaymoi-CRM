@@ -15,14 +15,12 @@ import { GenerationSession } from "@/core/application/interfaces/marketing/post-
 export class RAGPass implements GenerationPass {
     readonly name: PassType = 'rag'
 
-    canSkip(session: any): boolean {
-        // Static skip: already executed OR system not configured
-        return Boolean(session?.ragPass)
-    }
-
     async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
         const session = ctx.cache.get<GenerationSession>(ctx.sessionId);
-
+        if (!session) {
+            yield { type: 'pass:skip', pass: 'rag' }
+            return
+        }
         // 🔒 Gate condition (dynamic)
         if (!shouldRunRAG(ctx, session)) {
             console.log('[RAGPass] Skipped by gate condition')

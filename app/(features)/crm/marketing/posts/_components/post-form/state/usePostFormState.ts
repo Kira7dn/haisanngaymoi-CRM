@@ -8,7 +8,7 @@ export interface PostFormState {
     // ===== form fields =====
     title: string
     body: string
-    media: PostMedia | null
+    media: PostMedia | undefined
     hashtags: string
     platforms: PlatformMetadata[]
     contentType: ContentType

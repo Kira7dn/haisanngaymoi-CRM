@@ -1,77 +1,118 @@
 import { z } from "zod"
-import { GenerationEvent, GenerationPass, MultiPassGenRequest, PassContext, PassType } from "./stream-gen-multi-pass"
+import {
+    GenerationEvent,
+    GenerationPass,
+    PassContext,
+    PassType,
+} from "./stream-gen-multi-pass"
+import { GenerationSession } from "@/core/application/interfaces/marketing/post-gen-service"
 
+/**
+ * =========================
+ * Schema
+ * =========================
+ */
 const AnglePassSchema = z.object({
     angles: z.array(z.string()).min(3),
 })
 
-export class AnglePass implements GenerationPass {
-    readonly name: PassType = 'angle'
 
-    canSkip(session: any): boolean {
-        return Boolean(session.anglePass)
-    }
+/**
+ * =========================
+ * Angle Generation Pass
+ * =========================
+ */
+export class AnglePass implements GenerationPass {
+    readonly name: PassType = "angle"
 
     async *execute(ctx: PassContext): AsyncGenerator<GenerationEvent> {
-        const session = ctx.cache.get(ctx.sessionId)
+        yield { type: "pass:start", pass: "angle" }
 
-        if (!session.ideaPass?.selectedIdea) {
-            throw new Error('Angle pass requires idea pass to be completed first')
+        const { brand, product, sessionId } = ctx
+        const session = ctx.cache.get<GenerationSession>(sessionId)
+        const canSkip = session?.anglePass && session.anglePass.angles?.length >= 3
+        if (canSkip) {
+            yield { type: "pass:skip", pass: "angle" }
+            return
+        }
+        if (!session?.ideaPass?.selectedIdea) {
+            throw new Error("AnglePass requires IdeaGenerationPass to be completed first")
         }
 
-        yield { type: 'pass:start', pass: 'angle' }
+        const prompt = `
+            You are a senior content strategist.
 
-        const prompt = `Generate 3 different angles for this content idea.
+            Your task is to explore DIFFERENT ANGLES for the same content idea.
+            An angle defines *how* the idea is framed, not what the idea is.
 
-            Brand Context:
-            ${ctx.brandContext}
+            ${brand?.brandDescription ? `Brand context (for alignment only): ${brand?.brandDescription}` : ""}
 
-            Idea: ${session.ideaPass.selectedIdea}
+            Core content idea:
+            ${session.ideaPass.selectedIdea}
 
-            Requirements:
-            - Each angle must approach the idea differently
-            - Consider different audience perspectives
-            - Make angles compelling and unique
-
-            Return ONLY a valid JSON object with this exact format:
-            {
-            "angles": ["angle 1 as a single string", "angle 2 as a single string", "angle 3 as a single string"]
+            ${product?.name ? `Product reference (optional):${product?.name} 
+                The product may be referenced subtly as context or inspiration,
+                without becoming the main focus or direct promotion.` : ""
             }
 
-            Do not include any markdown, code blocks, or additional text. Only return the raw JSON object.
-        `
+            TASK:
+            Generate exactly 3 DISTINCT content angles that:
+            - Frame the idea from different audience perspectives, motivations, or emotional lenses
+            - Speak to different reasons why someone would care about this idea
+            - Stay consistent with the brand voice and niche
+            - Stay aligned with the brand and product context if provided
+
+            RULES:
+            An angle should represent a DISTINCT FRAMING DIMENSION, such as:
+            - Educational vs experiential
+            - Problem-focused vs outcome-focused
+            - Emotional vs rational
+            - Beginner vs expert perspective
+
+            Avoid:
+            - Rewriting the idea in different words
+            - Generic or abstract descriptions
+            - Angles that differ only in tone but not in perspective
+
+            Return ONLY valid JSON in this format:
+            {
+            "angles": ["Angle 1", "Angle 2", "Angle 3"]
+            }
+            `.trim()
 
         const response = await ctx.llm.generateCompletion({
-            systemPrompt: "You are a content strategist. Always respond with valid JSON only. Never use markdown code blocks.",
+            systemPrompt:
+                "You are a professional content strategist. Always return valid JSON only. Never include markdown or extra text.",
             prompt,
             temperature: 0.8,
             maxTokens: 500,
         })
 
-        // Clean response content
         let cleanContent = response.content.trim()
-        if (cleanContent.startsWith('```json')) {
-            cleanContent = cleanContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-        } else if (cleanContent.startsWith('```')) {
-            cleanContent = cleanContent.replace(/```\n?/g, '').trim()
-        }
+        cleanContent = cleanContent
+            .replace(/^```json/i, "")
+            .replace(/^```/i, "")
+            .replace(/```$/, "")
+            .trim()
 
         try {
             const parsed = JSON.parse(cleanContent)
             console.log('[Multi-Pass] Angle pass parsed:', parsed)
             const angles = AnglePassSchema.parse(parsed)
 
-            ctx.cache.updateSession(ctx.sessionId, {
+            ctx.cache.updateSession(sessionId, {
                 anglePass: {
                     angles: angles.angles,
                     selectedAngle: angles.angles[0],
                 },
             })
         } catch (error) {
-            console.error('[Multi-Pass] Failed to parse angle response:', cleanContent)
-            throw new Error(`Invalid JSON response from angle pass: ${error instanceof Error ? error.message : 'Unknown error'}`)
+            console.error("[AnglePass] Invalid response:", cleanContent)
+            throw new Error(
+                `AnglePass failed to parse LLM response: ${error instanceof Error ? error.message : "Unknown error"}`,
+            )
         }
 
-        yield { type: 'pass:complete', pass: 'angle' }
+        yield { type: "pass:complete", pass: "angle" }
     }
 }
