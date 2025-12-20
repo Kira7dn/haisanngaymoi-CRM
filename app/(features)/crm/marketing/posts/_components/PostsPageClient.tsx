@@ -64,10 +64,6 @@ export default function PostsPageClient({ initialPosts }: PostsPageClientProps) 
     }
   }
 
-  const handleCreateNewPost = () => {
-    setShowCreatePost(true)
-  }
-
   const handleSaveSchedule = async () => {
     if (generatedSchedule.length === 0) {
       toast.error('No schedule items to save')
@@ -117,8 +113,6 @@ export default function PostsPageClient({ initialPosts }: PostsPageClientProps) 
       {/* Posts View (List or Calendar) */}
       <PostsView
         initialPosts={initialPosts}
-        showCreatePost={showCreatePost}
-        setShowCreatePost={setShowCreatePost}
       />
 
       {/* Schedule Dialog */}

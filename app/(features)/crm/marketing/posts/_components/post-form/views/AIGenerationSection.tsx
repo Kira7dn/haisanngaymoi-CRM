@@ -1,275 +1,181 @@
 'use client'
 
+import { useState, useMemo } from 'react'
+import { Sparkles, Zap, Loader2 } from 'lucide-react'
 import { Button } from '@shared/ui/button'
-import { Sparkles, Zap, Loader2, AlertTriangle } from 'lucide-react'
-import { usePostFormContext } from '../PostFormContext'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/@shared/ui/tabs'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/@shared/ui/card'
-import { useMemo, useState } from 'react'
-import { streamMultiPassGeneration } from '../actions/stream-generate-action'
+import { usePostFormContext } from '../PostFormContext'
 import { usePostSettingStore } from '../../../_store/usePostSettingStore'
+import { streamMultiPassGeneration } from '../actions/stream-generate-action'
+import { handleStreamEvents, generateSessionId } from './stream-event-handler'
 import { scrollBodyTextareaToBottom } from './utils'
+import { AlertBox, SectionContainer } from './shared-ui'
 
 export default function AIGenerationSection() {
   const { state, setField } = usePostFormContext()
-  const {
-    title,
-    body,
-    hashtags,
-    contentType,
-    idea,
-    product,
-    contentInstruction,
-  } = state
-  const [progress, setProgress] = useState<string[]>([])
-  const [similarityWarning, setSimilarityWarning] = useState<string | undefined>(undefined)
-  const [isGenerating, setIsGenerating] = useState(false)
   const { brand } = usePostSettingStore()
 
-  // Generate session ID for this generation session
-  const sessionId = useMemo(() => {
-    return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-  }, [])
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [progress, setProgress] = useState<string[]>([])
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined)
 
-  // Check if form is ready for generation
-  const isDisabled = !idea && !product && !contentInstruction && !title
+  // Generate session ID once
+  const sessionId = useMemo(() => generateSessionId(), [])
 
-  // ========== AI Generation Actions ==========
-  const genParam = {
-    ...state,
-    brand,
-    sessionId,
-  }
-  const handleSinglePassGen = async () => {
-    setIsGenerating(true)
-    setProgress(['Starting single-pass generation...'])
+  // Check if form has minimum required input
+  const isDisabled = !state.idea && !state.product && !state.contentInstruction && !state.title
 
-    try {
-      const stream = streamMultiPassGeneration({
-        ...genParam,
-        action: 'singlepass',
-      })
-
-      let body = ''
-
-      for await (const event of stream) {
-
-        switch (event.type) {
-          case 'title:ready':
-            setField('title', event.title)
-            setProgress(p => [...p, '📝 Title generated'])
-            break
-
-          case 'hashtags:ready':
-            setField('hashtags', event.hashtags)
-            setProgress(p => [...p, '🏷️ Hashtags generated'])
-            break
-
-          case 'pass:start':
-            // Enhance overwrite Draft
-            body = ''
-            setProgress(p => [...p, `▶️ Starting ${event.pass}...`])
-            break
-
-          case 'pass:skip':
-            setProgress(p => [...p, `⏭️ Skipping ${event.pass}`])
-            break
-
-          case 'body:token':
-            body += event.content
-            setField('body', body)
-            scrollBodyTextareaToBottom()
-            break
-
-          case 'pass:complete':
-            setProgress(p => [...p, `✅ ${event.pass} completed`])
-            break
-
-          case 'final':
-            setProgress(p => [...p, '🎉 Generation completed!'])
-            break
-
-          case 'error':
-            setSimilarityWarning(event.message)
-            setProgress([])
-            return
-        }
-      }
-    } catch (err) {
-      console.error(err)
-      setSimilarityWarning('Generation failed. Please try again.')
-    } finally {
-      setIsGenerating(false)
-      setTimeout(() => setProgress([]), 2000)
-    }
-  }
-
-
-  const handleMultiPassGen = async () => {
+  /**
+   * Generic generation handler - eliminates duplication
+   */
+  const handleGeneration = async (action: 'singlepass' | 'multipass') => {
     setIsGenerating(true)
     setProgress([])
-    setSimilarityWarning(undefined)
-
-    let body = ''
+    setErrorMessage(undefined)
 
     try {
-      const stream = streamMultiPassGeneration({
-        ...genParam,
-        action: 'multipass',
+      const events = streamMultiPassGeneration({
+        ...state,
+        brand,
+        sessionId,
+        action,
       })
 
-      for await (const event of stream) {
-        switch (event.type) {
-          case 'title:ready':
-            setField('title', event.title)
-            setProgress(p => [...p, '📝 Title generated'])
-            break
-
-          case 'hashtags:ready':
-            setField('hashtags', event.hashtags)
-            setProgress(p => [...p, '🏷️ Hashtags generated'])
-            break
-
-          case 'pass:start':
-            // Enhance overwrite Draft
-            body = ''
-            setProgress(p => [...p, `▶️ Starting ${event.pass}...`])
-            break
-
-          case 'pass:skip':
-            setProgress(p => [...p, `⏭️ Skipping ${event.pass}`])
-            break
-
-          case 'body:token':
-            body += event.content
-            setField('body', body)
-            scrollBodyTextareaToBottom()
-            break
-
-          case 'pass:complete':
-            setProgress(p => [...p, `✅ ${event.pass} completed`])
-            break
-
-          case 'final':
-            setProgress(p => [...p, '🎉 Generation completed!'])
-            break
-
-          case 'error':
-            setSimilarityWarning(event.message)
-            setProgress([])
-            return
-        }
-      }
+      await handleStreamEvents(events, {
+        onTitleReady: (title) => setField('title', title),
+        onHashtagsReady: (hashtags) => setField('hashtags', hashtags),
+        onBodyToken: (_, accumulatedBody) => {
+          setField('body', accumulatedBody)
+          scrollBodyTextareaToBottom()
+        },
+        onProgress: (message) => setProgress((p) => [...p, message]),
+        onError: (message) => {
+          setErrorMessage(message)
+          setProgress([])
+        },
+      })
     } catch (err) {
-      console.error(err)
-      setSimilarityWarning('Generation failed. Please try again.')
+      console.error('Generation failed:', err)
+      setErrorMessage('Generation failed. Please try again.')
     } finally {
       setIsGenerating(false)
+      // Clear progress after completion
+      if (!errorMessage) {
+        setTimeout(() => setProgress([]), 2000)
+      }
     }
   }
 
-
   return (
-    <div className="border rounded-lg p-4 bg-linear-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 space-y-3">
+    <SectionContainer variant="purple">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-purple-600" />
           <h3 className="font-semibold">AI Content Generation</h3>
         </div>
       </div>
-      <div className="flex w-full flex-col gap-6" suppressHydrationWarning>
-        <Tabs defaultValue="account">
-          <TabsList>
-            <TabsTrigger value="account">
-              <Zap className="h-4 w-4" />
-              Simple (3-5s)
-            </TabsTrigger>
-            <TabsTrigger value="password">
-              <Sparkles className="h-4 w-4" />
-              Multi-pass (15-25s)
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="account">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-purple-600" />
-                  <span className="font-semibold">Single-pass</span>
-                </CardTitle>
-                <CardDescription>
-                  Simple mode generates content quickly in one pass.
-                </CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={handleSinglePassGen}
-                  disabled={isGenerating || isDisabled}
-                  className="w-full gap-2"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Single-pass...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4" />
-                      Generate with AI
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          <TabsContent value="password">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-purple-600" />
-                  <span className="font-semibold">Multi-pass</span>
-                </CardTitle>
-                <CardDescription>
-                  Multi-pass uses 5 stages (Idea → Angle → Outline → Draft → Enhance) for higher quality.
-                </CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={handleMultiPassGen}
-                  disabled={isGenerating || isDisabled}
-                  className="w-full gap-2"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {progress.length > 0 ? progress[progress.length - 1] : 'Multi-pass...'}
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4" />
-                      Generate with AI
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
 
-      {/* Similarity Warning */}
-      {similarityWarning && (
-        <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-          <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
-          <div className="text-sm text-yellow-800 dark:text-yellow-200">
-            {similarityWarning}
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Generation Mode Tabs */}
+      <Tabs defaultValue="simple" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="simple" className="gap-2">
+            <Zap className="h-4 w-4" />
+            Simple (3-5s)
+          </TabsTrigger>
+          <TabsTrigger value="multipass" className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            Multi-pass (15-25s)
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Simple Mode */}
+        <TabsContent value="simple" className="mt-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Zap className="h-5 w-5 text-purple-600" />
+                Single-pass Generation
+              </CardTitle>
+              <CardDescription>
+                Fast content generation in one pass. Best for quick drafts.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => handleGeneration('singlepass')}
+                disabled={isGenerating || isDisabled}
+                className="w-full gap-2"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4" />
+                    Generate with AI
+                  </>
+                )}
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+
+        {/* Multi-pass Mode */}
+        <TabsContent value="multipass" className="mt-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Sparkles className="h-5 w-5 text-purple-600" />
+                Multi-pass Generation
+              </CardTitle>
+              <CardDescription>
+                5-stage process (Idea → Angle → Outline → Draft → Enhance) for premium quality content.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex-col gap-3">
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => handleGeneration('multipass')}
+                disabled={isGenerating || isDisabled}
+                className="w-full gap-2"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {progress.length > 0 ? progress[progress.length - 1] : 'Processing...'}
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Generate with AI
+                  </>
+                )}
+              </Button>
+
+              {/* Progress indicator */}
+              {progress.length > 0 && (
+                <div className="w-full text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                  {progress.slice(-3).map((step, idx) => (
+                    <div key={idx} className="animate-in fade-in-50 duration-200">
+                      {step}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardFooter>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Error Message */}
+      {errorMessage && <AlertBox message={errorMessage} variant="warning" className="mt-3" />}
+    </SectionContainer>
   )
 }

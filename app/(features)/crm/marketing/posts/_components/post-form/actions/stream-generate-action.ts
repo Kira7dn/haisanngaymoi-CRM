@@ -1,6 +1,11 @@
 import { GenerationEvent, PostGenRequest } from "@/core/application/usecases/marketing/post/generate-post/stream-post-generationn"
 
 /**
+ * Re-export types for use in components
+ */
+export type StreamEvent = GenerationEvent
+
+/**
  * Client-side helper to consume streaming generation events
  * Uses fetch with SSE (Server-Sent Events) format
  */

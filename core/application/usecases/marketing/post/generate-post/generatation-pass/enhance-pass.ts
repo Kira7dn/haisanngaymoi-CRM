@@ -5,7 +5,7 @@ export class EnhanceStreamingPass implements GenerationPass {
     readonly name: PassType = 'enhance';
 
     private buildPrompt(ctx: PassContext, session?: GenerationSession): string {
-        const { body, brand, contentInstruction } = ctx
+        const { body, brand, product, contentInstruction } = ctx
 
         const brandInfo = brand ? [
             brand.brandVoice && `Brand Voice: ${JSON.stringify(brand.brandVoice)}`,
@@ -13,7 +13,12 @@ export class EnhanceStreamingPass implements GenerationPass {
                 ? `Key Points:\n- ${brand.keyPoints.join("\n- ")}`
                 : "",
         ].filter(Boolean).join("\n") : ""
-
+        // Product info
+        const productInfo = product ? [
+            product.name ? `- Name: ${product.name}` : '',
+            product.detail ? `- Details: ${product.detail}` : '',
+            product.url ? `- URL: ${product.url}` : ''
+        ].filter(Boolean).join("\n") : '';
         const initialContent = session?.draftPass?.draft || body || ""
 
         const userInstructionBlock = contentInstruction
@@ -29,6 +34,7 @@ export class EnhanceStreamingPass implements GenerationPass {
             ${initialContent}
 
             ${brandInfo ? `Brand alignment:\n${brandInfo}` : ""}
+            ${productInfo ? `Product alignment:\n${productInfo}` : ""}
 
             Enhancement guidelines:
             - Improve clarity, flow, and readability

@@ -112,7 +112,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         > */}
-        <CopilotKit runtimeUrl="/api/copilotkit" publicLicenseKey="ck_pub_9f183f4c59f3d2b59e41ff75d5aace3e">
+        <CopilotKit publicLicenseKey="ck_pub_9f183f4c59f3d2b59e41ff75d5aace3e">
           {children}
         </CopilotKit>
         {/* </ThemeProvider> */}

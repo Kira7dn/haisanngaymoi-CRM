@@ -46,16 +46,75 @@ export default function PostFormView() {
       className="p-6 bg-white dark:bg-gray-800 rounded-lg border"
     >
       {/* ===== Header - Full Width ===== */}
-      <header className="flex items-center gap-2 mb-6">
-        <h2 className="text-xl font-semibold">
-          {post ? 'Edit Post' : 'Create New Post'}
-        </h2>
+      <header className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold">
+            {post ? 'Edit Post' : 'Create New Post'}
+          </h2>
 
-        {isDirty && !post && (
-          <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-            • Unsaved changes
-          </span>
-        )}
+          {isDirty && !post && (
+            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+              • Unsaved changes
+            </span>
+          )}
+        </div>
+        {/* Actions - Sticky at bottom of right column */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2 bg-white dark:bg-gray-800">
+          <div className="flex gap-2">
+            {post && (
+              <Button
+                type="button"
+                variant="destructive"
+                // onClick={actions.delete}
+                disabled={isSubmitting}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Xóa
+              </Button>
+            )}
+
+            {!post && (
+              <Button
+                type="button"
+                variant="outline"
+                // onClick={actions.saveDraft}
+                disabled={isSubmitting}
+              >
+                Save as Draft
+              </Button>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              // onClick={actions.close}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              type="submit"
+              disabled={isSubmitting || hasPlatformError}
+              className="min-w-[140px]"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : post ? (
+                'Update Post'
+              ) : state.scheduledAt ? (
+                'Schedule Post'
+              ) : (
+                'Publish Now'
+              )}
+            </Button>
+          </div>
+        </div>
       </header>
 
       {/* ===== Two Column Layout ===== */}
@@ -76,9 +135,9 @@ export default function PostFormView() {
         </div>
 
         {/* ===== RIGHT COLUMN - AI Tools + Actions (40%) ===== */}
-        <div className="order-1 lg:order-2 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] flex flex-col">
+        <div className="order-1 lg:order-2 lg:top-6 lg:self-start flex flex-col">
           {/* AI Tools Container - Scrollable */}
-          <div className="ai-tools-scroll space-y-6 lg:overflow-y-auto lg:max-h-[calc(100vh-12rem)] lg:pr-2">
+          <div className="ai-tools-scroll space-y-6 lg:overflow-y-auto lg:pr-2">
             {/* AI Generation */}
             <AIGenerationSection />
 
@@ -86,63 +145,7 @@ export default function PostFormView() {
             <QualityScoreDisplay />
           </div>
 
-          {/* Actions - Sticky at bottom of right column */}
-          <footer className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2 mt-6 pt-4 border-t bg-white dark:bg-gray-800">
-            <div className="flex gap-2">
-              {post && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  // onClick={actions.delete}
-                  disabled={isSubmitting}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Xóa
-                </Button>
-              )}
 
-              {!post && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  // onClick={actions.saveDraft}
-                  disabled={isSubmitting}
-                >
-                  Save as Draft
-                </Button>
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                // onClick={actions.close}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-
-              <Button
-                type="submit"
-                disabled={isSubmitting || hasPlatformError}
-                className="min-w-[140px]"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : post ? (
-                  'Update Post'
-                ) : state.scheduledAt ? (
-                  'Schedule Post'
-                ) : (
-                  'Publish Now'
-                )}
-              </Button>
-            </div>
-          </footer>
         </div>
       </div>
     </form>
