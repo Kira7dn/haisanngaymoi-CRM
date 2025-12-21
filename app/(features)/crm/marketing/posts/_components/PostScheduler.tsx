@@ -1,24 +1,26 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import FullCalendar from '@fullcalendar/react'
-import type { DateSelectArg, EventInput } from '@fullcalendar/core'
+import dynamic from 'next/dynamic'
+import type { EventInput, EventClickArg } from '@fullcalendar/core'
+import type { EventContentArg } from '@fullcalendar/core/index.js'
+import type { DateClickArg } from '@fullcalendar/interaction'
 import dayGridPlugin from '@fullcalendar/daygrid'
-import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction'
-import type { EventClickArg, EventContentArg } from '@fullcalendar/core/index.js'
-import type { Platform, ContentType, PostMedia, PlatformMetadata } from '@/core/domain/marketing/post'
+import interactionPlugin from '@fullcalendar/interaction'
+import type { Platform } from '@/core/domain/marketing/post'
 import { Post } from '@/core/domain/marketing/post'
 import { usePostStore } from '../_store/usePostStore'
 import { Card } from '@shared/ui/card'
-import PostDetailModal from './PostDetailModal'
 import DayScheduleDialog from './DayScheduleDialog'
 import { CheckCircle, Clock, XCircle, Sparkles, Loader2 } from 'lucide-react'
 import { startOfDay } from 'date-fns'
-import { fromZonedTime } from 'date-fns-tz'
-import { ThemeProvider } from './scheduler/theme-provider'
 import CalendarNav from './scheduler/calendar-nav'
 import { EventsProvider } from './scheduler/context/events-context'
+
+// Dynamic import FullCalendar - only render on client
+const FullCalendar = dynamic(() => import('@fullcalendar/react'), {
+  ssr: false,
+}) as any
 
 const PLATFORM_COLORS: Record<Platform, string> = {
   facebook: '#1877F2',
@@ -31,36 +33,16 @@ const PLATFORM_COLORS: Record<Platform, string> = {
   instagram: '#E4405F',
 }
 
-interface PostSchedulerProps {
-  initialPosts: Post[]
-}
 
-
-
-export default function PostScheduler({ initialPosts }: PostSchedulerProps) {
-  const { posts, setPosts, filter, previewPosts, isGeneratingSchedule } = usePostStore()
+export default function PostScheduler() {
+  const { posts, filter, previewPosts, isGeneratingSchedule } = usePostStore()
   const [events, setEvents] = useState<EventInput[]>([])
-  const router = useRouter()
-
-  const calendarRef = useRef<FullCalendar | null>(null);
-  const [selectedStart, setSelectedStart] = useState(new Date());
-  const [selectedEnd, setSelectedEnd] = useState(new Date());
-  const [viewedDate, setViewedDate] = useState(new Date());
+  const calendarRef = useRef<any>(null)
+  const [viewedDate, setViewedDate] = useState(new Date())
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [selectedDatePosts, setSelectedDatePosts] = useState<Post[]>([])
-
-  const handleDateSelect = (info: DateSelectArg) => {
-    setSelectedStart(info.start);
-    setSelectedEnd(info.end);
-  };
-
-
-  useEffect(() => {
-    setPosts(initialPosts)
-  }, [initialPosts, setPosts])
 
   // Transform posts to calendar events
   useEffect(() => {
@@ -88,7 +70,7 @@ export default function PostScheduler({ initialPosts }: PostSchedulerProps) {
         allDay: true,
         backgroundColor: isPublished ? '#10B981' : isFailed ? '#EF4444' : backgroundColor,
         borderColor: isPublished ? '#059669' : isFailed ? '#DC2626' : backgroundColor,
-        extendedProps: { post }
+        extendedProps: { post },
       }
     })
 
@@ -114,26 +96,16 @@ export default function PostScheduler({ initialPosts }: PostSchedulerProps) {
 
   const handleDateClick = (info: DateClickArg) => {
     const clickedDate = startOfDay(info.date)
-
-    // Filter posts for the clicked date
-    const postsOnDate = posts.filter((post) => {
-      const postDate = post.scheduledAt
-        ? startOfDay(new Date(post.scheduledAt))
-        : startOfDay(new Date(post.createdAt))
-      return postDate.getTime() === clickedDate.getTime()
-    })
-
     setSelectedDate(clickedDate)
-    setSelectedDatePosts(postsOnDate)
     setDialogOpen(true)
   }
 
   const handleEventClick = (info: EventClickArg) => {
-    const post = info.event.extendedProps.post as Post
-    router.push(`/crm/marketing/posts/edit?id=${post.id}`)
-
+    // Extract date from the clicked event and show all posts for that day
+    const clickedDate = startOfDay(info.event.start || new Date())
+    setSelectedDate(clickedDate)
+    setDialogOpen(true)
   }
-
 
   const renderEventContent = (eventInfo: EventContentArg) => {
     const isPreview = eventInfo.event.extendedProps.isPreview
@@ -155,11 +127,11 @@ export default function PostScheduler({ initialPosts }: PostSchedulerProps) {
     const isScheduled = post.scheduledAt && new Date(post.scheduledAt) > new Date()
 
     return (
-      <div className="flex items-center gap-1 p-1 w-full overflow-hidden hover:opacity-100 opacity-80">
+      <div className=" flex items-center gap-1 p-0 md:p-1 overflow-hidden hover:opacity-100 opacity-80">
         {isPublished && <CheckCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />}
         {isFailed && <XCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />}
         {isScheduled && !isPublished && !isFailed && <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />}
-        <div className="text-[10px] sm:text-xs font-medium truncate cursor-pointer">
+        <div className="hidden md:block text-[10px] sm:text-xs font-medium truncate cursor-default p-0">
           {eventInfo.event.title}
         </div>
       </div>
@@ -168,13 +140,8 @@ export default function PostScheduler({ initialPosts }: PostSchedulerProps) {
 
   return (
     <EventsProvider>
-      <div className="space-y-4 sm:space-y-5">
-        <CalendarNav
-          calendarRef={calendarRef}
-          start={selectedStart}
-          end={selectedEnd}
-          viewedDate={viewedDate}
-        />
+      <Card className="py-2 gap-2">
+        <CalendarNav calendarRef={calendarRef} viewedDate={viewedDate} />
 
         <div className="relative">
           {isGeneratingSchedule && (
@@ -184,7 +151,7 @@ export default function PostScheduler({ initialPosts }: PostSchedulerProps) {
             </div>
           )}
 
-          <Card className="p-2 sm:p-4">
+          <div className="p-2 md:p-4 text-xs md:text-base">
             <FullCalendar
               ref={calendarRef}
               plugins={[dayGridPlugin, interactionPlugin]}
@@ -195,26 +162,24 @@ export default function PostScheduler({ initialPosts }: PostSchedulerProps) {
               dateClick={handleDateClick}
               eventClick={handleEventClick}
               eventContent={renderEventContent}
-              datesSet={(dates) => setViewedDate(dates.view.currentStart)}
+              datesSet={(dates: any) => setViewedDate(dates.view.currentStart)}
               height="auto"
-              firstDay={1}
               displayEventTime={false}
               displayEventEnd={false}
               dayMaxEvents={2}
               editable={false}
-              selectable={true}
+              selectable={false}
+              handleWindowResize={true}
             />
-          </Card>
+          </div>
         </div>
 
-        {/* Day Schedule Dialog */}
         <DayScheduleDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           selectedDate={selectedDate}
-          posts={selectedDatePosts}
         />
-      </div>
+      </Card>
     </EventsProvider>
   )
 }

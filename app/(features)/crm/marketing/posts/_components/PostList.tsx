@@ -5,9 +5,7 @@ import type { Post, Platform } from '@/core/domain/marketing/post'
 import { usePostStore } from '../_store/usePostStore'
 import { Button } from '@shared/ui/button'
 import { Trash2, Edit, Eye, Clock, CheckCircle, XCircle, Calendar } from 'lucide-react'
-import { toast } from 'sonner'
 import PostDetailModal from './PostDetailModal'
-import { deletePostAction } from '../_actions/delete-post-action'
 
 const PLATFORM_COLORS: Record<Platform, string> = {
   facebook: 'bg-blue-600 text-white',
@@ -37,7 +35,7 @@ interface PostListProps {
 }
 
 export default function PostList({ initialPosts, onEdit }: PostListProps) {
-  const { posts, setPosts, filter } = usePostStore()
+  const { posts, setPosts, filter, deletePost } = usePostStore()
   const [pending, startTransition] = useTransition()
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
   const [showDetail, setShowDetail] = useState(false)
@@ -54,33 +52,10 @@ export default function PostList({ initialPosts, onEdit }: PostListProps) {
     if (confirm('Are you sure you want to delete this post?')) {
       startTransition(async () => {
         try {
-          const result = await deletePostAction(id)
-
-          if (result.success) {
-            // Remove from local state
-            setPosts(posts.filter(p => p.id !== id))
-
-            // Check if any platforms were successfully deleted
-            const deletedPlatforms = Object.keys(result.deletedOnPlatforms || {}).filter(
-              platform => result.deletedOnPlatforms![platform]
-            )
-
-            if (deletedPlatforms.length > 0) {
-              toast.success(`Post deleted successfully from CRM and ${deletedPlatforms.join(', ')} platforms`)
-            } else {
-              toast.success("Post deleted from CRM", {
-                description: "Post was removed from database but not from external platforms"
-              })
-            }
-          } else {
-            toast.error("Delete failed", {
-              description: result.error || "Failed to delete post"
-            })
-          }
+          await deletePost(id)
+          // Toast handled by store
         } catch (error) {
-          toast.error("Delete failed", {
-            description: error instanceof Error ? error.message : "An unexpected error occurred"
-          })
+          // Error toast already handled by store
         }
       })
     }

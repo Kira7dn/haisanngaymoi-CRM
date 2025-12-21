@@ -16,13 +16,12 @@ import { Badge } from '@shared/ui/badge'
 import { Card } from '@shared/ui/card'
 import { Post } from '@/core/domain/marketing/post'
 import type { Platform, PostStatus } from '@/core/domain/marketing/post'
-import { deletePostAction } from '../_actions/delete-post-action'
+import { usePostStore } from '../_store/usePostStore'
 
 interface DayScheduleDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   selectedDate: Date
-  posts: Post[]
 }
 
 const PLATFORM_COLORS: Record<Platform, { bg: string; text: string }> = {
@@ -48,11 +47,21 @@ export default function DayScheduleDialog({
   open,
   onOpenChange,
   selectedDate,
-  posts,
 }: DayScheduleDialogProps) {
-
   const router = useRouter()
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const { posts: allPosts, deletePost } = usePostStore()
+
+  // Filter posts for the selected date from store
+  const posts = allPosts.filter((post) => {
+    if (!post.scheduledAt) return false
+    const postDate = new Date(post.scheduledAt)
+    return (
+      postDate.getDate() === selectedDate.getDate() &&
+      postDate.getMonth() === selectedDate.getMonth() &&
+      postDate.getFullYear() === selectedDate.getFullYear()
+    )
+  })
 
   const handleNewPost = () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd')
@@ -72,8 +81,7 @@ export default function DayScheduleDialog({
 
     setDeletingId(postId)
     try {
-      await deletePostAction(postId)
-      // The store will be updated via revalidation
+      await deletePost(postId)
     } catch (error) {
       console.error('Failed to delete post:', error)
       alert('Failed to delete post. Please try again.')

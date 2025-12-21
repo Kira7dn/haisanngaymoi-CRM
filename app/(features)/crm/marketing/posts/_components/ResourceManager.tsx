@@ -5,7 +5,7 @@ import { Upload, Trash2, FileText, Loader2, X } from 'lucide-react'
 import { Button } from '@shared/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@shared/ui/dialog'
 import { Label } from '@shared/ui/label'
-import { toast } from 'sonner'
+import { toast } from '@shared/hooks/use-toast'
 import type { Resource } from '@/core/domain/marketing/resource'
 
 interface ResourceManagerProps {
@@ -40,7 +40,11 @@ export default function ResourceManager({ open, onClose }: ResourceManagerProps)
       setResources(data)
     } catch (error) {
       console.error('[ResourceManager] Load failed:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to load resources')
+      toast({
+        title: 'Failed to load resources',
+        description: error instanceof Error ? error.message : 'An error occurred',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -56,13 +60,21 @@ export default function ResourceManager({ open, onClose }: ResourceManagerProps)
     const validExts = ['md', 'txt', 'pdf']
 
     if (!validTypes.includes(file.type) && !validExts.includes(fileExt || '')) {
-      toast.error('Invalid file type. Only .md, .txt, and .pdf files are allowed')
+      toast({
+        title: 'Invalid file type',
+        description: 'Only .md, .txt, and .pdf files are allowed',
+        variant: 'destructive',
+      })
       return
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size too large. Maximum 10MB allowed')
+      toast({
+        title: 'File size too large',
+        description: 'Maximum 10MB allowed',
+        variant: 'destructive',
+      })
       return
     }
 
@@ -89,14 +101,21 @@ export default function ResourceManager({ open, onClose }: ResourceManagerProps)
       }
 
       const result = await res.json()
-      toast.success(`Uploaded ${result.resource.name} (${result.chunkCount} chunks)`)
+      toast({
+        title: 'Upload successful',
+        description: `${result.resource.name} (${result.chunkCount} chunks)`,
+      })
 
       // Reset selection and reload
       setSelectedFile(null)
       loadResources()
     } catch (error) {
       console.error('[ResourceManager] Upload failed:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to upload resource')
+      toast({
+        title: 'Upload failed',
+        description: error instanceof Error ? error.message : 'Failed to upload resource',
+        variant: 'destructive',
+      })
     } finally {
       setUploading(false)
     }
@@ -115,11 +134,17 @@ export default function ResourceManager({ open, onClose }: ResourceManagerProps)
         throw new Error('Failed to delete resource')
       }
 
-      toast.success('Resource deleted successfully')
+      toast({
+        title: 'Resource deleted successfully',
+      })
       loadResources()
     } catch (error) {
       console.error('[ResourceManager] Delete failed:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to delete resource')
+      toast({
+        title: 'Delete failed',
+        description: error instanceof Error ? error.message : 'Failed to delete resource',
+        variant: 'destructive',
+      })
     } finally {
       setDeleting(null)
     }

@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from '@shared/ui/select'
 import type { BrandMemory } from '@/core/domain/brand-memory'
-import { toast } from 'sonner'
 import { usePostSettingStore } from '../_store/usePostSettingStore'
 
 interface PostContentSettingsProps {

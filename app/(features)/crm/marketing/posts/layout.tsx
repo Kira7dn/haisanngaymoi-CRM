@@ -5,7 +5,7 @@ export default async function PostLayout({
 }) {
 
   return (
-    <div className="container mx-auto max-w-6xl p-6 space-y-6">
+    <div className="container mx-auto max-w-6xl p-2 sm:p-6">
       {children}
     </div>
   )

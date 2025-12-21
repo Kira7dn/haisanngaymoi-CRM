@@ -10,19 +10,19 @@ export const latestTime = 1320;
 export const months = [
   {
     value: "1",
-    label: "January",
+    label: "Jan",
   },
   {
     value: "2",
-    label: "February",
+    label: "Feb",
   },
   {
     value: "3",
-    label: "March",
+    label: "Mar",
   },
   {
     value: "4",
-    label: "April",
+    label: "Apr",
   },
   {
     value: "5",
@@ -30,31 +30,31 @@ export const months = [
   },
   {
     value: "6",
-    label: "June",
+    label: "Jun",
   },
   {
     value: "7",
-    label: "July",
+    label: "Jul",
   },
   {
     value: "8",
-    label: "August",
+    label: "Aug",
   },
   {
     value: "9",
-    label: "September",
+    label: "Sep",
   },
   {
     value: "10",
-    label: "October",
+    label: "Oct",
   },
   {
     value: "11",
-    label: "November",
+    label: "Nov",
   },
   {
     value: "12",
-    label: "December",
+    label: "Dec",
   },
 ];
 

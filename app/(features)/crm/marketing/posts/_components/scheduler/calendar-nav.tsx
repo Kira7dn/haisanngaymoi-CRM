@@ -5,14 +5,11 @@ import { months } from "@/app/(features)/crm/marketing/posts/_components/schedul
 import { calendarRef } from "@/app/(features)/crm/marketing/posts/_components/scheduler/utils/data";
 import { Button } from "@shared/ui/button";
 import {
-  generateDaysInMonth,
   goNext,
   goPrev,
   goToday,
-  handleDayChange,
   handleMonthChange,
   handleYearChange,
-  setView,
 } from "@/app/(features)/crm/marketing/posts/_components/scheduler/utils/calendar-utils";
 import { useState } from "react";
 import {
@@ -20,9 +17,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
-  GalleryVertical,
-  Table,
-  Tally3,
+  Plus,
+  Save,
+  Sparkles,
+  Undo2,
 } from "lucide-react";
 import {
   Command,
@@ -37,147 +35,188 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@shared/ui/popover";
-
 import { Input } from "@shared/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@shared/ui/tabs";
-import { EventAddForm } from "./event-add-form";
+import { usePostStore } from "../../_store/usePostStore";
+import { useGenerateSchedule } from "../../_hooks/useGenerateSchedule";
+import { useRouter } from "next/navigation";
+import PostFilter from "../PostFilter";
+
 
 interface CalendarNavProps {
   calendarRef: calendarRef;
-  start: Date;
-  end: Date;
   viewedDate: Date;
 }
 
 export default function CalendarNav({
   calendarRef,
-  start,
-  end,
   viewedDate,
 }: CalendarNavProps) {
-  const [currentView, setCurrentView] = useState("timeGridWeek");
+  const { previewPosts, isGeneratingSchedule } = usePostStore();
+  const { generateSchedule, saveSchedule, undoSchedule } = useGenerateSchedule();
+  const router = useRouter();
 
   const selectedMonth = viewedDate.getMonth() + 1;
-  const selectedDay = viewedDate.getDate();
   const selectedYear = viewedDate.getFullYear();
 
-  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-  const dayOptions = generateDaysInMonth(daysInMonth);
-
-  const [daySelectOpen, setDaySelectOpen] = useState(false);
   const [monthSelectOpen, setMonthSelectOpen] = useState(false);
 
+  const isCurrentMonth = () => {
+    const today = new Date();
+    return (
+      viewedDate.getMonth() === today.getMonth() &&
+      viewedDate.getFullYear() === today.getFullYear()
+    );
+  };
+
   return (
-    <div className="flex flex-wrap min-w-full justify-center gap-10 px-10 ">
-      <div className="flex flex-row space-x-1">
-        {/* Navigate to previous date interval */}
+    <div className="w-full bg-background border-b">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+          {/* Left Section: Date Navigation */}
+          <div className="flex items-center gap-2 w-full lg:w-full justify-between lg:justify-between">
+            <div className="flex items-center gap-2">
+              <PostFilter />
+            </div>
+            <div className="flex items-center gap-1 rounded-lg p-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-background"
+                onClick={() => goPrev(calendarRef)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
 
-        <Button
-          variant="ghost"
-          className="w-8"
-          onClick={() => {
-            goPrev(calendarRef);
-          }}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+              <Popover open={monthSelectOpen} onOpenChange={setMonthSelectOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    role="combobox"
+                    className="h-8 px-3 font-semibold hover:bg-background min-w-[100px] justify-between"
+                  >
+                    {months.find((m) => m.value === String(selectedMonth))?.label}
+                    <ChevronsUpDown className="ml-2 h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[200px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search month..." />
+                    <CommandList>
+                      <CommandEmpty>No month found.</CommandEmpty>
+                      <CommandGroup>
+                        {months.map((month) => (
+                          <CommandItem
+                            key={month.value}
+                            value={month.value}
+                            onSelect={(value) => {
+                              handleMonthChange(calendarRef, viewedDate, value);
+                              setMonthSelectOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                String(selectedMonth) === month.value
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                            {month.label}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
 
-        {/* Month Lookup */}
+              <Input
+                type="number"
+                value={selectedYear}
+                onChange={(e) => handleYearChange(calendarRef, viewedDate, e)}
+                className="h-8 w-[80px] font-semibold text-center border-0 bg-transparent hover:bg-background focus-visible:ring-1"
+              />
 
-        <Popover open={monthSelectOpen} onOpenChange={setMonthSelectOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              className="flex w-[105px] justify-between overflow-hidden p-2 text-xs font-semibold md:text-sm md:w-[120px]"
-            >
-              {selectedMonth
-                ? months.find((month) => month.value === String(selectedMonth))
-                  ?.label
-                : "Select month..."}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0">
-            <Command>
-              <CommandInput placeholder="Search month..." />
-              <CommandList>
-                <CommandEmpty>No month found.</CommandEmpty>
-                <CommandGroup>
-                  {months.map((month) => (
-                    <CommandItem
-                      key={month.value}
-                      value={month.value}
-                      onSelect={(currentValue) => {
-                        handleMonthChange(
-                          calendarRef,
-                          viewedDate,
-                          currentValue
-                        );
-                        //   setValue(currentValue === selectedMonth ? "" : currentValue);
-                        setMonthSelectOpen(false);
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          String(selectedMonth) === month.value
-                            ? "opacity-100"
-                            : "opacity-0"
-                        )}
-                      />
-                      {month.label}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-background"
+                onClick={() => goNext(calendarRef)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <div className="h-8 w-[80px] font-semibold text-center border-0 bg-transparent hover:bg-background focus-visible:ring-1">
+                {!isCurrentMonth() && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 hidden sm:flex"
+                    onClick={() => goToday(calendarRef)}
+                  >
+                    Today
+                  </Button>
+                )}
+              </div>
+            </div>
+            {/* Right Section: Action Buttons */}
+            <div className="flex items-center gap-2 w-full lg:w-auto justify-center lg:justify-end">
+              {previewPosts.length === 0 ? (
+                <Button
+                  variant="outline"
+                  onClick={generateSchedule}
+                  disabled={isGeneratingSchedule}
+                  className="gap-2 h-9"
+                  size="sm"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    {isGeneratingSchedule ? "Generating..." : "Lên lịch đăng"}
+                  </span>
+                  <span className="sm:hidden">
+                    {isGeneratingSchedule ? "..." : "AI"}
+                  </span>
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={undoSchedule}
+                    className="gap-2 h-9"
+                    size="sm"
+                  >
+                    <Undo2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      Undo ({previewPosts.length})
+                    </span>
+                    <span className="sm:hidden">Undo</span>
+                  </Button>
+                  <Button
+                    onClick={saveSchedule}
+                    className="gap-2 h-9"
+                    size="sm"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      Save {previewPosts.length} Posts
+                    </span>
+                    <span className="sm:hidden">Save</span>
+                  </Button>
+                </>
+              )}
 
-        {/* Year Lookup */}
+              <Button
+                onClick={() => router.push("/crm/marketing/posts/new")}
+                className="gap-2 h-9"
+                size="sm"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">New Post</span>
+                <span className="sm:hidden">New</span>
+              </Button>
+            </div>
+          </div>
 
-        <Input
-          className="w-[75px] md:w-[85px] text-xs md:text-sm font-semibold"
-          type="number"
-          value={selectedYear}
-          onChange={(value) => handleYearChange(calendarRef, viewedDate, value)}
-        />
-
-        {/* Navigate to next date interval */}
-
-        <Button
-          variant="ghost"
-          className="w-8"
-          onClick={() => {
-            goNext(calendarRef);
-          }}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap gap-3 justify-center">
-        {/* Button to go to current date */}
-
-        <Button
-          className="w-[90px] text-xs md:text-sm"
-          variant="outline"
-          onClick={() => {
-            goToday(calendarRef);
-          }}
-        >
-          {currentView === "timeGridDay"
-            ? "Today"
-            : currentView === "timeGridWeek"
-              ? "This Week"
-              : currentView === "dayGridMonth"
-                ? "This Month"
-                : null}
-        </Button>
-        {/* Add event button  */}
-
-        <EventAddForm start={start} end={end} />
+        </div>
       </div>
     </div>
   );

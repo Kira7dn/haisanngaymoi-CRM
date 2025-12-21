@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@shared/ui/button'
 import { Loader2, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -11,6 +12,11 @@ import QualityScoreDisplay from './QualityScoreDisplaySection'
 import PlatformSelector from './PlatformSelectorSection'
 import MediaHashtagScheduleSection from './MediaHashtagScheduleSection'
 import ContentInputSection from './ContentInputSection'
+
+// Routes
+const ROUTES = {
+  POSTS_LIST: '/crm/marketing/posts',
+} as const
 
 /**
  * Pure presentational component for Post Form
@@ -27,6 +33,8 @@ import ContentInputSection from './ContentInputSection'
  */
 export default function PostFormView() {
   const router = useRouter()
+  const [isNavigating, setIsNavigating] = useState(false)
+
   const {
     state,
     post,
@@ -37,20 +45,59 @@ export default function PostFormView() {
 
   const hasPlatformError = state.platforms.length === 0
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const navigateToList = () => {
+    setIsNavigating(true)
+    router.push(ROUTES.POSTS_LIST)
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    actions.submit()
+
+    try {
+      await actions.submit()
+      // On success, redirect to posts list
+      navigateToList()
+    } catch (error) {
+      // Error toast already handled by store
+      console.error('[PostForm] Submit failed:', error)
+    }
+  }
+
+  const handleSaveDraft = async () => {
+    try {
+      await actions.saveDraft()
+      // On success, redirect to posts list
+      navigateToList()
+    } catch (error) {
+      console.error('[PostForm] Save draft failed:', error)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this post?')) {
+      return
+    }
+
+    try {
+      await actions.delete()
+      // On success, redirect to posts list
+      navigateToList()
+    } catch (error) {
+      console.error('[PostForm] Delete failed:', error)
+    }
   }
 
   const handleCancel = () => {
     if (isDirty) {
       if (confirm('Bạn có thay đổi chưa được lưu. Bạn có chắc muốn rời đi?')) {
-        router.push('/crm/marketing/posts')
+        navigateToList()
       }
     } else {
-      router.push('/crm/marketing/posts')
+      navigateToList()
     }
   }
+
+  const isActionDisabled = isSubmitting || isNavigating
 
   return (
     <form
@@ -77,8 +124,8 @@ export default function PostFormView() {
               <Button
                 type="button"
                 variant="destructive"
-                onClick={() => actions.delete()}
-                disabled={isSubmitting}
+                onClick={handleDelete}
+                disabled={isActionDisabled}
               >
                 <Trash2 className="h-4 w-4 mr-1" />
                 Xóa
@@ -89,8 +136,8 @@ export default function PostFormView() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => actions.saveDraft()}
-                disabled={isSubmitting}
+                onClick={handleSaveDraft}
+                disabled={isActionDisabled}
               >
                 Save as Draft
               </Button>
@@ -102,20 +149,20 @@ export default function PostFormView() {
               type="button"
               variant="outline"
               onClick={handleCancel}
-              disabled={isSubmitting}
+              disabled={isActionDisabled}
             >
               Cancel
             </Button>
 
             <Button
               type="submit"
-              disabled={isSubmitting || hasPlatformError}
+              disabled={isActionDisabled || hasPlatformError}
               className="min-w-[140px]"
             >
-              {isSubmitting ? (
+              {isSubmitting || isNavigating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {isNavigating ? 'Redirecting...' : 'Saving...'}
                 </>
               ) : post ? (
                 'Update Post'

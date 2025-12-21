@@ -1,19 +1,17 @@
 import { Post, PostStatus } from '@/core/domain/marketing/post'
 import { PostFormState } from '../state/usePostFormState'
-import { updatePostAction } from '../../../_actions/update-post-action'
-import { createPostAction } from '../../../_actions/create-post-action'
-import { deletePostAction } from '../../../_actions/delete-post-action'
+import type { PostPayload } from '@/core/application/interfaces/marketing/post-repo'
 
 // ---------- helpers ----------
 
 const parseHashtags = (value: string): string[] =>
   value
     .split(/\s+/)
-    .filter(tag => tag.startsWith('#'))
-    .map(tag => tag.slice(1))
+    .filter((tag) => tag.startsWith('#'))
+    .map((tag) => tag.slice(1))
 
 // ---------- types ----------
-// PostFormActions.ts
+
 export interface PostFormActions {
   submit: () => Promise<void>
   saveDraft: () => Promise<void>
@@ -25,20 +23,25 @@ export type SubmitMode = 'draft' | 'schedule' | 'publish'
 export interface PostFormActionsDeps {
   getState: () => PostFormState
   post?: Post
+  createPost: (payload: PostPayload) => Promise<{ success: boolean; postId: string }>
+  updatePost: (postId: string, payload: PostPayload) => Promise<{ success: boolean }>
+  deletePost: (postId: string) => Promise<void>
 }
 
 // ---------- factory ----------
 
 /**
- * createPostFormActions
+ * PostFormActions
  *
  * Plain action factory (NO React, NO hook)
  */
 export function PostFormActions({
   getState,
   post,
+  createPost,
+  updatePost,
+  deletePost: deletePostFn,
 }: PostFormActionsDeps): PostFormActions {
-
   // ===== submit (publish / schedule) =====
 
   const submit = async (): Promise<void> => {
@@ -48,13 +51,13 @@ export function PostFormActions({
       throw new Error('Please select at least one platform')
     }
 
-    const payload = {
+    const payload: PostPayload = {
       title: state.title,
       body: state.body,
       contentType: state.contentType,
-      platforms: state.platforms.map(platform => ({
+      platforms: state.platforms.map((platform) => ({
         platform: platform.platform,
-        status: (state.scheduledAt ? "scheduled" : "draft") as PostStatus
+        status: (state.scheduledAt ? 'scheduled' : 'draft') as PostStatus,
       })),
       media: state.media || undefined,
       hashtags: parseHashtags(state.hashtags),
@@ -63,29 +66,12 @@ export function PostFormActions({
 
     // update
     if (post?.id) {
-      const updatePayload = {
-        title: state.title,
-        body: state.body,
-        contentType: state.contentType,
-        platforms: state.platforms.map(platform => ({
-          platform: platform.platform,
-          status: (state.scheduledAt ? "scheduled" : "draft") as PostStatus
-        })),
-        media: state.media || undefined,
-        hashtags: parseHashtags(state.hashtags),
-        scheduledAt: state.scheduledAt ? new Date(state.scheduledAt) : undefined,
-      }
-      await updatePostAction({
-        postId: post.id,
-        payload: updatePayload,
-      })
+      await updatePost(post.id, payload)
       return
     }
 
     // create
-    await createPostAction({
-      payload,
-    })
+    await createPost(payload)
   }
 
   // ===== save draft =====
@@ -93,13 +79,13 @@ export function PostFormActions({
   const saveDraft = async (): Promise<void> => {
     const state = getState()
 
-    const payload = {
+    const payload: PostPayload = {
       title: state.title,
       body: state.body,
       contentType: state.contentType,
-      platforms: state.platforms.map(platform => ({
+      platforms: state.platforms.map((platform) => ({
         platform: platform.platform,
-        status: "draft" as PostStatus
+        status: 'draft' as PostStatus,
       })),
       media: state.media || undefined,
       hashtags: parseHashtags(state.hashtags),
@@ -107,43 +93,26 @@ export function PostFormActions({
     }
 
     if (post?.id) {
-      const updatePayload = {
-        title: state.title,
-        body: state.body,
-        contentType: state.contentType,
-        platforms: state.platforms.map(platform => ({
-          platform: platform.platform,
-          status: "draft" as PostStatus
-        })),
-        media: state.media || undefined,
-        hashtags: parseHashtags(state.hashtags),
-        scheduledAt: undefined,
-      }
-      await updatePostAction({
-        postId: post.id,
-        payload: updatePayload,
-      })
+      await updatePost(post.id, payload)
       return
     }
 
-    await createPostAction({
-      payload,
-    })
+    await createPost(payload)
   }
 
   // ===== delete =====
 
-  const deletePost = async (): Promise<void> => {
+  const deletePostAction = async (): Promise<void> => {
     if (!post?.id) {
       throw new Error('No post to delete')
     }
 
-    await deletePostAction(post.id)
+    await deletePostFn(post.id)
   }
 
   return {
     submit,
     saveDraft,
-    delete: deletePost,
+    delete: deletePostAction,
   }
 }

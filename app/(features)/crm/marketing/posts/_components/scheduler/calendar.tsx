@@ -206,12 +206,7 @@ export default function Calendar() {
 
   return (
     <div className="space-y-5">
-      <CalendarNav
-        calendarRef={calendarRef}
-        start={selectedStart}
-        end={selectedEnd}
-        viewedDate={viewedDate}
-      />
+      <CalendarNav calendarRef={calendarRef} viewedDate={viewedDate} />
 
       <Card className="p-3">
         <FullCalendar

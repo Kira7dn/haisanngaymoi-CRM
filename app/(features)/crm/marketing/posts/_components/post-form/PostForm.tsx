@@ -30,7 +30,7 @@ export default function PostForm({
   initialScheduledAt,
   initialIdea,
 }: PostFormProps) {
-  const { findPostById } = usePostStore()
+  const { findPostById, createPost, updatePost, deletePost } = usePostStore()
   const [post, setPost] = useState<Post | undefined>(undefined)
 
   // Load post if postId is provided
@@ -39,7 +39,6 @@ export default function PostForm({
       findPostById(postId).then(setPost)
     }
   }, [postId, findPostById])
-
 
   // ========== Form State ==========
   const {
@@ -64,8 +63,11 @@ export default function PostForm({
       PostFormActions({
         getState: () => stateRef.current,
         post,
+        createPost,
+        updatePost,
+        deletePost,
       }),
-    [post]
+    [post, createPost, updatePost, deletePost]
   )
 
   // Convert ProductPlain[] to Product[] for context
