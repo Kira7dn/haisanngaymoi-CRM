@@ -35,7 +35,14 @@ const PLATFORM_COLORS: Record<Platform, string> = {
 
 
 export default function PostScheduler() {
-  const { posts, filter, previewPosts, isGeneratingSchedule } = usePostStore()
+  const {
+    posts,
+    filter,
+    previewPosts,
+    isGeneratingSchedule,
+    loadPostsByMonth,
+    loadedMonths
+  } = usePostStore()
   const [events, setEvents] = useState<EventInput[]>([])
   const calendarRef = useRef<any>(null)
   const [viewedDate, setViewedDate] = useState(new Date())
@@ -43,6 +50,19 @@ export default function PostScheduler() {
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+
+  // Load posts when calendar month changes
+  useEffect(() => {
+    const year = viewedDate.getFullYear()
+    const month = viewedDate.getMonth() // 0-11
+    const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`
+
+    // Check if this month is already loaded
+    if (!loadedMonths.has(monthKey)) {
+      console.log(`[PostScheduler] Loading posts for new month: ${monthKey}`)
+      loadPostsByMonth(year, month)
+    }
+  }, [viewedDate, loadPostsByMonth, loadedMonths])
 
   // Transform posts to calendar events
   useEffect(() => {

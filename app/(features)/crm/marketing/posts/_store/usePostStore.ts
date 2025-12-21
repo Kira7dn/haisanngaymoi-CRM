@@ -24,6 +24,10 @@ interface PostStore {
   hasLoaded: boolean
   serverProcessTime: number | null
 
+  // Month-based loading state
+  loadedMonths: Set<string> // Format: "YYYY-MM"
+  currentViewedMonth: string | null
+
   // ===== Actions =====
   setPosts: (posts: Post[]) => void
   setFilter: (filter: string) => void
@@ -35,6 +39,7 @@ interface PostStore {
 
   // Data fetching
   loadPosts: (force?: boolean) => Promise<void>
+  loadPostsByMonth: (year: number, month: number) => Promise<void>
   findPostById: (id: string) => Promise<Post | undefined>
 
   // CRUD operations with toaster
@@ -60,6 +65,10 @@ export const usePostStore = create<PostStore>((set, get) => ({
   hasLoaded: false,
   serverProcessTime: null,
 
+  // Month-based loading state
+  loadedMonths: new Set<string>(),
+  currentViewedMonth: null,
+
   // ===== Simple setters =====
   setPosts: (posts) => set({ posts }),
 
@@ -81,25 +90,73 @@ export const usePostStore = create<PostStore>((set, get) => ({
       return
     }
 
+    // Load current month and adjacent months
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth() // 0-11
+
     set({ isLoading: true })
+
+    try {
+      // Load current month, previous month, and next month
+      await Promise.all([
+        get().loadPostsByMonth(currentYear, currentMonth),
+        get().loadPostsByMonth(
+          currentMonth === 0 ? currentYear - 1 : currentYear,
+          currentMonth === 0 ? 11 : currentMonth - 1
+        ),
+        get().loadPostsByMonth(
+          currentMonth === 11 ? currentYear + 1 : currentYear,
+          currentMonth === 11 ? 0 : currentMonth + 1
+        ),
+      ])
+
+      set({ hasLoaded: true, isLoading: false })
+    } catch (error) {
+      console.error("[PostStore] Failed to load posts:", error)
+      set({ isLoading: false, hasLoaded: true })
+    }
+  },
+
+  loadPostsByMonth: async (year: number, month: number) => {
+    const { isLoading, loadedMonths, posts } = get()
+    const monthKey = `${year}-${String(month + 1).padStart(2, '0')}` // Format: "YYYY-MM"
+
+    // Skip if already loaded or currently loading
+    if (loadedMonths.has(monthKey)) {
+      console.log(`[PostStore] Month ${monthKey} already loaded, skipping`)
+      return
+    }
+
+    console.log(`[PostStore] Loading posts for ${monthKey}...`)
 
     try {
       const { getPostsAction } = await import("../_actions/get-post-action")
 
-      console.log("[PostStore] Loading posts...")
-      const response = await getPostsAction()
-      console.log("[PostStore] Server process time:", response.serverProcessTime, "ms")
-      console.log("[PostStore] Posts loaded:", response.posts)
+      // Calculate date range for the month
+      const startDate = new Date(year, month, 1, 0, 0, 0, 0)
+      const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999)
+
+      const response = await getPostsAction({
+        dateRange: {
+          startDate,
+          endDate
+        }
+      })
+
+      console.log(`[PostStore] Loaded ${response.posts.length} posts for ${monthKey}`)
+
+      // Merge new posts with existing posts (avoid duplicates)
+      const existingIds = new Set(posts.map(p => p.id))
+      const newPosts = response.posts.filter(p => !existingIds.has(p.id))
 
       set({
-        posts: response.posts,
-        isLoading: false,
-        hasLoaded: true,
+        posts: [...posts, ...newPosts],
+        loadedMonths: new Set([...loadedMonths, monthKey]),
         serverProcessTime: response.serverProcessTime,
       })
     } catch (error) {
-      console.error("[PostStore] Failed to load posts:", error)
-      set({ isLoading: false, hasLoaded: true })
+      console.error(`[PostStore] Failed to load posts for ${monthKey}:`, error)
     }
   },
 

@@ -1,6 +1,6 @@
 import { BaseRepository, type PaginationOptions, type PaginatedResult } from "@/infrastructure/db/base-repository";
 import { Post } from "@/core/domain/marketing/post";
-import type { PostRepo, PostPayload } from "@/core/application/interfaces/marketing/post-repo";
+import type { PostRepo, PostPayload, DateRangeFilter } from "@/core/application/interfaces/marketing/post-repo";
 import { ObjectId } from "mongodb";
 
 export class PostRepository extends BaseRepository<Post, string> implements PostRepo {
@@ -36,6 +36,35 @@ export class PostRepository extends BaseRepository<Post, string> implements Post
       limit,
       totalPages: Math.ceil(total / limit)
     };
+  }
+
+  async getByDateRange(filter: DateRangeFilter): Promise<Post[]> {
+    const collection = await this.getCollection();
+
+    // Query posts where scheduledAt falls within the date range
+    // If scheduledAt is null, fall back to createdAt
+    const docs = await collection
+      .find({
+        $or: [
+          {
+            scheduledAt: {
+              $gte: filter.startDate,
+              $lte: filter.endDate
+            }
+          },
+          {
+            scheduledAt: { $exists: false },
+            createdAt: {
+              $gte: filter.startDate,
+              $lte: filter.endDate
+            }
+          }
+        ]
+      })
+      .sort({ scheduledAt: -1, createdAt: -1 })
+      .toArray();
+
+    return docs.map(doc => this.toDomain(doc));
   }
 
   async getById(id: string): Promise<Post | null> {
