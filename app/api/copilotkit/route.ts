@@ -7,7 +7,7 @@ import {
 
 
 const serviceAdapter = new OpenAIAdapter({
-  model: process.env.OPENAI_MODEL || "gpt-4o",
+  model: process.env.OPENAI_MODEL || "gpt-5-nano",
 });
 
 const copilotKitRuntime = new CopilotRuntime();

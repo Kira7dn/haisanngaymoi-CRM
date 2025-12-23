@@ -28,7 +28,7 @@ export default function PostFormModal() {
 
   return (
     <Dialog open={isPostFormModalOpen} onOpenChange={closePostFormModal}>
-      <DialogContent className="w-[95vw] sm:w-[90vw] lg:max-w-6xl h-[95vh] sm:h-[90vh] max-h-[900px] flex flex-col overflow-hidden p-0">
+      <DialogContent className="w-[95vw] sm:w-[90vw] lg:max-w-6xl h-[95vh] sm:h-[90vh] max-h-225 flex flex-col overflow-hidden p-0">
         <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
           <DialogTitle className="flex items-center gap-2">
             {isPreview ? '📝 Preview Post' : selectedPost ? '✏️ Edit Post' : '➕ New Post'}

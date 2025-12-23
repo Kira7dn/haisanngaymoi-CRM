@@ -42,13 +42,14 @@ export class PostRepository extends BaseRepository<Post, string> implements Post
     const collection = await this.getCollection();
 
     // Query posts where scheduledAt falls within the date range
-    // If scheduledAt is null, fall back to createdAt
+    // Use Date objects for comparison (MongoDB stores dates as Date objects)
+    // If scheduledAt is null/missing, fall back to createdAt
     const docs = await collection
       .find({
         $or: [
           {
             scheduledAt: {
-              $gte: filter.startDate,
+              $gte: filter.startDate,  // Compare Date with Date
               $lte: filter.endDate
             }
           },
@@ -74,13 +75,23 @@ export class PostRepository extends BaseRepository<Post, string> implements Post
   }
 
   async create(payload: PostPayload): Promise<Post> {
-
+    const now = new Date();
     const collection = await this.getCollection();
-    const { insertedId } = await collection.insertOne(payload);
+
+    // Ensure all date fields are Date objects (not strings)
+    // This guarantees MongoDB stores them as ISODate for proper comparison
+    const doc = {
+      ...payload,
+      createdAt: payload.createdAt ? new Date(payload.createdAt) : now,
+      updatedAt: payload.updatedAt ? new Date(payload.updatedAt) : now,
+      scheduledAt: payload.scheduledAt ? new Date(payload.scheduledAt) : undefined,
+    };
+
+    const { insertedId } = await collection.insertOne(doc);
 
     return this.toDomain({
       _id: insertedId,
-      ...payload
+      ...doc,
     });
   }
 
@@ -90,10 +101,21 @@ export class PostRepository extends BaseRepository<Post, string> implements Post
     const now = new Date();
     const { id, ...updateFields } = payload;
 
+    // Ensure all date fields are Date objects (not strings)
     const updateObj: any = {
       ...updateFields,
-      updatedAt: now
+      updatedAt: payload.updatedAt ? new Date(payload.updatedAt) : now,
     };
+
+    // Convert scheduledAt to Date if it exists
+    if (updateObj.scheduledAt) {
+      updateObj.scheduledAt = new Date(updateObj.scheduledAt);
+    }
+
+    // Convert createdAt to Date if it exists
+    if (updateObj.createdAt) {
+      updateObj.createdAt = new Date(updateObj.createdAt);
+    }
 
     const collection = await this.getCollection();
     const result = await collection.findOneAndUpdate(

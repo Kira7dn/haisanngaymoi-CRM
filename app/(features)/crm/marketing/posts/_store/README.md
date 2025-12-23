@@ -45,7 +45,7 @@ Handles CRUD operations with automatic modal closing:
 ### `slices/planner-slice.ts` (258 lines)
 Manages AI-powered schedule generation:
 - **State**: `isGeneratingSchedule`, `isSavingSchedule`, `saveProgress`
-- **Actions**: `generateSchedule()`, `savePlannerPosts()`, `undoSchedule()`
+- **Actions**: `generateSchedule()`, `saveSchedule()`, `undoSchedule()`
 - **Features**: Streaming API for batch save with real-time progress
 
 ### `usePostStore.ts` (23 lines)

@@ -169,7 +169,7 @@ export default function DayScheduleDialog({ }: DayScheduleDialogProps) {
                         {/* Header: Title & Status */}
                         <div className="flex items-start justify-between gap-2">
                           <h3 className="font-semibold text-base line-clamp-2 flex-1">
-                            {post.title}
+                            {post.title || post.idea}
                           </h3>
                           <Badge
                             className={`${statusConfig.bg} ${statusConfig.text} shrink-0`}

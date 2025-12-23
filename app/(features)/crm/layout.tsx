@@ -35,7 +35,7 @@ export default async function FeaturesLayout({
   }
 
   return (
-    <CopilotKit runtimeUrl="/api/copilotkit">
+    <CopilotKit runtimeUrl="/api/copilotkit" publicLicenseKey="ck_pub_9f183f4c59f3d2b59e41ff75d5aace3e">
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <AdminHeader userName={user?.name} userRole={user?.role} />
         <main>{children}</main>

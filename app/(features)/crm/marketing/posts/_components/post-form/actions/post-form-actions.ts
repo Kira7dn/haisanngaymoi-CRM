@@ -1,14 +1,7 @@
 import { Post, PostStatus } from '@/core/domain/marketing/post'
 import { PostFormState } from '../state/usePostFormState'
 import type { PostPayload } from '@/core/application/interfaces/marketing/post-repo'
-
-// ---------- helpers ----------
-
-const parseHashtags = (value: string): string[] =>
-  value
-    .split(/\s+/)
-    .filter((tag) => tag.startsWith('#'))
-    .map((tag) => tag.slice(1))
+import { parseHashtags } from '../views/utils'
 
 // ---------- types ----------
 

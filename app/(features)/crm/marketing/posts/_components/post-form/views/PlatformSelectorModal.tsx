@@ -42,7 +42,7 @@ export default function PlatformSelectorModal({
   const { state, setField } = usePostFormContext()
   const { contentType, platforms } = state
 
-  const hasError = platforms.length === 0
+  const hasError = platforms?.length === 0
   const errorMessage = "Please select at least one platform"
   const isActionDisabled = isSubmitting || hasError
 

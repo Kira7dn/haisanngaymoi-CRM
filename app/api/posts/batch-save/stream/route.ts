@@ -6,20 +6,10 @@ export const maxDuration = 60 // Max 60 seconds for batch save
 import { createPostUseCase } from '@/app/api/posts/depends'
 import { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
-import type { ContentType } from '@/core/domain/marketing/post'
-
-interface BatchSaveItem {
-  idea: string
-  scheduledDate: string
-  // Optional fields from batchDraft
-  title?: string
-  body?: string
-  hashtags?: string[]
-  contentType?: ContentType
-}
+import type { Post } from '@/core/domain/marketing/post'
 
 interface BatchSaveRequest {
-  items: BatchSaveItem[]
+  items: Post[]
 }
 
 export async function POST(request: NextRequest) {
@@ -63,19 +53,19 @@ export async function POST(request: NextRequest) {
             const item = items[i]
 
             try {
-              // Parse scheduled date (YYYY-MM-DD format)
-              const [year, month, day] = item.scheduledDate.split('-').map(Number)
-              const scheduledAt = new Date(year, month - 1, day, 10, 0, 0) // Default to 10:00 AM
+              // Parse dates from ISO strings back to Date objects
+              // (JSON.stringify converts Date objects to strings)
+              const scheduledAt = item.scheduledAt ? new Date(item.scheduledAt) : undefined
+              const createdAt = item.createdAt ? new Date(item.createdAt) : undefined
+              const updatedAt = item.updatedAt ? new Date(item.updatedAt) : undefined
 
               // Create post with optional fields from batchDraft
               const post = await useCase.execute({
-                userId,
-                idea: item.idea,
-                title: item.title || item.idea,
-                body: item.body || item.idea,
-                contentType: item.contentType || ('post' as ContentType),
-                hashtags: item.hashtags || [],
+                ...item,
                 scheduledAt,
+                createdAt,
+                updatedAt,
+                userId,
               })
 
               savedCount++
@@ -93,16 +83,16 @@ export async function POST(request: NextRequest) {
                   progress,
                   currentIndex: i + 1,
                   postId: post.id.toString(),
-                  idea: item.idea
+                  idea: item.idea || 'Unknown item'
                 })}\n\n`)
               )
             } catch (error) {
               failedCount++
               const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
-              console.error(`[BatchSave] Failed to save "${item.idea}":`, error)
+              console.error(`[BatchSave] Failed to save "${item.idea || 'Unknown item'}":`, error)
               errors.push({
-                idea: item.idea,
+                idea: item.idea || 'Unknown item',
                 error: errorMessage
               })
 
@@ -110,7 +100,7 @@ export async function POST(request: NextRequest) {
               controller.enqueue(
                 encoder.encode(`data: ${JSON.stringify({
                   type: 'item-error',
-                  idea: item.idea,
+                  idea: item.idea || 'Unknown item',
                   error: errorMessage,
                   savedCount,
                   failedCount

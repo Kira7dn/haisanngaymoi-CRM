@@ -57,7 +57,7 @@ export default function CalendarNav({
     brand,
     products,
     generateSchedule: generateScheduleStore,
-    savePlannerPosts,
+    saveSchedule,
     undoSchedule,
   } = usePostStore();
   const router = useRouter();
@@ -68,10 +68,6 @@ export default function CalendarNav({
       brand.selectedProductIds?.includes(p.id)
     )
     return generateScheduleStore(brand, selectedProducts)
-  }
-
-  const saveSchedule = async () => {
-    return savePlannerPosts()
   }
 
   const selectedMonth = viewedDate.getMonth() + 1;

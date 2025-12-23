@@ -18,7 +18,7 @@ export interface PlannerSlice {
   // Actions
   setIsGeneratingSchedule: (value: boolean) => void
   generateSchedule: (brandMemory: BrandMemory, selectedProducts: Product[]) => Promise<Post[]>
-  savePlannerPosts: () => Promise<{ success: boolean; savedCount?: number }>
+  saveSchedule: () => Promise<{ success: boolean; savedCount?: number }>
   undoSchedule: () => { success: boolean; discardedCount: number }
 }
 
@@ -77,7 +77,7 @@ export const createPlannerSlice: StateCreator<
   },
 
   // ===== SAVE PLANNER POSTS (STREAMING) =====
-  savePlannerPosts: async () => {
+  saveSchedule: async () => {
     const { previewPosts } = get()
 
     if (previewPosts.length === 0) {

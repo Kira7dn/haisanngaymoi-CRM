@@ -30,7 +30,8 @@ export default function PostsPageClient() {
       }
       console.log(`[PostsPageClient] Total time = client processing + network + server processing`)
     })
-  }, [loadPosts])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="space-y-6 px-4 sm:px-6 lg:px-8">

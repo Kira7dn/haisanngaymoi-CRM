@@ -54,6 +54,7 @@ export default function PostScheduler() {
     loadedMonths,
     openDayScheduleDialog,
   } = usePostStore()
+
   const [events, setEvents] = useState<EventInput[]>([])
   const calendarRef = useRef<any>(null)
   const [viewedDate, setViewedDate] = useState(new Date())
@@ -77,13 +78,15 @@ export default function PostScheduler() {
       console.log(`[PostScheduler] Loading posts for new month: ${monthKey}`)
       loadPostsByMonth(year, month)
     }
-  }, [viewedDate, loadPostsByMonth, loadedMonths])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewedDate])
 
   // Transform posts to calendar events
   useEffect(() => {
-    const filtered = posts.filter((p) =>
-      p.title?.toLowerCase().includes(filter.toLowerCase())
-    )
+    const filtered = posts.filter((p) => {
+      const searchText = (p.title || p.idea || '').toLowerCase()
+      return searchText.includes(filter.toLowerCase())
+    })
 
     const calendarEvents: EventInput[] = filtered.map((post) => {
       // Get post status and apply color based on status
@@ -94,9 +97,11 @@ export default function PostScheduler() {
         ? new Date(post.scheduledAt)
         : new Date(post.createdAt)
 
+      const eventTitle = post.title || post.idea || 'Untitled Post'
+
       return {
         id: post.id,
-        title: post.title,
+        title: eventTitle,
         start: start,
         allDay: true,
         backgroundColor: statusColor.bg,

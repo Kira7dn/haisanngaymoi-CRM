@@ -96,11 +96,14 @@ export const createDataSlice: StateCreator<
     const { loadedMonths, posts } = get()
     const monthKey = `${year}-${String(month + 1).padStart(2, '0')}` // Format: "YYYY-MM"
 
-    // Skip if already loaded
+    // Skip if already loaded OR currently loading (prevent race condition)
     if (loadedMonths.has(monthKey)) {
       console.log(`[PostStore] Month ${monthKey} already loaded, skipping`)
       return
     }
+
+    // Mark as loading immediately to prevent race condition
+    set({ loadedMonths: new Set([...loadedMonths, monthKey]) })
 
     console.log(`[PostStore] Loading posts for ${monthKey}...`)
 
@@ -121,16 +124,24 @@ export const createDataSlice: StateCreator<
       console.log(`[PostStore] Loaded ${response.posts.length} posts for ${monthKey}`)
 
       // Merge new posts with existing posts (avoid duplicates)
-      const existingIds = new Set(posts.map(p => p.id))
+      // Get fresh state right before merging to handle concurrent loads
+      const currentState = get()
+      const existingIds = new Set(currentState.posts.map(p => p.id))
       const newPosts = response.posts.filter(p => !existingIds.has(p.id))
 
+      console.log(`[PostStore] Merging ${newPosts.length} new posts (${response.posts.length - newPosts.length} duplicates skipped)`)
+
       set({
-        posts: [...posts, ...newPosts],
-        loadedMonths: new Set([...loadedMonths, monthKey]),
+        posts: [...currentState.posts, ...newPosts],
         serverProcessTime: response.serverProcessTime,
       })
     } catch (error) {
       console.error(`[PostStore] Failed to load posts for ${monthKey}:`, error)
+
+      // Remove from loadedMonths on error so it can be retried
+      const currentLoadedMonths = get().loadedMonths
+      currentLoadedMonths.delete(monthKey)
+      set({ loadedMonths: new Set(currentLoadedMonths) })
     }
   },
 

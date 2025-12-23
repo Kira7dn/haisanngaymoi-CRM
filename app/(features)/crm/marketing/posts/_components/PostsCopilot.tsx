@@ -1,15 +1,13 @@
 'use client'
 
-import { CopilotSidebar } from '@copilotkit/react-ui'
-import { useCopilotAction, useCopilotReadable, useCopilotChatSuggestions, useFrontendTool } from '@copilotkit/react-core'
+import { useMemo } from 'react'
+import { CopilotKitCSSProperties, CopilotPopup } from '@copilotkit/react-ui'
+import { useCopilotAction, useCopilotChatSuggestions, useCopilotReadable, useFrontendTool } from '@copilotkit/react-core'
 import { usePostStore } from '../_store/usePostStore'
 import type { Post } from '@/core/domain/marketing/post'
+import { parseHashtags } from './post-form/views/utils'
 
-interface PostsCopilotProps {
-  children: React.ReactNode
-}
-
-export function PostsCopilot({ children }: PostsCopilotProps) {
+export function PostsCopilot() {
   const {
     posts,
     createPost,
@@ -17,36 +15,129 @@ export function PostsCopilot({ children }: PostsCopilotProps) {
     previewPosts,
     brand,
     products,
-    generateSchedule,
-    savePlannerPosts,
+    saveSchedule,
     undoSchedule,
   } = usePostStore()
 
-  // Helper functions that were in the hook
-  const generateScheduleWithProducts = async () => {
-    const selectedProducts = products.filter((p: any) =>
-      brand.selectedProductIds?.includes(p.id)
-    )
-    return generateSchedule(brand, selectedProducts)
-  }
-
-  const saveSchedule = async () => {
-    return savePlannerPosts()
-  }
 
   const hasPreview = previewPosts.length > 0
   const previewCount = previewPosts.length
 
+  // Dynamic suggestions based on context - passed directly to CopilotPopup
+  const suggestions = useMemo(() => {
+    const result: Array<{ message: string; title: string }> = []
+
+    if (hasPreview) {
+      // User has preview posts - suggest saving or discarding
+      result.push({
+        title: `💾 Save ${previewCount} posts`,
+        message: `Save all ${previewCount} preview posts to calendar`
+      })
+      result.push({
+        title: '🔄 Undo posts',
+        message: `Discard all ${previewCount} preview posts`
+      })
+    } else {
+      // No preview - suggest content creation based on current state
+      const now = new Date()
+      const currentDay = now.getDate()
+      const currentMonth = now.getMonth() + 1 // 1-12
+      const currentYear = now.getFullYear()
+      const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1
+      const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      const nextMonthName = monthNames[nextMonth - 1]
+      const isEndOfMonth = currentDay > 20
+
+      if (posts.length === 0) {
+        // No posts at all - onboarding suggestions
+        result.push({
+          title: `🚀 Plan ${nextMonthName}`,
+          message: `Create a complete 30-day content plan for ${nextMonthName} ${nextMonthYear}`
+        })
+        result.push({
+          title: '✨ Quick start',
+          message: 'Generate 10 post ideas to get started'
+        })
+      } else if (isEndOfMonth) {
+        // End of month - focus on next month planning
+        result.push({
+          title: `📅 Next month plan`,
+          message: `Plan complete ${nextMonthName} content calendar with 30 posts`
+        })
+        result.push({
+          title: `💡 Early Post for ${nextMonthName}`,
+          message: `Add 5 posts for the first week of ${nextMonthName}`
+        })
+      } else {
+        // Mid-month - focus on filling current gaps
+        result.push({
+          title: '📊 Fill the gaps',
+          message: 'Add 15 more posts to complete this month'
+        })
+        result.push({
+          title: `🔮 Preview ${nextMonthName}`,
+          message: `Start planning content for ${nextMonthName}`
+        })
+      }
+
+      // Context-aware single post suggestion
+      result.push({
+        title: '⚡ Post for today',
+        message: 'Create 1 engaging post for today'
+      })
+    }
+
+    // Always show help option
+    result.push({
+      title: '💭 Strategy tips',
+      message: 'Get content strategy tips for my brand'
+    })
+
+    return result
+  }, [hasPreview, previewCount, posts.length])
+
+  // useCopilotChatSuggestions(
+  //   {
+  //     instructions: "Suggest the most relevant next actions.",
+  //   },
+  //   [suggestions],
+  // );
+
   // Make brand context readable to AI
   useCopilotReadable({
-    description: 'Brand memory and content strategy',
+    description: 'Brand memory and content strategy - Complete brand identity, voice guidelines, and product catalog for content generation',
     value: {
-      brand: brand.brandDescription,
-      niche: brand.niche,
-      contentStyle: brand.contentStyle,
-      language: brand.language,
-      tone: brand.brandVoice.tone,
-      selectedProductsCount: brand.selectedProductIds?.length || 0
+      brandIdentity: {
+        description: brand.brandDescription,
+        niche: brand.niche,
+        contentStyle: brand.contentStyle,
+        language: brand.language,
+      },
+      brandVoice: {
+        tone: brand.brandVoice.tone,
+        writingPatterns: brand.brandVoice.writingPatterns,
+      },
+      brandAssets: {
+        keyPoints: brand.keyPoints,
+        ctaLibrary: brand.ctaLibrary,
+        contentsInstruction: brand.contentsInstruction,
+      },
+      selectedProducts: products
+        .filter(p => brand.selectedProductIds?.includes(p.id))
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          originalPrice: p.originalPrice,
+          detail: p.detail,
+          sizes: p.sizes,
+          colors: p.colors,
+        })),
+      productSummary: {
+        totalProducts: products.length,
+        selectedCount: brand.selectedProductIds?.length || 0,
+      }
     }
   })
 
@@ -60,70 +151,66 @@ export function PostsCopilot({ children }: PostsCopilotProps) {
     }
   })
 
-  // Suggest next actions based on preview state
-  // useCopilotChatSuggestions(
-  //   {
-  //     instructions: hasPreview
-  //       ? `There are ${previewCount} preview posts waiting. Suggest: "Save schedule" to persist them to database, or "Undo schedule" to discard them.`
-  //       : "No preview posts. Suggest: 'Generate post schedule' or 'Draft posts'",
-  //     minSuggestions: hasPreview ? 2 : 1,
-  //     maxSuggestions: hasPreview ? 2 : 3,
-  //   },
-  //   [hasPreview, previewCount]
-  // )
-
-  // Define generatePostSchedule action
-  useCopilotAction({
-    name: 'generatePostSchedule',
-    description: 'Generate 30-day post schedule with 20-30 content ideas based on brand memory. Use when user asks to "create post schedule", "generate schedule", "plan content".',
-    parameters: [],
-    handler: async () => {
-      const schedule = await generateScheduleWithProducts()
-      return {
-        success: true,
-        message: `Created ${schedule.length} post ideas for the next 30 days. You can preview on calendar and click Save to save.`,
-        count: schedule.length
-      }
-    }
-  }, [generateScheduleWithProducts])
-
   // Define addDraftPost action
   useCopilotAction({
     name: 'addDraftPost',
-    description: 'Draft a post to schedule. Use when user asks to "draft post", "create post", "add post". then return the post edit URL.',
+    description: 'Create a single high-quality marketing post with strategic content and save immediately to database. Use brand voice, integrate products naturally, and generate scheduledAt automatically.',
     parameters: [
       {
-        name: "idea",
-        type: "string",
-        description: "The main idea or concept of the post",
+        name: "post",
+        type: "object",
+        description: "Complete post object with all required properties",
         required: true,
-      },
-      {
-        name: "title",
-        type: "string",
-        description: "The title of the post",
-        required: true,
-      },
-      {
-        name: "body",
-        type: "string",
-        description: "The full content/text of the post",
-        required: true,
-      },
-      {
-        name: "hashtags",
-        type: "string",
-        description: "Comma-separated hashtags for the post",
-        required: false,
+        properties: [
+          {
+            name: "idea",
+            type: "string",
+            description: "The main idea or concept of the post",
+            required: false,
+          },
+          {
+            name: "title",
+            type: "string",
+            description: "The title of the post",
+            required: false,
+          },
+          {
+            name: "body",
+            type: "string",
+            description: "The full content/text of the post",
+            required: false,
+          },
+          {
+            name: "hashtags",
+            type: "string[]",
+            description: "Array of hashtags for the post",
+            required: false,
+          },
+          {
+            name: "scheduledAt",
+            type: "string",
+            description: "Scheduled date",
+            required: false,
+          },
+          {
+            name: "mentions",
+            type: "string[]",
+            description: "Array of mentions",
+            required: false,
+          }
+        ]
       },
     ],
-    handler: async (params: { idea: string; title: string; body: string; hashtags?: string }) => {
+    handler: async (args: { post: any }) => {
+      const post = args.post as Post;
       const payload = {
-        idea: params.idea,
-        title: params.title,
-        body: params.body,
-        contentType: 'post' as const,
-        hashtags: params.hashtags ? params.hashtags.split(',').map(tag => tag.trim()) : []
+        idea: post.idea,
+        title: post.title,
+        body: post.body,
+        scheduledAt: post.scheduledAt,
+        contentType: "post" as const,
+        hashtags: parseHashtags(post.hashtags),
+        mentions: post.mentions
       }
       const result = await createPost(payload)
       const baseUrl = window.location.origin
@@ -141,38 +228,12 @@ export function PostsCopilot({ children }: PostsCopilotProps) {
   // Adds posts to previewPosts instead of creating them immediately
   useFrontendTool({
     name: 'batchDraft',
-    description: `Create multiple draft posts at once and add them to preview (not saved to DB yet).
-      CRITICAL REQUIREMENTS:
-      - You MUST generate a scheduledDate (YYYY-MM-DD format) for EACH post
-      - Spread posts across different dates (don't put all on same day)
-      - Use dates within next 30 days from today: ${new Date().toISOString().split('T')[0]}
-
-      Example call:
-      {
-        "posts": [
-          {
-            "idea": "Post idea 1",
-            "title": "Title 1",
-            "body": "Body content 1",
-            "scheduledDate": "2025-12-25",
-            "hashtags": "tag1,tag2"
-          },
-          {
-            "idea": "Post idea 2",
-            "title": "Title 2",
-            "body": "Body content 2",
-            "scheduledDate": "2025-12-27",
-            "hashtags": "tag3,tag4"
-          }
-        ]
-      }
-
-User must call saveSchedule afterwards to save to database.`,
+    description: 'Create a strategic 30-day marketing content calendar with 15-30 posts following AIDA framework and 70-20-10 rule. Each post must include scheduledAt (YYYY-MM-DD). Posts added to preview (not saved to DB).',
     parameters: [
       {
         name: "posts",
         type: "object[]",
-        description: "Array of posts to create. EVERY post object MUST include: idea, title, body, and scheduledDate (YYYY-MM-DD). Optional: hashtags.",
+        description: "Array of posts to create. EVERY post object MUST include: idea, scheduledAt (YYYY-MM-DD). Optional: hashtags.",
         required: true,
         properties: [
           {
@@ -182,19 +243,7 @@ User must call saveSchedule afterwards to save to database.`,
             required: true,
           },
           {
-            name: "title",
-            type: "string",
-            description: "The title of the post",
-            required: true,
-          },
-          {
-            name: "body",
-            type: "string",
-            description: "The full content/text of the post",
-            required: true,
-          },
-          {
-            name: "scheduledDate",
+            name: "scheduledAt",
             type: "string",
             description: "REQUIRED: The scheduled date in YYYY-MM-DD format. Must be within next 30 days. Example: 2025-12-25",
             required: true,
@@ -202,97 +251,53 @@ User must call saveSchedule afterwards to save to database.`,
           {
             name: "hashtags",
             type: "string",
-            description: "Comma-separated hashtags for the post",
+            description: "Comma-separated hashtags for the post (e.g., '#seafood,#fresh,#cotoisland')",
             required: false,
           },
         ]
       },
     ],
-    handler: async ({ posts }: { posts: Array<{ idea: string; title: string; body: string; scheduledDate?: string; hashtags?: string }> }) => {
-      console.log("Generated posts:", posts);
+    handler: async (args: { posts: any[] }) => {
+      console.log("Generated posts (raw from AI):", args.posts);
 
-      // Limit to a reasonable maximum to avoid abuse
-      const postsToAdd = posts.slice(0, 50)
-
-      // Auto-generate scheduledDate if missing (spread across next 30 days)
-      const today = new Date()
-      let dateOffset = 1 // Start from tomorrow
-
-      const scheduleItems = postsToAdd.map((post, index) => {
-        let scheduledDate = post.scheduledDate
-
-        // If scheduledDate is missing or invalid, auto-generate
-        if (!scheduledDate || scheduledDate.trim() === '') {
-          const targetDate = new Date(today)
-          targetDate.setDate(today.getDate() + dateOffset)
-          scheduledDate = targetDate.toISOString().split('T')[0]
-
-          // Spread posts across days (max 2 posts per day)
-          if (index % 2 === 1) {
-            dateOffset += 1
-          }
+      // Parse dates and hashtags, filter out invalid keys
+      const parsedPosts = args.posts.map((post: any) => {
+        // Convert scheduledAt string to Date object if needed
+        let scheduledAt = post.scheduledAt;
+        if (scheduledAt && typeof scheduledAt === 'string') {
+          const [year, month, day] = scheduledAt.split('-').map(Number);
+          scheduledAt = new Date(year, month - 1, day, 10, 0, 0);
         }
 
-        // Convert scheduledDate (YYYY-MM-DD) to Date object for scheduledAt
-        const [year, month, day] = scheduledDate.split('-').map(Number)
-        const scheduledAt = new Date(year, month - 1, day, 10, 0, 0) // Default to 10:00 AM
+        // Parse hashtags to ensure consistent format
+        const hashtags = parseHashtags(post.hashtags);
 
-        return {
-          id: `temp-${crypto.randomUUID()}`, // Generate temporary ID for preview posts
+        // Only keep valid Post fields (filter out extra keys from AI)
+        // This prevents AI from adding random fields like "content", "description", etc.
+        const validPost = {
           idea: post.idea,
           title: post.title,
           body: post.body,
-          contentType: 'post' as const,
-          platforms: [], // Empty platforms array for preview
-          hashtags: post.hashtags ? post.hashtags.split(',').map(tag => tag.trim()) : [],
-          mentions: [],
-          media: undefined,
-          userId: undefined,
-          scheduledAt, // Use Date object instead of string
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        } as unknown as Post
-      })
+          scheduledAt,
+          hashtags,
+          mentions: post.mentions,
+        };
+
+        return validPost;
+      });
+
+      console.log("Generated posts (cleaned):", parsedPosts);
+      const posts = parsedPosts as Post[];
+
 
       // Merge with existing preview posts
       const existingPreviews = previewPosts || []
-      setPreviewPosts([...existingPreviews, ...scheduleItems])
-
-      // Group posts by date for schedule summary
-      const scheduleByDate = scheduleItems.reduce((acc, item) => {
-        const date = item.scheduledAt ? item.scheduledAt.toISOString().split('T')[0] : 'Unknown'
-        if (!acc[date]) acc[date] = []
-        if (item.title) {
-          acc[date].push(item.title)
-        }
-        return acc
-      }, {} as Record<string, string[]>)
-
-      const totalPreview = existingPreviews.length + scheduleItems.length
-
-      // Check if any dates were auto-generated
-      const autoGeneratedCount = postsToAdd.filter(p => !p.scheduledDate || p.scheduledDate.trim() === '').length
-      const autoGenNote = autoGeneratedCount > 0
-        ? `\n⚠️ Note: Auto-generated posting dates for ${autoGeneratedCount} posts (spread across next ${Math.ceil(autoGeneratedCount / 2)} days).\n`
-        : ''
+      setPreviewPosts([...existingPreviews, ...posts])
 
       return {
         success: true,
-        message: `✅ Successfully added ${scheduleItems.length} draft posts to preview (${totalPreview} total preview posts).${autoGenNote}
-📅 Posts are now visible on the calendar but NOT saved to database yet.
-
-What would you like to do next?
-• Say "save schedule" to save all ${totalPreview} preview posts to database
-• Say "undo schedule" to discard all preview posts and start over
-
-Would you like me to save the schedule now?`,
-        addedCount: scheduleItems.length,
-        totalPreview,
-        schedule: scheduleByDate,
-        posts: scheduleItems.map(item => ({
-          title: item.title,
-          scheduledDate: item.scheduledAt ? item.scheduledAt.toISOString().split('T')[0] : undefined
-        }))
+        addedCount: posts.length,
+        posts,
       }
     },
     render: ({ args, status, result }: any) => {
@@ -339,15 +344,6 @@ Would you like me to save the schedule now?`,
                 </div>
               </div>
             )}
-
-            <div className="space-y-2 text-sm">
-              <p className="font-medium text-blue-600 dark:text-blue-400">Next steps:</p>
-              <ul className="space-y-1 ml-4 list-disc text-gray-700 dark:text-gray-300">
-                <li>Review posts on the calendar</li>
-                <li>Use <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">"save schedule"</span> to save to database</li>
-                <li>Or use <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">"undo schedule"</span> to discard</li>
-              </ul>
-            </div>
           </div>
         )
       }
@@ -399,45 +395,71 @@ Would you like me to save the schedule now?`,
   }, [undoSchedule])
 
   return (
-    <CopilotSidebar
-      defaultOpen={false}
-      clickOutsideToClose={true}
-      labels={{
-        title: 'Posts Assistant',
-        initial: 'Hello! I can help you create a post schedule for next month.',
-        placeholder: 'e.g., create post schedule for this month...'
-      }}
-      instructions={`You are a content planning assistant for social media posts.
-        Current context:
-      - Brand: ${brand.brandDescription}
-      - Niche: ${brand.niche}
-      - Content style: ${brand.contentStyle}
-      - Language: ${brand.language}
-      - Brand voice: ${brand.brandVoice.tone}
-      - Products: ${products.filter(p => brand.selectedProductIds?.includes(p.id))
-          .map((p: any) => `- ${p.name}: ${p.detail || 'No description'}`).join('\n')
-        }
-
-        Available actions:
-      1. generatePostSchedule - Generate 30-day post schedule with 20-30 AI content ideas (adds to preview)
-      2. addDraftPost - Create a single draft post and save immediately to database
-      3. batchDraft - Create multiple complete draft posts at once. CRITICAL: Each post MUST include scheduledDate in YYYY-MM-DD format. Required fields: idea, title, body, scheduledDate. Optional: hashtags. Posts are added to PREVIEW only, NOT saved to database yet. User MUST use "save schedule" to persist them.
-      4. saveSchedule - Save ALL preview posts to database (works for both generatePostSchedule and batchDraft)
-      5. undoSchedule - Discard ALL preview posts without saving
-
-        CRITICAL requirements for batchDraft:
-      - ALWAYS generate scheduledDate for each post (format: YYYY-MM-DD)
-      - Spread posts across different dates (don't put all on the same day)
-      - Use dates in the next 30 days from today (${new Date().toISOString().split('T')[0]})
-      - Posts are added to preview (visible on calendar but not in database)
-      - User can review preview posts on the calendar
-      - User must explicitly call "save schedule" to persist to database
-      - Or call "undo schedule" to discard all preview posts
-
-        Current state: ${hasPreview ? `${previewCount} preview posts ready to save or undo. ASK USER if they want to "save schedule" or "undo schedule".` : 'No preview posts'} `}
-
+    <div
+      style={
+        {
+          "--copilot-kit-primary-color": "#000000",
+        } as CopilotKitCSSProperties
+      }
     >
-      {children}
-    </CopilotSidebar>
+      <CopilotPopup
+        defaultOpen={false}
+        clickOutsideToClose={true}
+        suggestions={suggestions}
+        labels={{
+          title: 'Posts Assistant',
+          initial: 'Hello! I can help you create a post schedule for next month.',
+          placeholder: 'e.g., create post schedule for this month...'
+        }}
+        instructions={`
+          You are a social media content planner.
+
+          GOAL:
+          Help the user create clear and practical post plans (daily or monthly).
+
+          CONTEXT:
+          You already have access to brand info, products, and guidelines from useCopilotReadable.
+
+          WHAT TO CREATE:
+          Each post must include:
+          - idea: short, clear post idea
+          - scheduledAt: YYYY-MM-DD
+          - optional hashtags (5–10)
+
+          CONTENT RULES (simple):
+          - Focus on value first, promotion second
+          - Mix content types:
+            - Educational
+            - Brand / behind-the-scenes
+            - Product-related (light, not pushy)
+            - Engagement (questions, prompts)
+
+          AVAILABLE ACTIONS:
+
+          1. addDraftPost
+          - Create ONE post
+          - Save directly to database
+          - Use when user asks for a single post or specific date
+
+          2. batchDraft
+          - Create a post plan for a period (usually 7–30 days)
+          - 1 post per day is enough
+          - MUST include scheduledAt for every post
+          - Posts go to PREVIEW only
+
+          3. saveSchedule
+          - Save all preview posts to database
+
+          4. undoSchedule
+          - Clear preview posts and start over
+
+          IMPORTANT:
+          - Do NOT over-explain
+          - Do NOT write full captions unless asked
+          - Focus on planning, not copywriting
+          - Today is ${new Date().toISOString().split('T')[0]}
+          `}
+      />
+    </div>
   )
 }

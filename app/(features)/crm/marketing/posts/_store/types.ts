@@ -81,7 +81,7 @@ export interface PostStoreActions {
   // ===== Schedule Generation Actions =====
   setIsGeneratingSchedule: (value: boolean) => void
   generateSchedule: (brandMemory: BrandMemory, selectedProducts: Product[]) => Promise<Post[]>
-  savePlannerPosts: () => Promise<{ success: boolean; savedCount?: number }>
+  saveSchedule: () => Promise<{ success: boolean; savedCount?: number }>
   undoSchedule: () => { success: boolean; discardedCount: number }
 }
 

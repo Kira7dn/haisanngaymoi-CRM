@@ -236,7 +236,7 @@ export function AdminHeader({ userName, userRole = 'sale' }: AdminHeaderProps) {
   }
 
   return (
-    <header className="bg-background border-b sticky top-0 z-50 shadow-sm">
+    <header className="bg-background border-b sticky top-0 z-10 shadow-sm">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo/Brand */}

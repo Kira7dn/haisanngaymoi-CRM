@@ -7,8 +7,9 @@ export const revalidate = 60
 export default async function PostsPage() {
 
   return (
-    <PostsCopilot>
+    <>
+      <PostsCopilot />
       <PostsPageClient />
-    </PostsCopilot>
+    </>
   )
 }
