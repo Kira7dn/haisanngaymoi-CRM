@@ -16,7 +16,7 @@ export interface UploadResponse {
 interface UploadFilePayload {
   name: string;
   type: string;
-  buffer: number[];
+  buffer: string | number[]; // Support both base64 string and number array
   fileType: AllowedFileType;
   folder?: string;
 }
@@ -37,14 +37,30 @@ export async function uploadFileAction(
     });
 
     // Validate required fields
-    if (!payload.buffer || !Array.isArray(payload.buffer)) {
-      const errorMsg = "Invalid file data: buffer must be an array";
+    if (!payload.buffer) {
+      const errorMsg = "Invalid file data: buffer is required";
       console.error("[uploadFileAction]", errorMsg);
       return { success: false, error: errorMsg };
     }
 
     // Process the file data
-    const buffer = Buffer.from(payload.buffer);
+    let buffer: Buffer;
+
+    if (typeof payload.buffer === "string") {
+      // Handle base64 string
+      console.log("[uploadFileAction] Processing base64 string");
+      buffer = Buffer.from(payload.buffer, "base64");
+    } else if (Array.isArray(payload.buffer)) {
+      // Handle number array (legacy format)
+      console.log("[uploadFileAction] Processing number array");
+      buffer = Buffer.from(payload.buffer);
+    } else {
+      const errorMsg =
+        "Invalid buffer format: must be base64 string or number array";
+      console.error("[uploadFileAction]", errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
     const fileSize = buffer.length;
     const fileName = payload.name || "unnamed";
     let fileType = payload.fileType;

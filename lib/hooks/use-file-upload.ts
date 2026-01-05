@@ -20,6 +20,23 @@ export interface FileUploadState {
 }
 
 /**
+ * Convert file to base64 string
+ */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove the data URL prefix (e.g., "data:image/png;base64,")
+      const base64 = result.split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+}
+
+/**
  * Detect file type from filename and content type
  */
 function detectFileType(
@@ -132,15 +149,15 @@ export function useFileUpload(options: UseFileUploadOptions) {
     });
 
     try {
-      // Convert file to ArrayBuffer
-      console.log("[useFileUpload] Converting file to ArrayBuffer");
-      const arrayBuffer = await file.arrayBuffer();
-      const bufferArray = Array.from(new Uint8Array(arrayBuffer));
+      // Convert file to base64 string (more efficient than array)
+      console.log("[useFileUpload] Converting file to base64");
+      const base64String = await fileToBase64(file);
 
       console.log("[useFileUpload] Prepared file data for upload:", {
         name: file.name,
         type: file.type,
-        bufferLength: bufferArray.length,
+        base64Length: base64String.length,
+        originalSize: file.size,
       });
 
       // Auto-detect file type if not provided
@@ -152,7 +169,7 @@ export function useFileUpload(options: UseFileUploadOptions) {
       const result = await uploadFileAction({
         name: file.name,
         type: file.type,
-        buffer: bufferArray,
+        buffer: base64String, // Send as base64 string
         fileType: detectedFileType,
         folder: options.folder,
       });
