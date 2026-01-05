@@ -5,7 +5,7 @@ import type { AllowedFileType } from "@/infrastructure/adapters/s3-storage-servi
 import { uploadFileAction, deleteFileAction } from "@/app/actions/upload";
 
 export interface UseFileUploadOptions {
-  fileType: AllowedFileType;
+  fileType?: AllowedFileType; // Make optional for auto-detection
   folder?: string;
   onSuccess?: (url: string, key: string) => void;
   onError?: (error: string) => void;
@@ -17,6 +17,76 @@ export interface FileUploadState {
   error: string | null;
   url: string | null;
   key: string | null;
+}
+
+/**
+ * Detect file type from filename and content type
+ */
+function detectFileType(
+  fileName: string,
+  contentType?: string,
+): AllowedFileType {
+  const extension = fileName.split(".").pop()?.toLowerCase();
+  const normalizedContentType = contentType?.toLowerCase();
+
+  // Check by content type first
+  if (normalizedContentType) {
+    if (normalizedContentType.startsWith("image/")) return "image";
+    if (normalizedContentType.startsWith("video/")) return "video";
+    if (
+      normalizedContentType.includes("pdf") ||
+      normalizedContentType.includes("word") ||
+      normalizedContentType.includes("excel") ||
+      normalizedContentType.includes("powerpoint") ||
+      normalizedContentType.includes("text") ||
+      normalizedContentType.includes("zip")
+    )
+      return "document";
+  }
+
+  // Check by extension
+  if (extension) {
+    const imageExts = [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "webp",
+      "svg",
+      "bmp",
+      "tiff",
+      "ico",
+    ];
+    const videoExts = [
+      "mp4",
+      "mpeg",
+      "mov",
+      "avi",
+      "webm",
+      "wmv",
+      "3gp",
+      "flv",
+    ];
+    const documentExts = [
+      "pdf",
+      "doc",
+      "docx",
+      "xls",
+      "xlsx",
+      "ppt",
+      "pptx",
+      "txt",
+      "csv",
+      "zip",
+    ];
+
+    if (imageExts.includes(extension)) return "image";
+    if (videoExts.includes(extension)) return "video";
+    if (documentExts.includes(extension)) return "document";
+  }
+
+  // Default to document for unknown types
+  return "document";
 }
 
 /**
@@ -32,16 +102,16 @@ export function useFileUpload(options: UseFileUploadOptions) {
   });
 
   const upload = async (file: File) => {
-    console.log('[useFileUpload] Starting file upload process', {
+    console.log("[useFileUpload] Starting file upload process", {
       fileName: file?.name,
       fileSize: file?.size,
-      fileType: file?.type
+      fileType: file?.type,
     });
 
     // Validate file exists and is a proper File object
     if (!file || !(file instanceof File)) {
       const errorMessage = "No file selected or invalid file";
-      console.error('[useFileUpload] Invalid file:', { file });
+      console.error("[useFileUpload] Invalid file:", { file });
       setState({
         isUploading: false,
         progress: 0,
@@ -52,7 +122,7 @@ export function useFileUpload(options: UseFileUploadOptions) {
       throw new Error(errorMessage);
     }
 
-    console.log('[useFileUpload] Setting upload state to loading');
+    console.log("[useFileUpload] Setting upload state to loading");
     setState({
       isUploading: true,
       progress: 0,
@@ -63,38 +133,40 @@ export function useFileUpload(options: UseFileUploadOptions) {
 
     try {
       // Convert file to ArrayBuffer
-      console.log('[useFileUpload] Converting file to ArrayBuffer');
+      console.log("[useFileUpload] Converting file to ArrayBuffer");
       const arrayBuffer = await file.arrayBuffer();
       const bufferArray = Array.from(new Uint8Array(arrayBuffer));
 
-      console.log('[useFileUpload] Prepared file data for upload:', {
+      console.log("[useFileUpload] Prepared file data for upload:", {
         name: file.name,
         type: file.type,
         bufferLength: bufferArray.length,
-        fileType: options.fileType,
-        folder: options.folder
       });
 
+      // Auto-detect file type if not provided
+      const detectedFileType =
+        options.fileType || detectFileType(file.name, file.type);
+
       // Call Server Action with file data
-      console.log('[useFileUpload] Calling uploadFileAction');
+      console.log("[useFileUpload] Calling uploadFileAction");
       const result = await uploadFileAction({
         name: file.name,
         type: file.type,
         buffer: bufferArray,
-        fileType: options.fileType,
+        fileType: detectedFileType,
         folder: options.folder,
       });
 
       if (!result.success) {
-        console.error('[useFileUpload] Upload failed:', result.error);
+        console.error("[useFileUpload] Upload failed:", result.error);
         throw new Error(result.error || "Upload failed");
       }
 
-      console.log('[useFileUpload] Upload successful:', {
+      console.log("[useFileUpload] Upload successful:", {
         url: result.url,
         key: result.key,
         fileName: result.fileName,
-        fileSize: result.fileSize
+        fileSize: result.fileSize,
       });
 
       setState({
@@ -106,16 +178,17 @@ export function useFileUpload(options: UseFileUploadOptions) {
       });
 
       if (options.onSuccess && result.url && result.key) {
-        console.log('[useFileUpload] Calling onSuccess callback');
+        console.log("[useFileUpload] Calling onSuccess callback");
         options.onSuccess(result.url, result.key);
       }
 
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error('[useFileUpload] Error during upload:', {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error("[useFileUpload] Error during upload:", {
         error: errorMessage,
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
 
       setState({
@@ -127,7 +200,7 @@ export function useFileUpload(options: UseFileUploadOptions) {
       });
 
       if (options.onError) {
-        console.log('[useFileUpload] Calling onError callback');
+        console.log("[useFileUpload] Calling onError callback");
         options.onError(errorMessage);
       }
 
@@ -154,7 +227,8 @@ export function useFileUpload(options: UseFileUploadOptions) {
 
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       setState((prev) => ({
         ...prev,
         error: errorMessage,

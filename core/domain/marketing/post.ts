@@ -45,10 +45,12 @@ export type PostStatus = (typeof POST_STATUS)[number];
  * Media attachment for posts
  */
 export interface PostMedia {
-  type: "image" | "video";
+  type: "image" | "video" | "document";
   url: string;
   thumbnailUrl?: string;
   duration?: number; // For videos, in seconds
+  fileName?: string; // For documents
+  fileSize?: number; // For documents, in bytes
 }
 
 /**
