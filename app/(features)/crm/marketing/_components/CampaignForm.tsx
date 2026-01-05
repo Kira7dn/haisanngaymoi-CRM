@@ -1,54 +1,55 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import type { Campaign } from "@/core/domain/marketing/campaign"
-import { createCampaignAction, updateCampaignAction } from "../actions"
-import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import type { Campaign } from "@/core/domain/marketing/campaign";
+import { createCampaignAction, updateCampaignAction } from "../actions";
+import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload";
+import type { PostMedia } from "@/core/domain/marketing/post";
 
 interface CampaignFormProps {
-  campaign?: Campaign | null
-  onClose: () => void
+  campaign?: Campaign | null;
+  onClose: () => void;
 }
 
 export function CampaignForm({ campaign, onClose }: CampaignFormProps) {
-  const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState("")
-  const [imageUrl, setImageUrl] = useState<{ type: "image" | "video"; url: string } | null>(
-    campaign?.image ? { type: "image", url: campaign.image } : null
-  )
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [imageUrl, setImageUrl] = useState<PostMedia | null>(
+    campaign?.image ? { type: "image", url: campaign.image } : null,
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setError("")
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
 
-    const formData = new FormData(e.currentTarget)
-    formData.set("image", imageUrl?.url || "")
+    const formData = new FormData(e.currentTarget);
+    formData.set("image", imageUrl?.url || "");
 
     try {
       const result = campaign
         ? await updateCampaignAction(campaign.id, formData)
-        : await createCampaignAction(formData)
+        : await createCampaignAction(formData);
 
       if (result.success) {
-        router.refresh()
-        onClose()
+        router.refresh();
+        onClose();
       } else {
-        setError(result.error || "An error occurred")
+        setError(result.error || "An error occurred");
       }
     } catch (err) {
-      setError("An unexpected error occurred")
+      setError("An unexpected error occurred");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const formatDateForInput = (date: Date | string) => {
-    const d = new Date(date)
-    return d.toISOString().split("T")[0]
-  }
+    const d = new Date(date);
+    return d.toISOString().split("T")[0];
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -96,9 +97,10 @@ export function CampaignForm({ campaign, onClose }: CampaignFormProps) {
 
           <MediaUpload
             value={imageUrl || undefined}
-            onChange={(url) => setImageUrl(url)}
+            onChange={setImageUrl}
             folder="campaigns"
             disabled={isSubmitting}
+            allowedTypes={["image"]} // Only allow images for campaign
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -109,7 +111,9 @@ export function CampaignForm({ campaign, onClose }: CampaignFormProps) {
               <input
                 type="date"
                 name="startDate"
-                defaultValue={campaign ? formatDateForInput(campaign.startDate) : ""}
+                defaultValue={
+                  campaign ? formatDateForInput(campaign.startDate) : ""
+                }
                 required
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
               />
@@ -122,7 +126,9 @@ export function CampaignForm({ campaign, onClose }: CampaignFormProps) {
               <input
                 type="date"
                 name="endDate"
-                defaultValue={campaign ? formatDateForInput(campaign.endDate) : ""}
+                defaultValue={
+                  campaign ? formatDateForInput(campaign.endDate) : ""
+                }
                 required
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
               />
@@ -152,12 +158,15 @@ export function CampaignForm({ campaign, onClose }: CampaignFormProps) {
             <input
               type="text"
               name="products"
-              defaultValue={campaign?.products ? JSON.stringify(campaign.products) : "[]"}
+              defaultValue={
+                campaign?.products ? JSON.stringify(campaign.products) : "[]"
+              }
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm"
-              placeholder='[1, 2, 3]'
+              placeholder="[1, 2, 3]"
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Example: [1, 2, 3] - List of product IDs to include in this campaign
+              Example: [1, 2, 3] - List of product IDs to include in this
+              campaign
             </p>
           </div>
 
@@ -167,7 +176,11 @@ export function CampaignForm({ campaign, onClose }: CampaignFormProps) {
             </label>
             <textarea
               name="platforms"
-              defaultValue={campaign?.platforms ? JSON.stringify(campaign.platforms, null, 2) : "[]"}
+              defaultValue={
+                campaign?.platforms
+                  ? JSON.stringify(campaign.platforms, null, 2)
+                  : "[]"
+              }
               rows={5}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm"
               placeholder='[{"platform": "facebook", "campaignId": "123", "utmParams": {"source": "fb", "medium": "social", "campaign": "summer"}}]'
@@ -191,11 +204,15 @@ export function CampaignForm({ campaign, onClose }: CampaignFormProps) {
               disabled={isSubmitting}
               className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? "Saving..." : campaign ? "Update Campaign" : "Create Campaign"}
+              {isSubmitting
+                ? "Saving..."
+                : campaign
+                  ? "Update Campaign"
+                  : "Create Campaign"}
             </button>
           </div>
         </form>
       </div>
     </div>
-  )
+  );
 }

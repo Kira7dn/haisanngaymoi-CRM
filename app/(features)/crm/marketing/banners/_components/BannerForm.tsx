@@ -1,42 +1,43 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import type { Banner } from "@/core/domain/marketing/banner"
-import { createBannerAction, updateBannerAction } from "../actions"
-import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload"
+import { useState } from "react";
+import type { Banner } from "@/core/domain/marketing/banner";
+import { createBannerAction, updateBannerAction } from "../actions";
+import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload";
+import type { PostMedia } from "@/core/domain/marketing/post";
 
 interface BannerFormProps {
-  banner?: Banner | null
-  onClose: () => void
+  banner?: Banner | null;
+  onClose: () => void;
 }
 
 export function BannerForm({ banner, onClose }: BannerFormProps) {
-  const [loading, setLoading] = useState(false)
-  const [imageUrl, setImageUrl] = useState<{ type: "image" | "video"; url: string } | null>(
-    banner?.url ? { type: "image", url: banner.url } : null
-  )
+  const [loading, setLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<PostMedia | null>(
+    banner?.url ? { type: "image", url: banner.url } : null,
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
-      const formData = new FormData(e.currentTarget)
-      formData.set("url", imageUrl?.url || "")
+      const formData = new FormData(e.currentTarget);
+      formData.set("url", imageUrl?.url || "");
 
       if (banner) {
-        formData.set("id", banner.id.toString())
-        await updateBannerAction(formData)
+        formData.set("id", banner.id.toString());
+        await updateBannerAction(formData);
       } else {
-        await createBannerAction(formData)
+        await createBannerAction(formData);
       }
 
-      window.location.reload() // Reload to show updated data
+      window.location.reload(); // Reload to show updated data
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to save banner")
-      setLoading(false)
+      alert(error instanceof Error ? error.message : "Failed to save banner");
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -50,9 +51,10 @@ export function BannerForm({ banner, onClose }: BannerFormProps) {
             {/* Image Upload */}
             <MediaUpload
               value={imageUrl || undefined}
-              onChange={(url) => setImageUrl(url)}
+              onChange={setImageUrl}
               folder="banners"
               disabled={loading}
+              allowedTypes={["image"]} // Only allow images for banner
             />
 
             {/* Actions */}
@@ -77,5 +79,5 @@ export function BannerForm({ banner, onClose }: BannerFormProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,82 +1,94 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import type { Product, SizeOption } from "@/core/domain/catalog/product"
-import type { Category } from "@/core/domain/catalog/category"
-import { createProductAction, updateProductAction } from "../actions"
-import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload"
+import { useState } from "react";
+import type { Product, SizeOption } from "@/core/domain/catalog/product";
+import type { Category } from "@/core/domain/catalog/category";
+import { createProductAction, updateProductAction } from "../actions";
+import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload";
+import type { PostMedia } from "@/core/domain/marketing/post";
 
 interface ProductFormProps {
-  product?: Product | null
-  categories: Category[]
-  onClose: () => void
+  product?: Product | null;
+  categories: Category[];
+  onClose: () => void;
 }
 
-export function ProductForm({ product, categories, onClose }: ProductFormProps) {
-  const [loading, setLoading] = useState(false)
-  const [sizes, setSizes] = useState<SizeOption[]>(product?.sizes || [])
-  const [colors, setColors] = useState<string[]>(product?.colors || [])
-  const [imageUrl, setImageUrl] = useState<{ type: "image" | "video"; url: string } | null>(
-    product?.image ? { type: "image", url: product.image } : null
-  )
+export function ProductForm({
+  product,
+  categories,
+  onClose,
+}: ProductFormProps) {
+  const [loading, setLoading] = useState(false);
+  const [sizes, setSizes] = useState<SizeOption[]>(product?.sizes || []);
+  const [colors, setColors] = useState<string[]>(product?.colors || []);
+  const [imageUrl, setImageUrl] = useState<PostMedia | null>(
+    product?.image ? { type: "image", url: product.image } : null,
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
-      const formData = new FormData(e.currentTarget)
+      const formData = new FormData(e.currentTarget);
 
       // Add sizes and colors as JSON strings
-      formData.set("sizes", JSON.stringify(sizes))
-      formData.set("colors", JSON.stringify(colors))
-      formData.set("image", imageUrl?.url || "")
+      formData.set("sizes", JSON.stringify(sizes));
+      formData.set("colors", JSON.stringify(colors));
+      formData.set("image", imageUrl?.url || "");
 
       if (product) {
-        formData.set("id", product.id.toString())
-        await updateProductAction(formData)
+        formData.set("id", product.id.toString());
+        await updateProductAction(formData);
       } else {
-        await createProductAction(formData)
+        await createProductAction(formData);
       }
 
-      window.location.reload() // Reload to show updated data
+      window.location.reload(); // Reload to show updated data
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to save product")
-      setLoading(false)
+      alert(error instanceof Error ? error.message : "Failed to save product");
+      setLoading(false);
     }
-  }
+  };
 
   const addSize = () => {
-    setSizes([...sizes, { label: "", price: 0 }])
-  }
+    setSizes([...sizes, { label: "", price: 0 }]);
+  };
 
-  const updateSize = (index: number, field: "label" | "price" | "originalPrice", value: string | number) => {
-    const newSizes = [...sizes]
+  const updateSize = (
+    index: number,
+    field: "label" | "price" | "originalPrice",
+    value: string | number,
+  ) => {
+    const newSizes = [...sizes];
     if (field === "price" || field === "originalPrice") {
-      newSizes[index] = { ...newSizes[index], [field]: parseFloat(value as string) || 0 }
+      newSizes[index] = {
+        ...newSizes[index],
+        [field]: parseFloat(value as string) || 0,
+      };
     } else {
-      newSizes[index] = { ...newSizes[index], label: value as string }
+      newSizes[index] = { ...newSizes[index], label: value as string };
     }
-    setSizes(newSizes)
-  }
+    setSizes(newSizes);
+  };
 
   const removeSize = (index: number) => {
-    setSizes(sizes.filter((_, i) => i !== index))
-  }
+    setSizes(sizes.filter((_, i) => i !== index));
+  };
 
   const addColor = () => {
-    setColors([...colors, "#000000"])
-  }
+    setColors([...colors, "#000000"]);
+  };
 
   const updateColor = (index: number, value: string) => {
-    const newColors = [...colors]
-    newColors[index] = value
-    setColors(newColors)
-  }
+    const newColors = [...colors];
+    newColors[index] = value;
+    setColors(newColors);
+  };
 
   const removeColor = (index: number) => {
-    setColors(colors.filter((_, i) => i !== index))
-  }
+    setColors(colors.filter((_, i) => i !== index));
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -156,9 +168,10 @@ export function ProductForm({ product, categories, onClose }: ProductFormProps) 
             {/* Image Upload */}
             <MediaUpload
               value={imageUrl || undefined}
-              onChange={(url) => setImageUrl(url)}
+              onChange={setImageUrl}
               folder="products"
               disabled={loading}
+              allowedTypes={["image"]} // Only allow images for product
             />
 
             {/* Detail */}
@@ -272,5 +285,5 @@ export function ProductForm({ product, categories, onClose }: ProductFormProps) 
         </div>
       </div>
     </div>
-  )
+  );
 }

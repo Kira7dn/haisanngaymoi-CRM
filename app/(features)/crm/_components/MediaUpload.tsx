@@ -13,6 +13,7 @@ export interface MediaUploadProps {
   folder?: string;
   maxSize?: number; // in MB (optional, uses type-based defaults)
   disabled?: boolean;
+  allowedTypes?: ("image" | "video" | "document")[]; // Restrict which buttons to show
 }
 
 /**
@@ -31,6 +32,7 @@ export function MediaUpload({
   folder = "media",
   maxSize,
   disabled = false,
+  allowedTypes = ["image", "video", "document"], // Default to all types
 }: MediaUploadProps) {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +63,13 @@ export function MediaUpload({
       detectedType = "image";
     } else {
       detectedType = "document";
+    }
+
+    // Check if detected type is allowed
+    if (!allowedTypes.includes(detectedType)) {
+      const allowedNames = allowedTypes.join(", ");
+      alert(`Only ${allowedNames} files are allowed`);
+      return;
     }
 
     // Type-specific size limits
@@ -162,50 +171,56 @@ export function MediaUpload({
       ) : (
         <div className="flex gap-3 flex-wrap">
           {/* Photo button */}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              !disabled && !isUploading && photoInputRef.current?.click()
-            }
-            disabled={disabled || isUploading}
-            className="cursor-pointer flex items-center gap-2 rounded-full px-4 py-2 bg-green-50 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-900 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300"
-          >
-            {isUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Image className="h-4 w-4" />
-            )}
-            <span className="text-sm font-medium">Photo</span>
-          </Button>
+          {allowedTypes.includes("image") && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                !disabled && !isUploading && photoInputRef.current?.click()
+              }
+              disabled={disabled || isUploading}
+              className="cursor-pointer flex items-center gap-2 rounded-full px-4 py-2 bg-green-50 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-900 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300"
+            >
+              {isUploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Image className="h-4 w-4" />
+              )}
+              <span className="text-sm font-medium">Photo</span>
+            </Button>
+          )}
 
           {/* Video button */}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              !disabled && !isUploading && videoInputRef.current?.click()
-            }
-            disabled={disabled || isUploading}
-            className="cursor-pointer flex items-center gap-2 rounded-full px-4 py-2 bg-pink-50 hover:bg-pink-100 dark:bg-pink-950 dark:hover:bg-pink-900 border-pink-200 dark:border-pink-800 text-pink-700 dark:text-pink-300"
-          >
-            <Video className="h-4 w-4" />
-            <span className="text-sm font-medium">Video</span>
-          </Button>
+          {allowedTypes.includes("video") && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                !disabled && !isUploading && videoInputRef.current?.click()
+              }
+              disabled={disabled || isUploading}
+              className="cursor-pointer flex items-center gap-2 rounded-full px-4 py-2 bg-pink-50 hover:bg-pink-100 dark:bg-pink-950 dark:hover:bg-pink-900 border-pink-200 dark:border-pink-800 text-pink-700 dark:text-pink-300"
+            >
+              <Video className="h-4 w-4" />
+              <span className="text-sm font-medium">Video</span>
+            </Button>
+          )}
 
           {/* Document button */}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              !disabled && !isUploading && documentInputRef.current?.click()
-            }
-            disabled={disabled || isUploading}
-            className="cursor-pointer flex items-center gap-2 rounded-full px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
-          >
-            <FileText className="h-4 w-4" />
-            <span className="text-sm font-medium">Document</span>
-          </Button>
+          {allowedTypes.includes("document") && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                !disabled && !isUploading && documentInputRef.current?.click()
+              }
+              disabled={disabled || isUploading}
+              className="cursor-pointer flex items-center gap-2 rounded-full px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="text-sm font-medium">Document</span>
+            </Button>
+          )}
         </div>
       )}
 

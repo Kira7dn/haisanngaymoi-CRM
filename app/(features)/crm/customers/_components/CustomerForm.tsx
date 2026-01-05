@@ -1,41 +1,42 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import type { Customer } from "@/core/domain/customers/customer"
-import { createCustomerAction, updateCustomerAction } from "../actions"
-import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload"
+import { useState } from "react";
+import type { Customer } from "@/core/domain/customers/customer";
+import { createCustomerAction, updateCustomerAction } from "../actions";
+import { MediaUpload } from "@/app/(features)/crm/_components/MediaUpload";
+import type { PostMedia } from "@/core/domain/marketing/post";
 
 interface CustomerFormProps {
-  customer?: Customer | null
-  onClose: () => void
+  customer?: Customer | null;
+  onClose: () => void;
 }
 
 export function CustomerForm({ customer, onClose }: CustomerFormProps) {
-  const [loading, setLoading] = useState(false)
-  const [avatarUrl, setAvatarUrl] = useState<{ type: "image" | "video"; url: string } | null>(
-    customer?.avatar ? { type: "image", url: customer.avatar } : null
-  )
+  const [loading, setLoading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<PostMedia | null>(
+    customer?.avatar ? { type: "image", url: customer.avatar } : null,
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
-      const formData = new FormData(e.currentTarget)
-      formData.set("avatar", avatarUrl?.url || "")
+      const formData = new FormData(e.currentTarget);
+      formData.set("avatar", avatarUrl?.url || "");
 
       if (customer) {
-        await updateCustomerAction(formData)
+        await updateCustomerAction(formData);
       } else {
-        await createCustomerAction(formData)
+        await createCustomerAction(formData);
       }
 
-      window.location.reload() // Reload to show updated data
+      window.location.reload(); // Reload to show updated data
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to save customer")
-      setLoading(false)
+      alert(error instanceof Error ? error.message : "Failed to save customer");
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -146,9 +147,10 @@ export function CustomerForm({ customer, onClose }: CustomerFormProps) {
             {/* Avatar Upload */}
             <MediaUpload
               value={avatarUrl || undefined}
-              onChange={(url) => setAvatarUrl(url)}
+              onChange={setAvatarUrl}
               folder="avatars"
               disabled={loading}
+              allowedTypes={["image"]} // Only allow images for avatar
             />
 
             {/* Actions */}
@@ -173,5 +175,5 @@ export function CustomerForm({ customer, onClose }: CustomerFormProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }
